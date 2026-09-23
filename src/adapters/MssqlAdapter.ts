@@ -212,6 +212,8 @@ export class MssqlAdapter implements IDbAdapter {
     await tx.begin(mssqlIso);
 
     const driver: IDbTransactionDriver = {
+      // Store the raw mssql Transaction so createRequest can retrieve it
+      _nativeTx: tx,
       commit: async () => tx.commit(),
       rollback: async () => tx.rollback(),
       savepoint: async (name: string) => {
@@ -238,7 +240,9 @@ export class MssqlAdapter implements IDbAdapter {
   private createRequest(transaction?: DbTransaction): any {
     if (transaction) {
       const driver = transaction.getDriver<any>();
-      return new this.mssqlModule.Request(driver.tx || driver);
+      // _nativeTx is the raw mssql.Transaction stored during beginTransaction
+      const nativeTx = driver._nativeTx || driver.tx || driver;
+      return new this.mssqlModule.Request(nativeTx);
     }
     return this.pool.request();
   }
