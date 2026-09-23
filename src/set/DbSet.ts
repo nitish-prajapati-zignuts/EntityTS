@@ -440,58 +440,76 @@ export class DbSet<T extends object = any> {
   }
 
   /**
-   * Eagerly loads related navigation properties (`@HasMany`, `@HasOne`, `@BelongsTo`) in a single efficient batch.
+   * Eagerly loads related navigation properties (`@HasMany`, `@HasOne`, `@BelongsTo`) in a single efficient batch using a lambda selector.
    *
-   * Supports:
-   * 1. **Prisma-style boolean object**: `.include({ profile: true, posts: false })`
-   * 2. **Conditional boolean flag**: `.include('posts', shouldIncludePosts)`
-   * 3. **Property name string**: `.include('posts')` (supports dot-nested paths like `'posts.comments'`)
-   *
-   * @usecase Prevent the N+1 query problem by loading parent-child relationships upfront, with conditional inclusion based on true/false flags just like in Prisma.
-   * @param navigationProperty - Relation property name or path.
-   * @param enabled - Optional boolean flag when passing a property name (defaults to `true`). If `false`, inclusion is skipped.
+   * @usecase Prevent the N+1 query problem by loading parent-child relationships upfront with compile-time type safety.
+   * @param navigationProperty - Property accessor lambda (e.g. `u => u.posts`).
    * @returns A new cloned `DbSet` configured to eager load the specified navigation property.
    * @example
    * ```ts
-   * // 1. Prisma-style boolean object:
-   * const users = await context.users.include({
-   *   profile: true,
-   *   posts: true,
-   *   comments: false, // will NOT be loaded
-   * }).toList();
-   *
-   * // 2. Single property with conditional boolean flag:
-   * const users = await context.users
-   *   .include('profile', req.query.includeProfile === 'true')
-   *   .toList();
+   * const users = await context.users.include(u => u.posts).toList();
    * ```
+   */
+  public include<V>(navigationProperty: (entity: T) => V): DbSet<T>;
+  /**
+   * Eagerly loads related navigation properties using a relation property name.
+   *
+   * @param navigationProperty - Relation property name or dot-nested path.
+   * @param enabled - Optional boolean flag (defaults to `true`). If `false`, inclusion is skipped.
+   * @returns A new cloned `DbSet` configured to eager load the specified navigation property.
    */
   public include<K extends string = ColumnKey<T>>(
     navigationProperty: K,
     enabled?: boolean,
   ): DbSet<WithLoaded<T, K>>;
-  /**
-   * Eagerly loads related navigation properties using a boolean mapping object.
-   *
-   * @param includesMap - Object mapping relation property names to boolean flags.
-   */
-  public include(includesMap: Partial<Record<ColumnKey<T>, boolean>>): DbSet<T>;
   public include(
-    navigationPropertyOrMap: ColumnKey<T> | Partial<Record<ColumnKey<T>, boolean>>,
+    navigationPropertyOrSelector: ColumnKey<T> | ((entity: T) => unknown),
     enabled = true,
   ): DbSet<any> {
     const existingIncludes = [...(this.options.includes || [])];
 
-    if (typeof navigationPropertyOrMap === 'object' && navigationPropertyOrMap !== null) {
-      for (const [relName, isEnabled] of Object.entries(navigationPropertyOrMap)) {
-        if (isEnabled) {
-          existingIncludes.push(relName);
-        }
+    if (typeof navigationPropertyOrSelector === 'function') {
+      const propName = this.resolvePropertySelector(navigationPropertyOrSelector);
+      if (propName && enabled) {
+        existingIncludes.push(propName);
       }
-    } else if (typeof navigationPropertyOrMap === 'string') {
+    } else if (typeof navigationPropertyOrSelector === 'string') {
       if (enabled) {
-        existingIncludes.push(navigationPropertyOrMap);
+        existingIncludes.push(navigationPropertyOrSelector);
       }
+    }
+
+    return this.createClone(undefined, {
+      includes: existingIncludes,
+    });
+  }
+
+  /**
+   * Eagerly loads a nested relationship following a preceding `.include()`.
+   *
+   * @usecase Load multi-level relationships (e.g. User -> Posts -> Comments).
+   * @param navigationProperty - Property accessor lambda or relation property name on the child entity.
+   * @returns A new cloned `DbSet` configured to eager load the nested relation.
+   * @example
+   * ```ts
+   * const feed = await context.users
+   *   .include(u => u.posts)
+   *   .thenInclude((p: any) => p.comments)
+   *   .toList();
+   * ```
+   */
+  public thenInclude(navigationProperty: string | ((entity: any) => unknown)): DbSet<T> {
+    const existingIncludes = [...(this.options.includes || [])];
+    const propName =
+      typeof navigationProperty === 'function'
+        ? this.resolvePropertySelector(navigationProperty as any)
+        : navigationProperty;
+
+    if (existingIncludes.length > 0 && propName) {
+      const last = existingIncludes[existingIncludes.length - 1];
+      existingIncludes[existingIncludes.length - 1] = `${last}.${propName}`;
+    } else if (propName) {
+      existingIncludes.push(propName);
     }
 
     return this.createClone(undefined, {
@@ -1065,15 +1083,21 @@ export class DbSet<T extends object = any> {
   ): DbSet<T & Partial<R>> {
     const qb = this.cloneQueryBuilder<T & Partial<R>>();
     let otherTable = '';
+    let rightCol = String(on.right);
     if (typeof target === 'function') {
       const otherMeta = ModelMetadataRegistry.getInstance().get(target);
       otherTable = otherMeta?.tableName || target.name;
+      if (otherMeta) {
+        const colMeta = otherMeta.columns.get(String(on.right));
+        if (colMeta?.columnName) {
+          rightCol = colMeta.columnName;
+        }
+      }
     } else {
       otherTable = target;
     }
 
     const leftCol = this.mapPropertyToColumn(String(on.left));
-    const rightCol = String(on.right);
     qb.join(type, otherTable, leftCol, rightCol, alias);
     return new DbSet<T & Partial<R>>(
       this.adapter,
@@ -2098,25 +2122,6 @@ export class DbSet<T extends object = any> {
   }
 
   /**
-   * Updates an existing entity matching filter criteria with partial field updates.
-   *
-   * Automatically refreshes `updatedAt` and advances `@Version` properties.
-   *
-   * @usecase Update a unique record by matching where condition.
-   * @param args - Object containing `where` filter, `data` patch, and optional `select` projection.
-   * @returns A Promise resolving to the refreshed updated entity from the database.
-   *
-   * @example
-   * ```ts
-   * const updated = await context.users.update({ where: { id: 1 }, data: { name: 'Jane Doe' } });
-   * ```
-   */
-  public async update(args: {
-    where: Partial<T>;
-    data: Partial<T>;
-    select?: (keyof T)[];
-  }): Promise<T>;
-  /**
    * Updates an existing entity by primary key with partial field updates and optimistic concurrency checking.
    *
    * Automatically refreshes `updatedAt` and advances `@Version` properties.
@@ -2143,22 +2148,7 @@ export class DbSet<T extends object = any> {
     patch: Partial<T>,
     expectedVersion?: unknown,
     concurrencyOriginals?: Record<string, unknown>,
-  ): Promise<T>;
-  public async update(
-    idOrArgs: unknown,
-    patch?: Partial<T>,
-    expectedVersion?: unknown,
-    concurrencyOriginals?: Record<string, unknown>,
   ): Promise<T> {
-    if (
-      idOrArgs &&
-      typeof idOrArgs === 'object' &&
-      'where' in (idOrArgs as any) &&
-      'data' in (idOrArgs as any)
-    ) {
-      return this.updateUnique(idOrArgs as any);
-    }
-    const id = idOrArgs;
     this.ensureNotView('update');
     const toUpdate = { ...patch } as any;
     if (typeof this.entityTarget === 'function') {
@@ -2343,11 +2333,25 @@ export class DbSet<T extends object = any> {
         create: Partial<T>;
         select?: (keyof T)[];
       };
-      const existing = await this.findUnique({ where: args.where });
+      const existing = await this.where(args.where as any).firstOrDefault();
       if (existing) {
-        return this.updateUnique({ where: args.where, data: args.update, select: args.select });
+        const pk = this.getPrimaryKeyProperty();
+        const id = (existing as any)[pk];
+        const updated = await this.update(id, args.update);
+        if (args.select && args.select.length > 0) {
+          const filtered: any = {};
+          for (const k of args.select) filtered[k] = (updated as any)[k];
+          return filtered;
+        }
+        return updated;
       }
-      return this.create({ data: { ...args.where, ...args.create }, select: args.select });
+      const created = await this.add({ ...args.where, ...args.create });
+      if (args.select && args.select.length > 0) {
+        const filtered: any = {};
+        for (const k of args.select) filtered[k] = (created as any)[k];
+        return filtered;
+      }
+      return created;
     }
 
     const entity = entityOrArgs as Partial<T>;
@@ -2880,341 +2884,6 @@ export class DbSet<T extends object = any> {
     }
 
     return rowsAffected;
-  }
-
-  /**
-   * Finds a unique entity matching the `where` criteria.
-   *
-   * @example
-   * ```ts
-   * const user = await db.users.findUnique({ where: { id: 1 } });
-   * const userWithPosts = await db.users.findUnique({ where: { email: 'a@b.com' }, include: { posts: true } });
-   * ```
-   */
-  public async findUnique(args: {
-    where: Partial<T>;
-    select?: (keyof T)[];
-    include?: any;
-  }): Promise<T | null> {
-    let set: DbSet<any> = this.where(args.where as any);
-    if (args.include) {
-      set = set.include(args.include);
-    }
-    if (args.select && args.select.length > 0) {
-      set = set.select(...(args.select as any));
-    }
-    return set.firstOrDefault();
-  }
-
-  /**
-   * Finds the first entity matching the optional `where`, `orderBy`, and pagination arguments.
-   *
-   * @example
-   * ```ts
-   * const admin = await db.users.findFirst({
-   *   where: { role: 'admin' },
-   *   orderBy: { createdAt: 'desc' },
-   * });
-   * ```
-   */
-  public async findFirst(
-    args: {
-      where?: Partial<T> | ((clause: WhereClause<T>) => void);
-      orderBy?: Record<string, 'asc' | 'desc'> | keyof T;
-      skip?: number;
-      take?: number;
-      select?: (keyof T)[];
-      include?: any;
-    } = {},
-  ): Promise<T | null> {
-    let set: DbSet<any> = args.where ? this.where(args.where as any) : this;
-    if (args.include) set = set.include(args.include);
-    if (args.select && args.select.length > 0) set = set.select(...(args.select as any));
-
-    if (args.orderBy) {
-      if (typeof args.orderBy === 'string') {
-        set = set.orderBy(args.orderBy as any);
-      } else {
-        for (const [col, dir] of Object.entries(args.orderBy)) {
-          set = dir === 'desc' ? set.orderByDescending(col as any) : set.orderBy(col as any);
-        }
-      }
-    }
-    if (args.skip) set = set.skip(args.skip);
-    if (args.take) set = set.take(args.take);
-
-    return set.firstOrDefault();
-  }
-
-  /**
-   * Finds multiple entities matching query criteria.
-   *
-   * @example
-   * ```ts
-   * const users = await db.users.findMany({
-   *   where: { role: 'user' },
-   *   take: 10,
-   *   orderBy: { name: 'asc' },
-   * });
-   * ```
-   */
-  public async findMany(
-    args: {
-      where?: Partial<T> | ((clause: WhereClause<T>) => void);
-      orderBy?: Record<string, 'asc' | 'desc'> | keyof T;
-      skip?: number;
-      take?: number;
-      select?: (keyof T)[];
-      include?: any;
-      distinct?: (keyof T)[];
-    } = {},
-  ): Promise<T[]> {
-    let set: DbSet<any> = args.where ? this.where(args.where as any) : this;
-    if (args.include) set = set.include(args.include);
-    if (args.select && args.select.length > 0) set = set.select(...(args.select as any));
-    if (args.distinct && args.distinct.length > 0) set = set.distinct();
-
-    if (args.orderBy) {
-      if (typeof args.orderBy === 'string') {
-        set = set.orderBy(args.orderBy as any);
-      } else {
-        for (const [col, dir] of Object.entries(args.orderBy)) {
-          set = dir === 'desc' ? set.orderByDescending(col as any) : set.orderBy(col as any);
-        }
-      }
-    }
-    if (args.skip) set = set.skip(args.skip);
-    if (args.take) set = set.take(args.take);
-
-    return set.toList();
-  }
-
-  /**
-   * Creates an entity and returns the newly inserted record.
-   *
-   * @example
-   * ```ts
-   * const user = await db.users.create({ data: { name: 'Alice', email: 'alice@example.com' } });
-   * ```
-   */
-  public async create(args: { data: Partial<T>; select?: (keyof T)[] }): Promise<T> {
-    const created = await this.add(args.data);
-    if (args.select && args.select.length > 0) {
-      const filtered: any = {};
-      for (const k of args.select) {
-        filtered[k] = (created as any)[k];
-      }
-      return filtered;
-    }
-    return created;
-  }
-
-  /**
-   * Batch inserts multiple entities and returns the inserted count.
-   *
-   * @example
-   * ```ts
-   * const { count } = await db.users.createMany({ data: [{ name: 'A' }, { name: 'B' }] });
-   * ```
-   */
-  public async createMany(args: {
-    data: Partial<T>[];
-    skipDuplicates?: boolean;
-  }): Promise<{ count: number }> {
-    if (!args.data || args.data.length === 0) return { count: 0 };
-    await this.bulkInsert(args.data, { ignoreDuplicates: args.skipDuplicates });
-    return { count: args.data.length };
-  }
-
-  /**
-   * Updates a single matching entity by where criteria and returns the updated record.
-   */
-  public async updateUnique(args: {
-    where: Partial<T>;
-    data: Partial<T>;
-    select?: (keyof T)[];
-  }): Promise<T> {
-    const pkProp = this.getPrimaryKeyProperty();
-    const existing = await this.findUnique({ where: args.where });
-    if (!existing) {
-      const versionProp = this.metadata?.versionProperty?.propertyName;
-      if (versionProp && (args.where as any)[versionProp] !== undefined) {
-        const pkVal = (args.where as any)[pkProp];
-        if (pkVal !== undefined) {
-          const byPk = await this.find(pkVal);
-          if (byPk) {
-            throw new DbUpdateConcurrencyException(
-              `Database operation expected to affect 1 row, but affected 0 rows due to a concurrency conflict in '${this.tableName}'.`,
-              this.tableName,
-              pkVal,
-            );
-          }
-        }
-      }
-      throw new Error(`Record to update not found matching where criteria`);
-    }
-    const id = (existing as any)[pkProp];
-    const versionProp = this.metadata?.versionProperty?.propertyName;
-    const expectedVersion =
-      versionProp && (args.where as any)[versionProp] !== undefined
-        ? (args.where as any)[versionProp]
-        : versionProp && (existing as any)[versionProp] !== undefined
-          ? (existing as any)[versionProp]
-          : undefined;
-    const updated = await this.update(id, args.data, expectedVersion);
-    if (args.select && args.select.length > 0) {
-      const filtered: any = {};
-      for (const k of args.select) filtered[k] = (updated as any)[k];
-      return filtered;
-    }
-    return updated;
-  }
-
-  /**
-   * Updates multiple records matching where filter.
-   *
-   * @example
-   * ```ts
-   * const { count } = await db.users.updateMany({ where: { role: 'guest' }, data: { role: 'member' } });
-   * ```
-   */
-  public async updateMany(args: {
-    where?: Partial<T> | ((clause: WhereClause<T>) => void);
-    data: Partial<T>;
-  }): Promise<{ count: number }> {
-    this.ensureNotView('updateMany');
-    const qb = this.cloneQueryBuilder();
-    if (args.where) {
-      const tempSet = this.where(args.where as any);
-      qb.where((tempSet as any).queryBuilder.getWhereClause());
-    }
-    const effectiveAdapter = this.resolveEffectiveAdapter(qb);
-    const updateData = this.mapEntityToRow(args.data);
-    const { sql, params } = qb.toUpdateSql(updateData);
-    let res;
-    try {
-      res = await effectiveAdapter.executeNonQuery(sql, params, this.transaction);
-    } catch (err) {
-      throw DatabaseErrorTranslator.translate(err, sql, effectiveAdapter.provider);
-    }
-    return { count: res.rowsAffected };
-  }
-
-  /**
-   * Deletes a single unique entity matching where criteria and returns the deleted record.
-   */
-  public async deleteUnique(args: { where: Partial<T>; select?: (keyof T)[] }): Promise<T> {
-    const existing = await this.findUnique({ where: args.where });
-    if (!existing) {
-      throw new Error(`Record to delete not found matching where criteria`);
-    }
-    const pkProp = this.getPrimaryKeyProperty();
-    await this.remove((existing as any)[pkProp]);
-    return existing;
-  }
-
-  /**
-   * Deletes record(s) matching unique criteria or by ID.
-   *
-   * @example
-   * ```ts
-   * const deleted = await db.users.delete({ where: { id: 1 } });
-   * await db.users.delete(1);
-   * ```
-   */
-  public async delete(args: { where: Partial<T>; select?: (keyof T)[] }): Promise<T>;
-  public async delete(id: unknown, expectedVersion?: unknown): Promise<void>;
-  public async delete(idOrArgs: unknown, expectedVersion?: unknown): Promise<any> {
-    if (idOrArgs && typeof idOrArgs === 'object' && 'where' in (idOrArgs as any)) {
-      return this.deleteUnique(idOrArgs as any);
-    }
-    return this.remove(idOrArgs, expectedVersion);
-  }
-
-  /**
-   * Deletes multiple records matching where filter.
-   *
-   * @example
-   * ```ts
-   * const { count } = await db.users.deleteMany({ where: { status: 'inactive' } });
-   * ```
-   */
-  public async deleteMany(
-    args: {
-      where?: Partial<T> | ((clause: WhereClause<T>) => void);
-    } = {},
-  ): Promise<{ count: number }> {
-    this.ensureNotView('deleteMany');
-    const qb = this.cloneQueryBuilder();
-    if (args.where) {
-      const tempSet = this.where(args.where as any);
-      qb.where((tempSet as any).queryBuilder.getWhereClause());
-    }
-    const effectiveAdapter = this.resolveEffectiveAdapter(qb);
-
-    if (this.metadata?.softDelete) {
-      const colName = this.metadata.softDelete.column;
-      const { sql, params } = qb.toUpdateSql({ [colName]: new Date() });
-      const res = await effectiveAdapter.executeNonQuery(sql, params, this.transaction);
-      return { count: res.rowsAffected };
-    }
-
-    const { sql, params } = qb.toDeleteSql();
-    const res = await effectiveAdapter.executeNonQuery(sql, params, this.transaction);
-    return { count: res.rowsAffected };
-  }
-
-  /**
-   * Executes multi-field aggregate operations in the style of Prisma.
-   *
-   * @example
-   * ```ts
-   * const res = await db.orders.aggregate({
-   *   _count: true,
-   *   _sum: { totalAmount: true },
-   *   _avg: { totalAmount: true },
-   * });
-   * ```
-   */
-  public async aggregate(args: {
-    where?: Partial<T> | ((clause: WhereClause<T>) => void);
-    _count?: boolean | Record<string, boolean>;
-    _sum?: Record<string, boolean>;
-    _avg?: Record<string, boolean>;
-    _min?: Record<string, boolean>;
-    _max?: Record<string, boolean>;
-  }): Promise<any> {
-    let set: DbSet<T> = args.where ? this.where(args.where as any) : this;
-    const result: any = {};
-
-    if (args._count) {
-      result._count = await set.count();
-    }
-    if (args._sum) {
-      result._sum = {};
-      for (const col of Object.keys(args._sum)) {
-        result._sum[col] = await set.sum(col as any);
-      }
-    }
-    if (args._avg) {
-      result._avg = {};
-      for (const col of Object.keys(args._avg)) {
-        result._avg[col] = await set.avg(col as any);
-      }
-    }
-    if (args._min) {
-      result._min = {};
-      for (const col of Object.keys(args._min)) {
-        result._min[col] = await set.min(col as any);
-      }
-    }
-    if (args._max) {
-      result._max = {};
-      for (const col of Object.keys(args._max)) {
-        result._max[col] = await set.max(col as any);
-      }
-    }
-    return result;
   }
 
   // --- Bulk Operations ---

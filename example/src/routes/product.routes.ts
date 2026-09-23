@@ -201,3 +201,41 @@ productRouter.put('/:id/concurrency', async (req: Request, res: Response, next: 
     next(err);
   }
 });
+
+/**
+ * 27. Pessimistic Row Locking (.lock('pessimistic'))
+ * POST /api/products/:id/adjust-stock
+ * Body: { delta: number }
+ */
+productRouter.post('/:id/adjust-stock', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const db = getDb(req);
+    const id = Number(req.params.id);
+    const { delta } = req.body;
+
+    const result = await db.useTransaction(async tx => {
+      const txDb = db.inTransaction(tx);
+      // Select row with FOR UPDATE row lock to serialize concurrent checkouts
+      const product = await txDb.products.where('id', '=', id).lock('pessimistic').firstOrDefault();
+
+      if (!product) {
+        throw new Error(`Product ${id} not found`);
+      }
+
+      const newStock = product.stock + Number(delta || 0);
+      if (newStock < 0) {
+        throw new Error(`Insufficient stock. Current: ${product.stock}, Requested: ${delta}`);
+      }
+
+      const updated = await txDb.products.update(id, { stock: newStock });
+      return updated;
+    });
+
+    res.json({
+      message: 'Stock adjusted safely with pessimistic row locking.',
+      product: result,
+    });
+  } catch (err: any) {
+    res.status(400).json({ error: err.message });
+  }
+});

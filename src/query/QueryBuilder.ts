@@ -436,6 +436,7 @@ export class QueryBuilder<T = any> {
 
     // Columns
     const distinctStr = this._isDistinct ? 'DISTINCT ' : '';
+    const mainTablePrefix = this._tableAlias || this._tableName;
     let colsStr = '*';
     if (this._selectColumns.length > 0) {
       colsStr = this._selectColumns
@@ -448,6 +449,15 @@ export class QueryBuilder<T = any> {
             !isNaN(Number(c))
           ) {
             return c;
+          }
+          if (c.includes('.')) {
+            return c
+              .split('.')
+              .map(part => escape(part))
+              .join('.');
+          }
+          if (this._joinClauses.length > 0) {
+            return `${escape(mainTablePrefix)}.${escape(c)}`;
           }
           return escape(c);
         })
@@ -479,7 +489,20 @@ export class QueryBuilder<T = any> {
         const jTable = j.alias
           ? `${escape(j.tableName)} AS ${escape(j.alias)}`
           : escape(j.tableName);
-        sql += ` ${j.type} JOIN ${jTable} ON ${escape(j.leftColumn)} = ${escape(j.rightColumn)}`;
+        const jTarget = j.alias || j.tableName;
+        const leftExpr = j.leftColumn.includes('.')
+          ? j.leftColumn
+              .split('.')
+              .map(part => escape(part))
+              .join('.')
+          : `${escape(mainTablePrefix)}.${escape(j.leftColumn)}`;
+        const rightExpr = j.rightColumn.includes('.')
+          ? j.rightColumn
+              .split('.')
+              .map(part => escape(part))
+              .join('.')
+          : `${escape(jTarget)}.${escape(j.rightColumn)}`;
+        sql += ` ${j.type} JOIN ${jTable} ON ${leftExpr} = ${rightExpr}`;
       }
     }
 
@@ -983,9 +1006,14 @@ export class QueryBuilder<T = any> {
         continue;
       }
 
-      const colName = c.jsonPath
-        ? this.formatJsonPathExpression(c.column, c.jsonPath)
-        : this.formatIdentifier(c.column);
+      let colName = '';
+      if (c.jsonPath) {
+        colName = this.formatJsonPathExpression(c.column, c.jsonPath);
+      } else if (this._joinClauses.length > 0 && !c.column.includes('.')) {
+        colName = `${this.formatIdentifier(this._tableAlias || this._tableName)}.${this.formatIdentifier(c.column)}`;
+      } else {
+        colName = this.formatIdentifier(c.column);
+      }
 
       if (c.operator === 'IS NULL' || c.operator === 'IS NOT NULL') {
         parts.push(`${logical}${colName} ${c.operator}`);

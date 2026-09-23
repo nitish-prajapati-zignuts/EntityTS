@@ -6,32 +6,43 @@ sidebar_position: 3
 
 # Eager Loading & Relations
 
-EntityTS eliminates the N+1 query problem by batch-loading related entities in single efficient queries.
+EntityTS eliminates the N+1 query problem by batch-loading related entities in single efficient queries using the LINQ `.include()` and `.thenInclude()` syntax.
 
 ---
 
-## `.include()` Syntax
+## LINQ `.include()` Syntax
+
+### 1. Strongly-Typed Lambda Selectors
 
 ```ts
-// 1. Single or nested property name
-const usersWithPosts = await db.users.include('posts').toList();
+// Eager load related posts for each user
+const usersWithPosts = await db.users.include(u => u.posts).toList();
+```
 
-// 2. Prisma-style boolean object
-const users = await db.users
-  .include({
-    profile: true,
-    posts: true,
-    comments: false,
-  })
+### 2. Multi-Level Chaining with `.thenInclude()`
+
+```ts
+// Eager load nested relations (User -> Posts -> Comments -> Author)
+const blogFeed = await db.users
+  .include(u => u.posts)
+  .thenInclude(p => p.comments)
+  .include(u => u.profile)
+  .where(u => u.isActive, '=', true)
   .toList();
+```
 
-// 3. Conditional boolean flag
-const users = await db.users.include('profile', req.query.withProfile === 'true').toList();
+### 3. Property Name String Syntax
+
+```ts
+// Eager load via property name key
+const usersWithProfile = await db.users.include('profile').include('posts').toList();
 ```
 
 ---
 
 ## Lazy / On-Demand Loading
+
+For workflows where related data should only be loaded when explicitly requested:
 
 ```ts
 const user = await db.users.find(1);

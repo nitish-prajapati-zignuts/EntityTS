@@ -157,13 +157,8 @@ describe('Relations and Eager Loading (.include)', () => {
     expect(order101.items!.map(i => i.product)).toEqual(['Book', 'Pen']);
   });
 
-  it('supports Prisma-style boolean object mapping in .include({ profile: true, orders: false })', async () => {
-    const users = await ctx.users
-      .include({
-        profile: true,
-        orders: false,
-      })
-      .toList();
+  it('supports LINQ lambda selectors in .include(u => u.profile)', async () => {
+    const users = await ctx.users.include(u => u.profile).toList();
 
     const alice = users.find(u => u.name === 'Alice')!;
     expect(alice.profile).toBeDefined();

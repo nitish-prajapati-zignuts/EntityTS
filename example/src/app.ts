@@ -6,7 +6,15 @@ import {
   DbException,
 } from 'entityts';
 import { AppDbContext } from './database/AppDbContext';
-import { userRouter, productRouter, transactionRouter, sqlRouter } from './routes';
+import {
+  userRouter,
+  productRouter,
+  transactionRouter,
+  sqlRouter,
+  procedureRouter,
+  aiRouter,
+  outboxRouter,
+} from './routes';
 import { config } from './config';
 
 export const app = express();
@@ -37,6 +45,9 @@ app.use('/api/users', userRouter);
 app.use('/api/products', productRouter);
 app.use('/api/transactions', transactionRouter);
 app.use('/api/sql', sqlRouter);
+app.use('/api/procedures', procedureRouter);
+app.use('/api/ai', aiRouter);
+app.use('/api/outbox', outboxRouter);
 
 // 5. Health Check & Diagnostics
 app.get('/health', async (req: Request, res: Response) => {

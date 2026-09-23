@@ -1,6 +1,7 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { AppDbContext } from '../database/AppDbContext';
 import { SqlType } from 'entityts';
+import { Profile } from '../entities';
 
 export const sqlRouter = Router();
 
@@ -101,6 +102,24 @@ sqlRouter.get('/procedure-demo', async (req: Request, res: Response, next: NextF
       .withParam('RoleFilter', 'admin', SqlType.VarChar)
       .withOutputParam('TotalMatched', SqlType.Int)
       .withReturnValue();
+
+    const usersWithRelations = await db.users
+      .include(u => u.profile) // 1-to-1 profile relation
+      .include(u => u.posts) // 1-to-many posts relation
+      .thenInclude((p: any) => p.comments) // nested comments under posts
+      .where('role', '=', 'admin')
+      .toList();
+
+    const tabularJoin = await db.users
+      .leftJoin(Profile, { left: 'id', right: 'userId' })
+      .where(w => {
+        w.eq(u => u.role, 'user')
+          .and()
+          .gt(u => u.score, 50);
+      })
+      .select('id', 'name', 'email')
+      .take(10)
+      .toList();
 
     console.log(procBuilder);
 

@@ -33,6 +33,12 @@ export class User {
   @Column({ name: 'score', type: SqlType.Int, defaultValue: 0 })
   score!: number;
 
+  @Column({ name: 'phone', type: SqlType.VarChar, maxLength: 20, nullable: true })
+  phone?: string;
+
+  @Column({ name: 'surname', type: SqlType.VarChar, maxLength: 20, nullable: true })
+  surname?: string;
+
   @CreatedAt()
   createdAt!: Date;
 

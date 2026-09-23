@@ -308,13 +308,23 @@ export class SchemaGenerator {
       );
       return rows.map(r => r.TABLE_NAME);
     }
-    // postgres / mysql / neon / planetscale / cockroachdb / supabase
+    if (p === 'mysql' || p === 'planetscale') {
+      const rows = await this.adapter.executeQuery<{
+        table_name?: string;
+        TABLE_NAME?: string;
+        name?: string;
+      }>(
+        `SELECT table_name FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name != '__entityts_migrations';`,
+      );
+      return rows.map(r => r.table_name || r.TABLE_NAME || r.name || '');
+    }
+    // postgres / neon / cockroachdb / supabase / default
     const rows = await this.adapter.executeQuery<{
       table_name?: string;
       TABLE_NAME?: string;
       name?: string;
     }>(
-      `SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' OR table_schema = DATABASE();`,
+      `SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' AND table_name != '__entityts_migrations';`,
     );
     return rows.map(r => r.table_name || r.TABLE_NAME || r.name || '');
   }
@@ -333,11 +343,23 @@ export class SchemaGenerator {
       );
       return rows.map(r => r.COLUMN_NAME || r.name || '');
     }
+    if (p === 'mysql' || p === 'planetscale') {
+      const rows = await this.adapter.executeQuery<{
+        column_name?: string;
+        COLUMN_NAME?: string;
+        name?: string;
+      }>(
+        `SELECT column_name FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = '${tableName}';`,
+      );
+      return rows.map(r => r.column_name || r.COLUMN_NAME || r.name || '');
+    }
     const rows = await this.adapter.executeQuery<{
       column_name?: string;
       COLUMN_NAME?: string;
       name?: string;
-    }>(`SELECT column_name FROM information_schema.columns WHERE table_name = '${tableName}';`);
+    }>(
+      `SELECT column_name FROM information_schema.columns WHERE table_schema = 'public' AND table_name = '${tableName}';`,
+    );
     return rows.map(r => r.column_name || r.COLUMN_NAME || r.name || '');
   }
 }

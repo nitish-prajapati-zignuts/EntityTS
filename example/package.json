@@ -8,8 +8,17 @@
     "build": "tsc",
     "start": "tsc && node dist/server.js",
     "start:postgres": "DATABASE_URL=postgresql://localhost:5432/entityts_db DB_PROVIDER=postgres tsc && DATABASE_URL=postgresql://localhost:5432/entityts_db DB_PROVIDER=postgres node dist/server.js",
+    "example:postgres": "npm run start:postgres",
     "dev": "tsc && node dist/server.js",
     "test": "tsc && node dist/test-client.js",
-    "test:postgres": "DATABASE_URL=postgresql://localhost:5432/entityts_db DB_PROVIDER=postgres tsc && DATABASE_URL=postgresql://localhost:5432/entityts_db DB_PROVIDER=postgres node dist/test-client.js"
+    "test:postgres": "DATABASE_URL=postgresql://localhost:5432/entityts_db DB_PROVIDER=postgres tsc && DATABASE_URL=postgresql://localhost:5432/entityts_db DB_PROVIDER=postgres node dist/test-client.js",
+    "cli": "node ../dist/cli/entityts.js",
+    "db:push": "tsc && node ../dist/cli/entityts.js db:push --context dist/database/AppDbContext.js",
+    "db:push:postgres": "DATABASE_URL=postgresql://localhost:5432/entityts_db DB_PROVIDER=postgres tsc && DATABASE_URL=postgresql://localhost:5432/entityts_db DB_PROVIDER=postgres node ../dist/cli/entityts.js db:push --context dist/database/AppDbContext.js",
+    "db:migrate": "tsc && node ../dist/cli/entityts.js db:migrate --context dist/database/AppDbContext.js",
+    "db:migrate:generate": "tsc && node ../dist/cli/entityts.js db:migrate:generate --context dist/database/AppDbContext.js",
+    "db:migrate:create": "node ../dist/cli/entityts.js db:migrate:create",
+    "db:migrate:status": "tsc && node ../dist/cli/entityts.js db:migrate:status --context dist/database/AppDbContext.js",
+    "db:migrate:revert": "tsc && node ../dist/cli/entityts.js db:migrate:revert --context dist/database/AppDbContext.js"
   }
 }

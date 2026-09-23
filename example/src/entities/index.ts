@@ -4,3 +4,4 @@ export * from './Post';
 export * from './Comment';
 export * from './Product';
 export * from './AuditLog';
+export * from './Document';

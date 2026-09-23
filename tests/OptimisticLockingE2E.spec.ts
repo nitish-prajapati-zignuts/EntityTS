@@ -84,26 +84,20 @@ describe('Optimistic Locking on saveChanges() E2E', () => {
     await expect(ctx.saveChanges()).rejects.toThrow(DbUpdateConcurrencyException);
   });
 
-  it('updateUnique with version where criteria checks version and increments', async () => {
+  it('update with expectedVersion checks version and increments', async () => {
     const { ctx } = createWalletContext([{ id: 1, holder: 'Alice', balance: 500, version: 1 }]);
 
-    const updated = await ctx.wallets.updateUnique({
-      where: { id: 1, version: 1 },
-      data: { balance: 900 },
-    });
+    const updated = await ctx.wallets.update(1, { balance: 900 }, 1);
 
     expect(updated.balance).toBe(900);
     expect(updated.version).toBe(2);
   });
 
-  it('updateUnique throws DbUpdateConcurrencyException when version is stale', async () => {
+  it('update throws DbUpdateConcurrencyException when version is stale', async () => {
     const { ctx } = createWalletContext([{ id: 1, holder: 'Alice', balance: 500, version: 2 }]);
 
     await expect(
-      ctx.wallets.updateUnique({
-        where: { id: 1, version: 1 }, // stale version
-        data: { balance: 900 },
-      }),
+      ctx.wallets.update(1, { balance: 900 }, 1), // stale version
     ).rejects.toThrow(DbUpdateConcurrencyException);
   });
 

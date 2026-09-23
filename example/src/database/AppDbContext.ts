@@ -8,10 +8,9 @@ import {
   ModelBuilder,
   MemoryQueryCache,
   createSlowQueryLogger,
-  createQueryPlanLogger,
 } from 'entityts';
 import { config } from '../config';
-import { User, Profile, Post, Comment, Product, AuditLog } from '../entities';
+import { User, Profile, Post, Comment, Product, AuditLog, Document } from '../entities';
 import { seedDatabase } from './seed';
 
 export class AppDbContext extends DbContext {
@@ -44,6 +43,10 @@ export class AppDbContext extends DbContext {
     return this.set(AuditLog);
   }
 
+  public get documents(): DbSet<Document> {
+    return this.set(Document);
+  }
+
   protected override onConfiguring(options: DbContextOptionsBuilder): void {
     if (config.dbProvider === 'postgres' || config.databaseUrl) {
       const conn = config.databaseUrl || 'postgresql://localhost:5432/postgres';
@@ -58,8 +61,7 @@ export class AppDbContext extends DbContext {
     }
 
     if (config.logQueries) {
-      // Prisma-style structured SQL query logging with duration and parameters
-      options.withLogging('prisma');
+      options.withLogging(true);
     }
 
     // Attach slow query detection
@@ -71,18 +73,6 @@ export class AppDbContext extends DbContext {
         },
       }),
     );
-
-    // Query plan analyzer — runs EXPLAIN [ANALYZE] alongside SELECT queries
-    // Enable with:  EXPLAIN_QUERIES=true npm run example:postgres
-    // EXPLAIN ANALYZE (accurate timing):  EXPLAIN_ANALYZE=true npm run example:postgres
-    if (config.explainQueries) {
-      options.withQueryPlanner({
-        analyze: config.explainAnalyze,
-        warnOnSeqScan: true,
-        // Optionally threshold: only explain queries slower than 20ms
-        // thresholdMs: 20,
-      });
-    }
 
     // In-memory query caching
     options.withCache(
@@ -128,6 +118,11 @@ export class AppDbContext extends DbContext {
       e.toTable('audit_logs');
       e.hasKey(a => a.id);
     });
+
+    model.entity(Document, e => {
+      e.toTable('documents');
+      e.hasKey(d => d.id);
+    });
   }
 
   /**
@@ -135,7 +130,7 @@ export class AppDbContext extends DbContext {
    * then seeds initial data if the database is newly initialized.
    */
   public async initDatabase(): Promise<void> {
-    await this.ensureCreated([User, Profile, Post, Comment, Product, AuditLog]);
+    await this.ensureCreated([User, Profile, Post, Comment, Product, AuditLog, Document]);
     await seedDatabase(this);
   }
 }

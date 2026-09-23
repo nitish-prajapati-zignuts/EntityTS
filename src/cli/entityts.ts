@@ -73,22 +73,28 @@ Options (Database First / db:scaffold):
 
 // ─── Arg parser ───────────────────────────────────────────────────────────
 
-function parseArgs(args: string[]): Record<string, string | boolean> {
-  const result: Record<string, string | boolean> = {};
+function parseArgs(args: string[]): {
+  flags: Record<string, string | boolean>;
+  positionals: string[];
+} {
+  const flags: Record<string, string | boolean> = {};
+  const positionals: string[] = [];
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
     if (arg.startsWith('--')) {
       const key = arg.slice(2);
       const next = args[i + 1];
       if (next && !next.startsWith('--')) {
-        result[key] = next;
+        flags[key] = next;
         i++;
       } else {
-        result[key] = true;
+        flags[key] = true;
       }
+    } else {
+      positionals.push(arg);
     }
   }
-  return result;
+  return { flags, positionals };
 }
 
 // ─── Context loader ───────────────────────────────────────────────────────
@@ -459,12 +465,172 @@ async function cmdDbSeedReset(flags: Record<string, string | boolean>): Promise<
   console.log('✓ Cleared __entityts_seeds tracking table. All seeds can now be re-applied.');
 }
 
+async function loadMigrationFile(filePath: string): Promise<any> {
+  if (filePath.endsWith('.ts')) {
+    const content = fs.readFileSync(filePath, 'utf-8');
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const ts = require('typescript');
+      const transpiled = ts.transpileModule(content, {
+        compilerOptions: {
+          module: ts.ModuleKind.CommonJS,
+          target: ts.ScriptTarget.ES2022,
+        },
+      }).outputText;
+
+      const m = { exports: {} as any };
+      const customRequire = (id: string) => {
+        if (id === 'entityts') {
+          return require('../index');
+        }
+        return require(id);
+      };
+      const wrapper = new Function(
+        'exports',
+        'require',
+        'module',
+        '__filename',
+        '__dirname',
+        transpiled,
+      );
+      wrapper(m.exports, customRequire, m, filePath, path.dirname(filePath));
+      return m.exports;
+    } catch {
+      // fallback
+    }
+  }
+  return import(filePath);
+}
+
+async function loadMigrationModules(
+  migrationsPath?: string,
+): Promise<import('../migrations/MigrationRunner').MigrationModule[]> {
+  const defaultPaths = ['./migrations', './src/migrations', './dist/migrations'];
+  const searchPaths = migrationsPath ? migrationsPath.split(',') : defaultPaths;
+  const modules: import('../migrations/MigrationRunner').MigrationModule[] = [];
+
+  for (const p of searchPaths) {
+    const resolved = path.resolve(process.cwd(), p.trim());
+    if (!fs.existsSync(resolved)) continue;
+
+    const stat = fs.statSync(resolved);
+    if (stat.isDirectory()) {
+      const files = fs
+        .readdirSync(resolved)
+        .filter(f => (f.endsWith('.js') || f.endsWith('.ts')) && !f.endsWith('.d.ts'))
+        .sort();
+
+      for (const file of files) {
+        const fullPath = path.join(resolved, file);
+        const mod = await loadMigrationFile(fullPath);
+        if (typeof mod.up === 'function') {
+          modules.push({
+            id: String(mod.id || path.basename(file, path.extname(file)).split('_')[0]),
+            name: String(mod.name || path.basename(file, path.extname(file))),
+            up: mod.up,
+            down: mod.down || (() => {}),
+          });
+        }
+      }
+    } else {
+      const mod = await loadMigrationFile(resolved);
+      if (typeof mod.up === 'function') {
+        modules.push({
+          id: String(mod.id || path.basename(p, path.extname(p)).split('_')[0]),
+          name: String(mod.name || path.basename(p, path.extname(p))),
+          up: mod.up,
+          down: mod.down || (() => {}),
+        });
+      }
+    }
+  }
+
+  const seen = new Set<string>();
+  return modules.filter(m => {
+    if (seen.has(m.id)) return false;
+    seen.add(m.id);
+    return true;
+  });
+}
+
+async function cmdDbMigrate(flags: Record<string, string | boolean>): Promise<void> {
+  const contextPath = flags['context'] as string | undefined;
+  if (!contextPath) {
+    console.error('Error: --context <path> is required for db:migrate.');
+    process.exit(1);
+  }
+  const adapter = await loadAdapter(contextPath);
+  const migrations = await loadMigrationModules(flags['migrations'] as string | undefined);
+  if (migrations.length === 0) {
+    console.log('No migration files found in migrations/ directory.');
+    return;
+  }
+  const { MigrationRunner } = await import('../migrations');
+  const runner = new MigrationRunner(adapter);
+  const result = await runner.up(migrations);
+  if (result.applied.length === 0) {
+    console.log('✅ Database is already up to date. No pending migrations.');
+  } else {
+    console.log(`Successfully applied ${result.applied.length} migration(s):`);
+    result.applied.forEach(name => console.log(`  ✓ ${name}`));
+  }
+}
+
+async function cmdDbMigrateStatus(flags: Record<string, string | boolean>): Promise<void> {
+  const contextPath = flags['context'] as string | undefined;
+  if (!contextPath) {
+    console.error('Error: --context <path> is required for db:migrate:status.');
+    process.exit(1);
+  }
+  const adapter = await loadAdapter(contextPath);
+  const migrations = await loadMigrationModules(flags['migrations'] as string | undefined);
+  const { MigrationRunner } = await import('../migrations');
+  const runner = new MigrationRunner(adapter);
+  const statuses = await runner.status(migrations);
+  if (statuses.length === 0) {
+    console.log('No migration files found in migrations/ directory.');
+    return;
+  }
+  console.log('\nMigration Status:');
+  console.log('─'.repeat(70));
+  for (const s of statuses) {
+    const mark = s.applied ? '✓ APPLIED' : '⏳ PENDING';
+    const batchStr = s.batch !== undefined ? ` [Batch: ${s.batch}]` : '';
+    const dateStr = s.appliedAt ? ` (${new Date(s.appliedAt).toISOString()})` : '';
+    console.log(`${mark.padEnd(12)} ${s.id} - ${s.name}${batchStr}${dateStr}`);
+  }
+  console.log('─'.repeat(70) + '\n');
+}
+
+async function cmdDbMigrateRevert(flags: Record<string, string | boolean>): Promise<void> {
+  const contextPath = flags['context'] as string | undefined;
+  if (!contextPath) {
+    console.error('Error: --context <path> is required for db:migrate:revert.');
+    process.exit(1);
+  }
+  const adapter = await loadAdapter(contextPath);
+  const migrations = await loadMigrationModules(flags['migrations'] as string | undefined);
+  if (migrations.length === 0) {
+    console.log('No migration files found in migrations/ directory.');
+    return;
+  }
+  const { MigrationRunner } = await import('../migrations');
+  const runner = new MigrationRunner(adapter);
+  const result = await runner.down(migrations);
+  if (result.reverted.length === 0) {
+    console.log('No migrations to revert.');
+  } else {
+    console.log(`Successfully reverted ${result.reverted.length} migration(s):`);
+    result.reverted.forEach(name => console.log(`  ↶ ${name}`));
+  }
+}
+
 // ─── Main ─────────────────────────────────────────────────────────────────
 
 async function main(): Promise<void> {
   const rawArgs = process.argv.slice(2);
   const command = rawArgs[0];
-  const flags = parseArgs(rawArgs.slice(1));
+  const { flags, positionals } = parseArgs(rawArgs.slice(1));
 
   if (!command || command === '--help' || command === '-h') {
     printHelp();
@@ -482,8 +648,8 @@ async function main(): Promise<void> {
   }
 
   if (command === 'db:migrate:generate' || command === 'migration:generate') {
-    const name = rawArgs[1];
-    if (!name || name.startsWith('--')) {
+    const name = positionals[0] || (flags['name'] as string);
+    if (!name) {
       console.error(
         'Error: Migration name required. Example: entityts db:migrate:generate InitSchema',
       );
@@ -499,7 +665,8 @@ async function main(): Promise<void> {
   }
 
   if (command === 'db:migrate:create') {
-    cmdMigrateCreate(rawArgs[1]);
+    const name = positionals[0] || (flags['name'] as string);
+    cmdMigrateCreate(name);
     return;
   }
 
@@ -518,18 +685,18 @@ async function main(): Promise<void> {
     return;
   }
 
-  if (
-    command === 'db:migrate' ||
-    command === 'db:migrate:revert' ||
-    command === 'db:migrate:status'
-  ) {
-    console.log(`Running '${command}'...`);
-    console.log(
-      `To execute migrations, pass your MigrationRunner + MigrationModule[] from your application code.`,
-    );
-    console.log(
-      `See: MigrationRunner.up(migrations) / MigrationRunner.down(migrations) / MigrationRunner.status(migrations)`,
-    );
+  if (command === 'db:migrate') {
+    await cmdDbMigrate(flags);
+    return;
+  }
+
+  if (command === 'db:migrate:status') {
+    await cmdDbMigrateStatus(flags);
+    return;
+  }
+
+  if (command === 'db:migrate:revert') {
+    await cmdDbMigrateRevert(flags);
     return;
   }
 
@@ -551,7 +718,7 @@ async function main(): Promise<void> {
   }
 
   if (command === 'add' || command === 'driver:add') {
-    const providerArg = rawArgs[1];
+    const providerArg = positionals[0] || (flags['provider'] as string);
     await cmdAdd(providerArg, flags);
     return;
   }

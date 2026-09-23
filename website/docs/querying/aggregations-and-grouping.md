@@ -6,27 +6,34 @@ sidebar_position: 4
 
 # Aggregations & GroupBy
 
-EntityTS provides typed aggregate functions and multi-column grouping.
+EntityTS provides strongly-typed LINQ aggregate operators and multi-column grouping.
 
 ---
 
-## Aggregations
+## LINQ Aggregations
+
+Perform standard LINQ aggregations with compile-time lambda selectors:
 
 ```ts
 // Count
 const totalUsers = await db.users.count();
-const activeAdmins = await db.users.count({ role: 'admin', isActive: true });
+const activeAdmins = await db.users
+  .where(u => u.role, '=', 'admin')
+  .where(u => u.isActive, '=', true)
+  .count();
 
 // Sum, Avg, Min, Max
 const totalRevenue = await db.orders.sum(o => o.totalAmount);
-const avgAge = await db.users.avg('age');
-const minPrice = await db.products.min('price');
-const maxScore = await db.scores.max('score');
+const avgAge = await db.users.avg(u => u.age);
+const minPrice = await db.products.min(p => p.price);
+const maxScore = await db.scores.max(s => s.score);
 ```
 
 ---
 
-## Group By & Projections
+## LINQ Group By & Projections
+
+Group records by key and project calculated aggregate metrics:
 
 ```ts
 const stats = await db.orders
@@ -35,6 +42,7 @@ const stats = await db.orders
     status: g.status,
     orderCount: group.count(),
     totalRevenue: group.sum('totalAmount'),
+    averageOrder: group.avg('totalAmount'),
   }))
   .toList();
 ```
