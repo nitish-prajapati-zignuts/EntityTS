@@ -16,6 +16,45 @@ jobs:
         os: [ubuntu-latest]
         node-version: [18.x, 20.x, 22.x]
 
+    # Live Database Service Containers for multi-engine integration testing
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: test_user
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_DB: entityts_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: test_password
+          MYSQL_DATABASE: entityts_test
+          MYSQL_USER: test_user
+          MYSQL_PASSWORD: test_password
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -ptest_password"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+      mssql:
+        image: mcr.microsoft.com/mssql/server:2022-latest
+        env:
+          ACCEPT_EULA: 'Y'
+          MSSQL_SA_PASSWORD: 'Your_password123'
+        ports:
+          - 1433:1433
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -40,7 +79,11 @@ jobs:
       - name: Typecheck TypeScript codebase
         run: pnpm run typecheck
 
-      - name: Run test suite
+      - name: Run test suite (SQLite, Postgres, MySQL, MSSQL, Mock)
+        env:
+          POSTGRES_URL: postgres://test_user:test_password@localhost:5432/entityts_test
+          MYSQL_URL: mysql://test_user:test_password@localhost:3306/entityts_test
+          MSSQL_URL: Server=localhost,1433;Database=master;User Id=sa;Password=Your_password123;TrustServerCertificate=true;
         run: pnpm test
 
       - name: Verify production library build
