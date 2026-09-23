@@ -111,3 +111,97 @@ Ensure your `tsconfig.json` contains:
 
 ---
 
+## Quick Start in 2 Minutes
+
+### 1. Define Entity
+
+```typescript
+import { Entity, Table, Column, PrimaryKey, CreatedAt, UpdatedAt, SqlType } from '@nsp/dbcontext';
+
+@Entity()
+@Table('users')
+export class User {
+  @PrimaryKey({ autoIncrement: true })
+  @Column({ type: SqlType.Int })
+  id!: number;
+
+  @Column({ name: 'full_name', type: SqlType.VarChar, maxLength: 100 })
+  name!: string;
+
+  @Column({ name: 'email', unique: true })
+  email!: string;
+
+  @Column({ name: 'score', type: SqlType.Int, defaultValue: 0 })
+  score!: number;
+
+  @CreatedAt()
+  createdAt!: Date;
+
+  @UpdatedAt()
+  updatedAt!: Date;
+}
+```
+
+### 2. Define DbContext
+
+```typescript
+import { DbContext, DbContextOptionsBuilder } from '@nsp/dbcontext';
+import { User } from './User';
+
+export class AppDbContext extends DbContext {
+  // Register DbSet collections
+  public users = this.set(User);
+
+  protected override onConfiguring(options: DbContextOptionsBuilder): void {
+    // Connect to SQL Server:
+    options.useSqlServer(process.env.DATABASE_URL || 'Server=localhost;Database=mydb;User Id=sa;Password=secret;');
+
+    // Or PostgreSQL:
+    // options.usePostgres(process.env.DATABASE_URL || 'postgresql://localhost:5432/mydb');
+
+    // Or MySQL:
+    // options.useMysql(process.env.DATABASE_URL || 'mysql://root:secret@localhost:3306/mydb');
+
+    // Or SQLite:
+    // options.useSqlite('./data.db');
+  }
+}
+```
+
+### 3. Application Usage (Singleton Pattern)
+
+In modern Node.js web applications (Express, Fastify, NestJS), you can create **one shared instance** of `AppDbContext` for the entire application to reuse the connection pool:
+
+```typescript
+// db.ts
+import { AppDbContext } from './AppDbContext';
+export const db = new AppDbContext();
+
+// server.ts
+import express from 'express';
+import { db } from './db';
+
+const app = express();
+app.use(express.json());
+
+// Query records
+app.get('/users', async (req, res) => {
+  const users = await db.users
+    .where(u => u.gt('score', 50))
+    .orderBy('name', 'asc')
+    .toList();
+
+  res.json(users);
+});
+
+// Insert record
+app.post('/users', async (req, res) => {
+  const user = await db.users.add(req.body);
+  res.status(201).json(user);
+});
+
+app.listen(3000, () => console.log('Server running on http://localhost:3000'));
+```
+
+---
+
