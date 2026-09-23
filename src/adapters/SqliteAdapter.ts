@@ -41,7 +41,13 @@ export class SqliteAdapter implements IDbAdapter {
 
   public async disconnect(): Promise<void> {
     if (this.db) {
-      this.db.close();
+      try {
+        if (typeof this.db.open === 'boolean' ? this.db.open : true) {
+          this.db.close();
+        }
+      } catch {
+        // Ignore if already closed or during teardown
+      }
       this.db = null;
     }
   }

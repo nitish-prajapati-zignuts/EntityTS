@@ -154,6 +154,8 @@ export function normalizeProvider(name: string): DbProvider | undefined {
   return undefined;
 }
 
+const DRIVER_MODULE_CACHE = new Map<string, any>();
+
 /**
  * Loads a database driver dynamically and throws a targeted ConnectionException
  * if the package is not installed in the consuming application.
@@ -165,9 +167,31 @@ export async function loadDriver<T = any>(
   const info = DRIVER_REGISTRY[provider];
   const specifier = importSpecifier || (info ? info.importSpecifier : provider);
 
+  if (DRIVER_MODULE_CACHE.has(specifier)) {
+    return DRIVER_MODULE_CACHE.get(specifier);
+  }
+
   try {
-    const mod = await import(specifier);
-    return mod.default && (mod.default.ConnectionPool || mod.default.Pool) ? mod.default : mod;
+    let mod: any;
+    if (typeof require !== 'undefined' && typeof require.resolve === 'function') {
+      try {
+        mod = require(specifier);
+      } catch {
+        mod = await import(specifier);
+      }
+    } else {
+      mod = await import(specifier);
+    }
+    const resolved =
+      mod.default &&
+      (mod.default.ConnectionPool ||
+        mod.default.Pool ||
+        mod.default.Database ||
+        typeof mod.default === 'function')
+        ? mod.default
+        : mod;
+    DRIVER_MODULE_CACHE.set(specifier, resolved);
+    return resolved;
   } catch (err: any) {
     const pm = detectPackageManager();
     const pkg = info ? info.packageName : specifier;
