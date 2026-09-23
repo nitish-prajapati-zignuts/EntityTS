@@ -1,0 +1,13 @@
+node_modules/
+dist/
+dist-backup/
+example/dist/
+example/data/
+coverage/
+logs/
+*.log
+pnpm-lock.yaml
+*.db*
+*.tsbuildinfo
+.git/
+.husky/
