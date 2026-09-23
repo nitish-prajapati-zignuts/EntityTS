@@ -1,6 +1,6 @@
 {
   "name": "entityts",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "EntityTS — Enterprise EF Core-inspired ORM, DbContext, DbSet<T>, and Stored Procedure Execution for TypeScript & Node.js",
   "main": "dist/index.js",
   "module": "dist/esm/index.js",
