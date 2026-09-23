@@ -580,3 +580,61 @@ options.withExecutionStrategy({
 
 ---
 
+## Framework Integration (Express, Fastify, NestJS)
+
+### Express (Singleton vs Scoped)
+
+```typescript
+// Pattern 1: Application-wide Singleton (Recommended)
+import { db } from './db';
+app.get('/users', async (req, res) => {
+  res.json(await db.users.toList());
+});
+
+// Pattern 2: Scoped Per-Request Middleware
+import { dbContextMiddleware } from '@nsp/dbcontext';
+import { AppDbContext } from './AppDbContext';
+
+app.use(dbContextMiddleware(AppDbContext));
+app.get('/users', async (req, res) => {
+  const scopedDb = req.dbContext as AppDbContext;
+  res.json(await scopedDb.users.toList());
+});
+```
+
+### NestJS Dynamic Module
+
+```typescript
+// app.module.ts
+import { Module } from '@nestjs/common';
+import { DbContextModule } from '@nsp/dbcontext';
+import { AppDbContext } from './AppDbContext';
+
+@Module({
+  imports: [
+    DbContextModule.forRoot({
+      context: AppDbContext,
+    }),
+  ],
+})
+export class AppModule {}
+
+// users.service.ts
+import { Injectable } from '@nestjs/common';
+import { InjectDbContext } from '@nsp/dbcontext';
+import { AppDbContext } from './AppDbContext';
+
+@Injectable()
+export class UsersService {
+  constructor(
+    @InjectDbContext(AppDbContext) private readonly db: AppDbContext
+  ) {}
+
+  async findAll() {
+    return this.db.users.toList();
+  }
+}
+```
+
+---
+
