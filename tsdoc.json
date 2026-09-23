@@ -1,0 +1,22 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/tsdoc/v0/tsdoc.schema.json",
+  "tagDefinitions": [
+    {
+      "tagName": "@usecase",
+      "syntaxKind": "block"
+    },
+    {
+      "tagName": "@caution",
+      "syntaxKind": "block"
+    },
+    {
+      "tagName": "@default",
+      "syntaxKind": "block"
+    }
+  ],
+  "supportForTags": {
+    "@usecase": true,
+    "@caution": true,
+    "@default": true
+  }
+}

@@ -2,16 +2,44 @@
   "$schema": "https://typedoc.org/schema.json",
   "entryPoints": ["src/index.ts"],
   "out": "docs",
-  "name": "EntityTS API & Architecture Reference",
+  "name": "EntityTS — Enterprise TypeScript ORM",
   "readme": "README.md",
   "githubPages": true,
   "excludePrivate": true,
   "excludeInternal": true,
   "searchInComments": true,
+  "cleanOutputDir": true,
+  "customCss": "./assets/typedoc-theme.css",
   "navigationLinks": {
     "GitHub": "https://github.com/nitish-prajapati-zignuts/EntityTS"
   },
   "categorizeByGroup": true,
+  "categoryOrder": [
+    "Context",
+    "Querying",
+    "Decorators",
+    "Transactions",
+    "Idempotency",
+    "Outbox",
+    "Observability",
+    "Cache",
+    "Migrations",
+    "*"
+  ],
+  "groupOrder": [
+    "Classes",
+    "Interfaces",
+    "Decorators",
+    "Enums",
+    "Functions",
+    "Type Aliases",
+    "Variables",
+    "*"
+  ],
+  "navigation": {
+    "includeCategories": true,
+    "includeGroups": true
+  },
   "sort": ["source-order", "alphabetical"],
   "validation": {
     "notExported": false,
