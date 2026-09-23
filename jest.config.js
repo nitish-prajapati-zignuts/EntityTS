@@ -8,6 +8,7 @@ module.exports = {
     '^.+\\.tsx?$': [
       'ts-jest',
       {
+        isolatedModules: true,
         tsconfig: {
           experimentalDecorators: true,
           emitDecoratorMetadata: true,
