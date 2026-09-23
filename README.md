@@ -457,3 +457,64 @@ const users = await db.users
 
 ---
 
+## Change Tracking & Entity Mutations
+
+`@nsp/dbcontext` features transparent Proxy-based change tracking:
+
+```typescript
+// 1. Fetch and track an entity
+const user = await db.users.track(1);
+
+// 2. Mutate properties directly — Proxy tracks mutations automatically
+user.score += 50;
+user.name = 'Jane Doe';
+
+// 3. Queue new entities or removals
+db.changeTracker.add(new User({ name: 'Bob', email: 'bob@test.com' }));
+db.changeTracker.remove(oldUser);
+
+// 4. Save all modifications in a single atomic transaction
+const changes = await db.saveChanges();
+console.log(`Persisted ${changes} modifications.`);
+```
+
+---
+
+## Soft Delete & Audit Fields
+
+Enable soft deletion and auditing with clean decorators:
+
+```typescript
+@Entity()
+@Table('products')
+@SoftDelete('deleted_at')
+export class Product {
+  @PrimaryKey() id!: number;
+  @Column() name!: string;
+
+  @CreatedAt() createdAt!: Date;
+  @UpdatedAt() updatedAt!: Date;
+  @CreatedBy() createdBy?: string;
+
+  @Column({ name: 'deleted_at', nullable: true })
+  deletedAt?: Date;
+}
+
+// Queries automatically filter out soft-deleted records:
+const active = await db.products.toList();
+
+// Include soft-deleted rows:
+const all = await db.products.withDeleted().toList();
+
+// Query only soft-deleted rows:
+const deleted = await db.products.onlyDeleted().toList();
+
+// Soft-delete a record (sets deleted_at timestamp):
+await db.products.remove(10);
+
+// Hard-delete permanently from database:
+await db.products.hardRemove(10);
+```
+
+---
+
