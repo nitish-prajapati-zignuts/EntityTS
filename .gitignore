@@ -4,6 +4,7 @@ node_modules/
 
 # Build artifacts & outputs
 dist/
+docs/
 dist-backup/
 example/dist/
 example/data/

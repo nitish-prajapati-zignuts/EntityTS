@@ -1,0 +1,20 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "entryPoints": ["src/index.ts"],
+  "out": "docs",
+  "name": "EntityTS API & Architecture Reference",
+  "readme": "README.md",
+  "githubPages": true,
+  "excludePrivate": true,
+  "excludeInternal": true,
+  "searchInComments": true,
+  "navigationLinks": {
+    "GitHub": "https://github.com/nitish-prajapati-zignuts/EntityTS"
+  },
+  "categorizeByGroup": true,
+  "sort": ["source-order", "alphabetical"],
+  "validation": {
+    "notExported": false,
+    "invalidLink": false
+  }
+}

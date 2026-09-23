@@ -53,6 +53,7 @@
   "scripts": {
     "build": "rm -rf dist && tsc -p tsconfig.build.json && tsc -p tsconfig.esm.json && node scripts/minify-dist.js",
     "build:fast": "tsc -p tsconfig.build.json",
+    "docs:build": "typedoc",
     "benchmark": "node scripts/benchmark.js",
     "test": "jest --passWithNoTests --runInBand",
     "test:coverage": "jest --coverage --runInBand",
@@ -136,6 +137,7 @@
     "prettier": "^3.9.8",
     "semantic-release": "^25.0.9",
     "ts-jest": "^29.2.6",
+    "typedoc": "^0.28.20",
     "typescript": "^5.8.2"
   }
 }
