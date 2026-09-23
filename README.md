@@ -54,3 +54,60 @@
 
 ---
 
+## Installation & Isolated Drivers
+
+Install the core package:
+
+```bash
+npm install entityts reflect-metadata
+# or
+pnpm add entityts reflect-metadata
+# or
+yarn add entityts reflect-metadata
+# or
+bun add entityts reflect-metadata
+```
+
+### Install ONLY the Database Driver You Need
+
+`@nsp/dbcontext` guarantees **driver isolation**. It does **not** install unused database drivers into your project.
+
+Use the built-in CLI tool to install the driver for your specific database:
+
+```bash
+# Microsoft SQL Server (installs mssql only — NEVER touches pg)
+npx nsp add mssql
+
+# PostgreSQL (installs pg only — NEVER touches mssql)
+npx nsp add postgres
+
+# MySQL / MariaDB (installs mysql2 only)
+npx nsp add mysql
+
+# SQLite (installs better-sqlite3 only)
+npx nsp add sqlite
+
+# Serverless (Turso, Neon, PlanetScale)
+npx nsp add turso
+npx nsp add neon
+npx nsp add planetscale
+```
+
+> 💡 **Driver Isolation Guard**: If your `DbContext` is configured for SQL Server (`mssql`), running `nsp add postgres` will automatically warn and block to prevent accidental package bloat.
+
+### Enable TypeScript Decorators
+
+Ensure your `tsconfig.json` contains:
+
+```json
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true
+  }
+}
+```
+
+---
+
