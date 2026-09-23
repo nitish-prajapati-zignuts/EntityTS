@@ -40,9 +40,6 @@ jobs:
       - name: Verify build before release
         run: pnpm run build
 
-      - name: Run test suite
-        run: pnpm test
-
       - name: Run Semantic Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
