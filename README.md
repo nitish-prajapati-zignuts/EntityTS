@@ -518,3 +518,65 @@ await db.products.hardRemove(10);
 
 ---
 
+## High-Performance Bulk Operations
+
+Execute batch operations that bypass row-by-row overhead:
+
+```typescript
+// Bulk Insert with automatic batching
+await db.products.bulkInsert(newProducts, {
+  batchSize: 1000,
+  ignoreDuplicates: true
+});
+
+// Bulk Update matching primary keys
+await db.products.bulkUpdate(
+  [{ id: 1, price: 19.99 }, { id: 2, price: 29.99 }],
+  { keys: ['id'], update: ['price'] }
+);
+
+// Bulk Upsert (Insert or Update on conflict)
+await db.products.bulkUpsert(records, {
+  conflictKeys: ['sku'],
+  update: ['price', 'name']
+});
+
+// Bulk Delete by predicate
+await db.products.bulkDelete({ discontinued: true });
+```
+
+---
+
+## Transactions, Savepoints & Resilience
+
+### Managed Transactions
+
+```typescript
+await db.useTransaction(async (tx) => {
+  // Execute DbSet operations in transaction:
+  await db.accounts.inTransaction(tx).update(fromId, { balance: fromBalance - 100 });
+  await db.accounts.inTransaction(tx).update(toId, { balance: toBalance + 100 });
+
+  // Execute Stored Procedure in the same transaction:
+  await db.procedure('usp_LogTransfer')
+    .input({ FromId: fromId, ToId: toId, Amount: 100 })
+    .inTransaction(tx)
+    .run();
+}); // Commits automatically, or rolls back completely if an error is thrown.
+```
+
+### Resilient Retry Strategy
+
+Handle transient network blips and deadlocks automatically:
+
+```typescript
+// In onConfiguring:
+options.withExecutionStrategy({
+  maxRetryCount: 3,
+  maxDelayMs: 5000,
+  retryableErrorCodes: ['ETIMEOUT', 'ECONNRESET', '1205'] // SQL Server deadlock 1205
+});
+```
+
+---
+
