@@ -10,7 +10,7 @@ export interface EncryptionOptions {
 /**
  * Enterprise AES-256-GCM Authenticated Encryption Engine.
  * Provides military-grade, tamper-evident field-level encryption for PCI-DSS, HIPAA,
- * and banking PII compliance with zero external dependencies.
+ * and enterprise PII compliance with zero external dependencies.
  */
 export class EncryptionEngine {
   private static defaultKey?: Buffer;

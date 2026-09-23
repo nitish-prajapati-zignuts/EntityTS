@@ -197,14 +197,14 @@ export async function loadDriver<T = any>(
     const pkg = info ? info.packageName : specifier;
     const displayName = info ? info.displayName : provider;
     const cmd = getInstallCommand(pkg, pm);
-    const nspCmd = `nsp add ${provider}`;
+    const entitytsCmd = `entityts add ${provider}`;
     const notes = info?.exclusiveNotes ? `\n\n  ⚠️  ${info.exclusiveNotes}` : '';
 
     throw new ConnectionException(
       `Database driver '${pkg}' is not installed.\n` +
-        `To use ${displayName} with @nsp/dbcontext, install only the required driver:\n\n` +
+        `To use ${displayName} with entityts, install only the required driver:\n\n` +
         `  ${cmd}\n` +
-        `  (or run: ${nspCmd})` +
+        `  (or run: ${entitytsCmd})` +
         notes,
       err,
     );

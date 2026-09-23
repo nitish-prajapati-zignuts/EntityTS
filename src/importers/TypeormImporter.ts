@@ -2,7 +2,7 @@ import { GeneratedFile, ImportResult } from './PrismaImporter';
 
 export class TypeormImporter {
   /**
-   * Translates TypeORM entity source code into @nsp/dbcontext entity code.
+   * Translates TypeORM entity source code into entityts entity code.
    */
   public static translateEntity(typeormCode: string): string {
     let result = typeormCode;
@@ -10,7 +10,7 @@ export class TypeormImporter {
     // Replace import statement
     result = result.replace(
       /import\s+\{[^}]*\}\s+from\s+['"]typeorm['"];?/g,
-      `import { Table, PrimaryKey, Column, Unique, CreatedAt, UpdatedAt, Version, HasMany, BelongsTo } from '@nsp/dbcontext';`,
+      `import { Table, PrimaryKey, Column, Unique, CreatedAt, UpdatedAt, Version, HasMany, BelongsTo } from 'entityts';`,
     );
 
     // Replace @Entity('tableName') with @Table('tableName')
@@ -64,7 +64,7 @@ export class TypeormImporter {
     }
 
     const contextLines: string[] = [
-      `import { DbContext, DbContextOptionsBuilder, DbSet } from '@nsp/dbcontext';`,
+      `import { DbContext, DbContextOptionsBuilder, DbSet } from 'entityts';`,
     ];
     for (const name of modelNames) {
       contextLines.push(`import { ${name} } from './${name}';`);

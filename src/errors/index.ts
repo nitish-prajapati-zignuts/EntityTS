@@ -67,17 +67,6 @@ export class IdempotencyConflictException extends DbException {
   }
 }
 
-export class UnbalancedLedgerException extends DbException {
-  constructor(
-    public readonly totalDebits: string,
-    public readonly totalCredits: string,
-    message = `Unbalanced ledger transaction: Total debits (${totalDebits}) must equal total credits (${totalCredits}).`,
-  ) {
-    super(message);
-    this.name = 'UnbalancedLedgerException';
-  }
-}
-
 export class EntityValidationException extends DbException {
   constructor(
     public readonly entityName: string,

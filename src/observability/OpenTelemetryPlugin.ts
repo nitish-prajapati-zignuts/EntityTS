@@ -10,7 +10,7 @@ export function createOpenTelemetryHooks(tracer?: any): QueryHooks {
     try {
       // Dynamic require if installed
       const otel = require('@opentelemetry/api');
-      tracer = otel.trace.getTracer('@nsp/dbcontext');
+      tracer = otel.trace.getTracer('entityts');
     } catch {
       return {};
     }

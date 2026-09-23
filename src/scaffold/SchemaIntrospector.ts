@@ -110,25 +110,25 @@ export class SchemaIntrospector {
     const p = this.adapter.provider;
     if (p === 'sqlite' || p === 'turso' || p === 'd1') {
       const rows = await this.adapter.executeQuery<{ name: string }>(
-        `SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name != '__nsp_migrations';`,
+        `SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name != '__entityts_migrations';`,
       );
       return rows.map(r => r.name);
     }
     if (p === 'mssql') {
       const rows = await this.adapter.executeQuery<{ TABLE_NAME: string }>(
-        `SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE = 'BASE TABLE' AND TABLE_NAME != '__nsp_migrations';`,
+        `SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE = 'BASE TABLE' AND TABLE_NAME != '__entityts_migrations';`,
       );
       return rows.map(r => r.TABLE_NAME);
     }
     if (p === 'mysql' || p === 'planetscale') {
       const rows = await this.adapter.executeQuery<{ TABLE_NAME: string }>(
-        `SELECT TABLE_NAME FROM information_schema.tables WHERE table_schema = DATABASE() AND TABLE_NAME != '__nsp_migrations';`,
+        `SELECT TABLE_NAME FROM information_schema.tables WHERE table_schema = DATABASE() AND TABLE_NAME != '__entityts_migrations';`,
       );
       return rows.map(r => r.TABLE_NAME);
     }
     // postgres, neon, cockroachdb, supabase
     const rows = await this.adapter.executeQuery<{ table_name: string }>(
-      `SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' AND table_name != '__nsp_migrations';`,
+      `SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' AND table_name != '__entityts_migrations';`,
     );
     return rows.map(r => r.table_name);
   }

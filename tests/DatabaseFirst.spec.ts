@@ -250,7 +250,7 @@ describe('EntityScaffolder.previewContext', () => {
 describe('EntityScaffolder.scaffold (file I/O)', () => {
   let tmpDir: string;
   beforeEach(() => {
-    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'nsp-test-'));
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'entityts-test-'));
   });
   afterEach(() => {
     fs.rmSync(tmpDir, { recursive: true, force: true });

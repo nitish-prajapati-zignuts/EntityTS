@@ -10,7 +10,7 @@ export interface MigrationModule {
 }
 
 export class MigrationRunner {
-  private readonly tableName = '__nsp_migrations';
+  private readonly tableName = '__entityts_migrations';
 
   constructor(private readonly adapter: IDbAdapter) {}
 

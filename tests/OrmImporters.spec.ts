@@ -2,7 +2,7 @@ import { PrismaImporter, TypeormImporter, DrizzleImporter } from '../src/importe
 
 describe('Universal ORM Migration Importers', () => {
   describe('PrismaImporter', () => {
-    it('translates schema.prisma into @nsp/dbcontext entities and AppDbContext', () => {
+    it('translates schema.prisma into entityts entities and AppDbContext', () => {
       const prismaSchema = `
 datasource db {
   provider = "postgresql"
@@ -65,7 +65,7 @@ model Post {
   });
 
   describe('TypeormImporter', () => {
-    it('translates TypeORM entity code to @nsp/dbcontext', () => {
+    it('translates TypeORM entity code to entityts', () => {
       const typeormCode = `
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, VersionColumn, OneToMany } from 'typeorm';
 
@@ -97,7 +97,7 @@ export class Account {
       const translated = TypeormImporter.translateEntity(typeormCode);
 
       expect(translated).toContain(
-        "import { Table, PrimaryKey, Column, Unique, CreatedAt, UpdatedAt, Version, HasMany, BelongsTo } from '@nsp/dbcontext';",
+        "import { Table, PrimaryKey, Column, Unique, CreatedAt, UpdatedAt, Version, HasMany, BelongsTo } from 'entityts';",
       );
       expect(translated).not.toContain("from 'typeorm'");
       expect(translated).toContain("@Table('accounts')");
@@ -129,7 +129,7 @@ export class Product {
   });
 
   describe('DrizzleImporter', () => {
-    it('translates Drizzle schema to @nsp/dbcontext entities and AppDbContext', () => {
+    it('translates Drizzle schema to entityts entities and AppDbContext', () => {
       const drizzleCode = `
 import { pgTable, serial, text, varchar, integer, timestamp, boolean } from 'drizzle-orm/pg-core';
 

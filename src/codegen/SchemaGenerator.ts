@@ -99,7 +99,7 @@ export class SchemaGenerator {
       .join('\n');
 
     return [
-      `import { MigrationBuilder } from '@nsp/dbcontext';`,
+      `import { MigrationBuilder } from 'entityts';`,
       ``,
       `export const id = '${timestamp}';`,
       `export const name = '${name}';`,
@@ -166,7 +166,7 @@ export class SchemaGenerator {
       downStatements.length > 0 ? downStatements.join('\n') : '  // No schema rollbacks required';
 
     return [
-      `import { MigrationBuilder } from '@nsp/dbcontext';`,
+      `import { MigrationBuilder } from 'entityts';`,
       ``,
       `export const id = '${timestamp}';`,
       `export const name = '${name}';`,

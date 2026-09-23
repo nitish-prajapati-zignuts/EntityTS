@@ -25,7 +25,7 @@ export interface DispatchSummary {
 }
 
 /**
- * Enterprise Transactional Outbox Engine for @nsp/dbcontext.
+ * Enterprise Transactional Outbox Engine for EntityTS.
  * Guarantees zero message loss and at-least-once delivery between local database transactions
  * and distributed message brokers (e.g. Kafka, RabbitMQ, SQS, Webhooks).
  */
@@ -42,8 +42,8 @@ export class OutboxDispatcher {
 
     if (provider === 'mssql') {
       sql = `
-        IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='__nsp_outbox' AND xtype='U')
-        CREATE TABLE [__nsp_outbox] (
+        IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='__entityts_outbox' AND xtype='U')
+        CREATE TABLE [__entityts_outbox] (
           [id] NVARCHAR(64) PRIMARY KEY,
           [event_type] NVARCHAR(128) NOT NULL,
           [payload] NVARCHAR(MAX) NOT NULL,
@@ -56,7 +56,7 @@ export class OutboxDispatcher {
       `;
     } else if (provider === 'mysql' || provider === 'planetscale') {
       sql = `
-        CREATE TABLE IF NOT EXISTS \`__nsp_outbox\` (
+        CREATE TABLE IF NOT EXISTS \`__entityts_outbox\` (
           \`id\` VARCHAR(64) PRIMARY KEY,
           \`event_type\` VARCHAR(128) NOT NULL,
           \`payload\` LONGTEXT NOT NULL,
@@ -74,7 +74,7 @@ export class OutboxDispatcher {
       provider === 'cockroachdb'
     ) {
       sql = `
-        CREATE TABLE IF NOT EXISTS "__nsp_outbox" (
+        CREATE TABLE IF NOT EXISTS "__entityts_outbox" (
           "id" VARCHAR(64) PRIMARY KEY,
           "event_type" VARCHAR(128) NOT NULL,
           "payload" TEXT NOT NULL,
@@ -88,7 +88,7 @@ export class OutboxDispatcher {
     } else {
       // SQLite, Turso, D1
       sql = `
-        CREATE TABLE IF NOT EXISTS __nsp_outbox (
+        CREATE TABLE IF NOT EXISTS __entityts_outbox (
           id TEXT PRIMARY KEY,
           event_type TEXT NOT NULL,
           payload TEXT NOT NULL,
@@ -109,7 +109,7 @@ export class OutboxDispatcher {
    * Enqueues a message into the outbox within the current database transaction.
    * If the transaction commits, the message is guaranteed to be saved; if rolled back, nothing is emitted.
    *
-   * @param eventType - Domain event type name (e.g. 'PAYMENT_RECEIVED', 'ACCOUNT_LOCKED').
+   * @param eventType - Domain event type name (e.g. 'PAYMENT_RECEIVED', 'ORDER_CREATED').
    * @param payload - Arbitrary event data object or primitive.
    * @param transaction - Optional active `DbTransaction` instance.
    * @returns Generated outbox message ID.
@@ -129,7 +129,7 @@ export class OutboxDispatcher {
     const ph = (name: string, idx: number) => this.adapter.formatParameterPlaceholder(name, idx);
 
     const insertSql = `
-      INSERT INTO ${escape('__nsp_outbox')}
+      INSERT INTO ${escape('__entityts_outbox')}
       (${escape('id')}, ${escape('event_type')}, ${escape('payload')}, ${escape('status')}, ${escape('retry_count')}, ${escape('created_at')})
       VALUES (${ph('id', 1)}, ${ph('type', 2)}, ${ph('payload', 3)}, ${ph('status', 4)}, ${ph('retry', 5)}, ${ph('created', 6)})
     `;
@@ -171,7 +171,7 @@ export class OutboxDispatcher {
 
     const fetchSql = `
       SELECT ${escape('id')}, ${escape('event_type')}, ${escape('payload')}, ${escape('status')}, ${escape('retry_count')}, ${escape('last_error')}, ${escape('created_at')}, ${escape('dispatched_at')}
-      FROM ${escape('__nsp_outbox')}
+      FROM ${escape('__entityts_outbox')}
       WHERE ${escape('status')} = ${ph('status', 1)} AND ${escape('retry_count')} < ${ph('max', 2)}
       ORDER BY ${escape('created_at')} ASC
     `;
@@ -201,7 +201,7 @@ export class OutboxDispatcher {
 
         // Mark DISPATCHED
         const updateSql = `
-          UPDATE ${escape('__nsp_outbox')}
+          UPDATE ${escape('__entityts_outbox')}
           SET ${escape('status')} = ${ph('status', 1)}, ${escape('dispatched_at')} = ${ph('dispatched', 2)}
           WHERE ${escape('id')} = ${ph('id', 3)}
         `;
@@ -218,7 +218,7 @@ export class OutboxDispatcher {
         const errorMsg = dispatchErr instanceof Error ? dispatchErr.message : String(dispatchErr);
 
         const failSql = `
-          UPDATE ${escape('__nsp_outbox')}
+          UPDATE ${escape('__entityts_outbox')}
           SET ${escape('status')} = ${ph('status', 1)}, ${escape('retry_count')} = ${ph('retry', 2)}, ${escape('last_error')} = ${ph('err', 3)}
           WHERE ${escape('id')} = ${ph('id', 4)}
         `;
@@ -244,7 +244,7 @@ export class OutboxDispatcher {
 
     const countSql = `
       SELECT COUNT(*) as count
-      FROM ${escape('__nsp_outbox')}
+      FROM ${escape('__entityts_outbox')}
       WHERE ${escape('status')} = ${ph('status', 1)}
     `;
 

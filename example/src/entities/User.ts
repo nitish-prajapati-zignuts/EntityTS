@@ -9,7 +9,7 @@ import {
   HasMany,
   HasOne,
   SqlType,
-} from '@nsp/dbcontext';
+} from 'entityts';
 import { Post } from './Post';
 import { Profile } from './Profile';
 

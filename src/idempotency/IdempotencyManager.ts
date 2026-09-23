@@ -1,5 +1,4 @@
 import { IDbAdapter } from '../adapters/IDbAdapter';
-import { DbTransaction } from '../transaction/DbTransaction';
 import { IdempotencyConflictException } from '../errors';
 
 export interface IdempotencyOptions {
@@ -21,9 +20,9 @@ export interface IdempotencyRecord {
 }
 
 /**
- * Enterprise Idempotency Engine for high-throughput banking and payment processing.
- * Guarantees that mobile client retries, webhook dispatches, and duplicate payment instructions
- * never execute transactions twice or produce double-spend anomalies.
+ * Enterprise Idempotency Engine for EntityTS.
+ * Guarantees that client retries, webhook dispatches, and duplicate mutation instructions
+ * never execute transactions twice.
  */
 export class IdempotencyManager {
   private schemaEnsured = false;
@@ -31,7 +30,7 @@ export class IdempotencyManager {
   constructor(private readonly adapter: IDbAdapter) {}
 
   /**
-   * Automatically verifies and creates the `__nsp_idempotency` table if it does not yet exist.
+   * Automatically verifies and creates the `__entityts_idempotency` table if it does not yet exist.
    */
   public async ensureSchema(): Promise<void> {
     if (this.schemaEnsured) return;
@@ -41,8 +40,8 @@ export class IdempotencyManager {
 
     if (provider === 'mssql') {
       sql = `
-        IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='__nsp_idempotency' AND xtype='U')
-        CREATE TABLE [__nsp_idempotency] (
+        IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='__entityts_idempotency' AND xtype='U')
+        CREATE TABLE [__entityts_idempotency] (
           [idempotency_key] NVARCHAR(255) PRIMARY KEY,
           [status] NVARCHAR(32) NOT NULL,
           [response_body] NVARCHAR(MAX),
@@ -53,7 +52,7 @@ export class IdempotencyManager {
       `;
     } else if (provider === 'mysql' || provider === 'planetscale') {
       sql = `
-        CREATE TABLE IF NOT EXISTS \`__nsp_idempotency\` (
+        CREATE TABLE IF NOT EXISTS \`__entityts_idempotency\` (
           \`idempotency_key\` VARCHAR(255) PRIMARY KEY,
           \`status\` VARCHAR(32) NOT NULL,
           \`response_body\` LONGTEXT,
@@ -69,7 +68,7 @@ export class IdempotencyManager {
       provider === 'cockroachdb'
     ) {
       sql = `
-        CREATE TABLE IF NOT EXISTS "__nsp_idempotency" (
+        CREATE TABLE IF NOT EXISTS "__entityts_idempotency" (
           "idempotency_key" VARCHAR(255) PRIMARY KEY,
           "status" VARCHAR(32) NOT NULL,
           "response_body" TEXT,
@@ -81,7 +80,7 @@ export class IdempotencyManager {
     } else {
       // SQLite, Turso, D1, fallback
       sql = `
-        CREATE TABLE IF NOT EXISTS __nsp_idempotency (
+        CREATE TABLE IF NOT EXISTS __entityts_idempotency (
           idempotency_key TEXT PRIMARY KEY,
           status TEXT NOT NULL,
           response_body TEXT,
@@ -101,7 +100,7 @@ export class IdempotencyManager {
    * If the key was already completed, returns the previously cached response immediately without re-executing.
    * If the key is currently being processed concurrently, throws `IdempotencyConflictException`.
    *
-   * @param key - The unique idempotency key (e.g. UUID, payment reference, header value).
+   * @param key - The unique idempotency key (e.g. UUID, order reference, header value).
    * @param handler - Transactional callback to execute once.
    * @param options - Idempotency lock and TTL configurations.
    */
@@ -124,7 +123,7 @@ export class IdempotencyManager {
     const expiresAt = now + ttlMs;
 
     const escape = (col: string) => this.adapter.escapeIdentifier(col);
-    const tableName = escape('__nsp_idempotency');
+    const tableName = escape('__entityts_idempotency');
     const colKey = escape('idempotency_key');
     const colStatus = escape('status');
     const colResp = escape('response_body');

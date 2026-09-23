@@ -43,8 +43,10 @@ export * from './errors';
 export * from './benchmark';
 // Dialect-aware RDBMS functions
 export * from './rdbms';
-// Banking & Financial Transactions
-export * from './banking';
+// Idempotency
+export * from './idempotency';
+// Transactional Outbox
+export * from './outbox';
 // Security & Field Encryption
 export * from './security';
 // Universal ORM Importers

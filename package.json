@@ -16,11 +16,17 @@
       "require": "./dist/index.js",
       "default": "./dist/index.js"
     },
-    "./banking": {
-      "types": "./dist/banking/index.d.ts",
-      "import": "./dist/esm/banking/index.js",
-      "require": "./dist/banking/index.js",
-      "default": "./dist/banking/index.js"
+    "./idempotency": {
+      "types": "./dist/idempotency/index.d.ts",
+      "import": "./dist/esm/idempotency/index.js",
+      "require": "./dist/idempotency/index.js",
+      "default": "./dist/idempotency/index.js"
+    },
+    "./outbox": {
+      "types": "./dist/outbox/index.d.ts",
+      "import": "./dist/esm/outbox/index.js",
+      "require": "./dist/outbox/index.js",
+      "default": "./dist/outbox/index.js"
     },
     "./adapters": {
       "types": "./dist/adapters/index.d.ts",
@@ -42,8 +48,7 @@
     }
   },
   "bin": {
-    "entityts": "./dist/cli/nsp.js",
-    "nsp": "./dist/cli/nsp.js"
+    "entityts": "./dist/cli/entityts.js"
   },
   "scripts": {
     "build": "rm -rf dist && tsc -p tsconfig.build.json && tsc -p tsconfig.esm.json && node scripts/minify-dist.js",
@@ -60,8 +65,8 @@
     "example:build": "tsc -p example/tsconfig.json",
     "example:start": "tsc -p example/tsconfig.json && node example/dist/server.js",
     "example:test": "tsc -p example/tsconfig.json && node example/dist/test-client.js",
-    "example:postgres": "DATABASE_URL=postgresql://localhost:5432/nsp_db DB_PROVIDER=postgres tsc -p example/tsconfig.json && DATABASE_URL=postgresql://localhost:5432/nsp_db DB_PROVIDER=postgres node example/dist/server.js",
-    "example:postgres:test": "DATABASE_URL=postgresql://localhost:5432/nsp_db DB_PROVIDER=postgres tsc -p example/tsconfig.json && DATABASE_URL=postgresql://localhost:5432/nsp_db DB_PROVIDER=postgres node example/dist/test-client.js",
+    "example:postgres": "DATABASE_URL=postgresql://localhost:5432/entityts_db DB_PROVIDER=postgres tsc -p example/tsconfig.json && DATABASE_URL=postgresql://localhost:5432/entityts_db DB_PROVIDER=postgres node example/dist/server.js",
+    "example:postgres:test": "DATABASE_URL=postgresql://localhost:5432/entityts_db DB_PROVIDER=postgres tsc -p example/tsconfig.json && DATABASE_URL=postgresql://localhost:5432/entityts_db DB_PROVIDER=postgres node example/dist/test-client.js",
     "prepare": "husky",
     "format": "prettier --write .",
     "format:check": "prettier --check .",

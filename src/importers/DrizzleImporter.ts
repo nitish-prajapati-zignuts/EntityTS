@@ -20,7 +20,7 @@ interface DrizzleTable {
 
 export class DrizzleImporter {
   /**
-   * Translates Drizzle schema file content into @nsp/dbcontext entities and AppDbContext.
+   * Translates Drizzle schema file content into entityts entities and AppDbContext.
    */
   public static importSchema(drizzleCode: string, contextName = 'AppDbContext'): ImportResult {
     const tables: DrizzleTable[] = [];
@@ -98,7 +98,7 @@ export class DrizzleImporter {
 
     for (const t of tables) {
       const lines: string[] = [
-        `import { Table, PrimaryKey, Column, Unique, CreatedAt, UpdatedAt } from '@nsp/dbcontext';`,
+        `import { Table, PrimaryKey, Column, Unique, CreatedAt, UpdatedAt } from 'entityts';`,
         '',
         `@Table('${t.tableName}')`,
         `export class ${t.className} {`,
@@ -133,7 +133,7 @@ export class DrizzleImporter {
 
     // Generate AppDbContext
     const contextLines: string[] = [
-      `import { DbContext, DbContextOptionsBuilder, DbSet } from '@nsp/dbcontext';`,
+      `import { DbContext, DbContextOptionsBuilder, DbSet } from 'entityts';`,
     ];
     for (const t of tables) {
       contextLines.push(`import { ${t.className} } from './${t.className}';`);

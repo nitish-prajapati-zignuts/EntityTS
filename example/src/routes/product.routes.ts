@@ -1,6 +1,6 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { AppDbContext } from '../database/AppDbContext';
-import { DbUpdateConcurrencyException } from '@nsp/dbcontext';
+import { DbUpdateConcurrencyException } from 'entityts';
 
 export const productRouter = Router();
 

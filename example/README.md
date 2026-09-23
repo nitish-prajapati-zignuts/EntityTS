@@ -1,6 +1,6 @@
-# @nsp/dbcontext — Express CRUD Operations Showcase
+# entityts — Express CRUD Operations Showcase
 
-This application demonstrates how to build an **Express web application** using **`@nsp/dbcontext`** with complete **CRUD operations**, advanced querying, bulk mutations, relationships, soft deletion, change tracking, optimistic concurrency, and transactions.
+This application demonstrates how to build an **Express web application** using **`entityts`** with complete **CRUD operations**, advanced querying, bulk mutations, relationships, soft deletion, change tracking, optimistic concurrency, and transactions.
 
 ---
 

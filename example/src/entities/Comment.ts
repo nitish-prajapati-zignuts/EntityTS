@@ -1,4 +1,4 @@
-import { Entity, Table, PrimaryKey, Column, CreatedAt, BelongsTo, SqlType } from '@nsp/dbcontext';
+import { Entity, Table, PrimaryKey, Column, CreatedAt, BelongsTo, SqlType } from 'entityts';
 import { Post } from './Post';
 
 @Entity()

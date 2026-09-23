@@ -9,7 +9,7 @@ import {
   MemoryQueryCache,
   createSlowQueryLogger,
   createQueryPlanLogger,
-} from '@nsp/dbcontext';
+} from 'entityts';
 import { config } from '../config';
 import { User, Profile, Post, Comment, Product, AuditLog } from '../entities';
 import { seedDatabase } from './seed';

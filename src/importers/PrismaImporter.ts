@@ -38,7 +38,7 @@ interface PrismaEnum {
 
 export class PrismaImporter {
   /**
-   * Imports a schema.prisma string and translates it into @nsp/dbcontext entities and DbContext.
+   * Imports a schema.prisma string and translates it into entityts entities and DbContext.
    */
   public static importSchema(prismaSchema: string, contextName = 'AppDbContext'): ImportResult {
     const enums: PrismaEnum[] = [];
@@ -139,7 +139,7 @@ export class PrismaImporter {
     // Generate each model entity
     for (const model of models) {
       const codeLines: string[] = [
-        `import { Table, PrimaryKey, Column, Unique, CreatedAt, UpdatedAt, HasMany, BelongsTo } from '@nsp/dbcontext';`,
+        `import { Table, PrimaryKey, Column, Unique, CreatedAt, UpdatedAt, HasMany, BelongsTo } from 'entityts';`,
       ];
 
       codeLines.push('');
@@ -187,7 +187,7 @@ export class PrismaImporter {
 
     // Generate AppDbContext
     const contextLines: string[] = [
-      `import { DbContext, DbContextOptionsBuilder, DbSet } from '@nsp/dbcontext';`,
+      `import { DbContext, DbContextOptionsBuilder, DbSet } from 'entityts';`,
     ];
     for (const m of models) {
       contextLines.push(`import { ${m.name} } from './${m.name}';`);

@@ -20,7 +20,7 @@ export class RedisQueryCache implements IQueryCache {
 
   constructor(options: RedisQueryCacheOptions) {
     this.client = options.client;
-    this.prefix = options.keyPrefix || 'nsp:cache:';
+    this.prefix = options.keyPrefix || 'entityts:cache:';
     this.defaultTtlMs = options.defaultTtlMs;
   }
 

@@ -13,7 +13,7 @@
     "skipLibCheck": true,
     "baseUrl": ".",
     "paths": {
-      "@nsp/dbcontext": ["../dist/index"]
+      "entityts": ["../dist/index"]
     }
   },
   "include": ["src/**/*"],

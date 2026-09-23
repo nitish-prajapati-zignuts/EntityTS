@@ -1,6 +1,6 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { AppDbContext } from '../database/AppDbContext';
-import { SqlType } from '@nsp/dbcontext';
+import { SqlType } from 'entityts';
 
 export const sqlRouter = Router();
 

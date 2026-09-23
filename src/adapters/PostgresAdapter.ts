@@ -21,7 +21,7 @@ export interface PostgresAdapterConfig {
   max?: number;
   idleTimeoutMillis?: number;
   connectionTimeoutMillis?: number;
-  /** When true, uses named prepared statements for high-frequency banking throughput. */
+  /** When true, uses named prepared statements for high-frequency throughput. */
   preparedStatements?: boolean;
 }
 
@@ -73,7 +73,7 @@ export class PostgresAdapter implements IDbAdapter {
     for (let i = 0; i < sql.length; i++) {
       hash = ((hash << 5) - hash + sql.charCodeAt(i)) | 0;
     }
-    return `nsp_ps_${Math.abs(hash)}`;
+    return `entityts_ps_${Math.abs(hash)}`;
   }
 
   public async executeQuery<T = unknown>(

@@ -47,7 +47,7 @@ class Product {
   rowVersion!: number;
 }
 
-class BankDbContext extends DbContext {
+class AccountDbContext extends DbContext {
   public accounts = this.set(Account);
   public products = this.set(Product);
 
@@ -65,10 +65,10 @@ class BankDbContext extends DbContext {
 }
 
 describe('Optimistic Concurrency Control (@Version / @RowVersion / @ConcurrencyCheck)', () => {
-  let ctx: BankDbContext;
+  let ctx: AccountDbContext;
 
   beforeEach(() => {
-    ctx = new BankDbContext();
+    ctx = new AccountDbContext();
   });
 
   describe('Entity Insertion with @Version', () => {

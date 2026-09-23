@@ -14,13 +14,8 @@ import { ModelMetadataRegistry } from '../model/EntityMetadata';
 import { SchemaGenerator } from '../codegen/SchemaGenerator';
 import { MigrationRunner, MigrationModule } from '../migrations/MigrationRunner';
 import { DefaultExecutionStrategy } from '../resilience';
-import {
-  IdempotencyManager,
-  OutboxDispatcher,
-  LedgerManager,
-  LedgerEntryBuilder,
-  IdempotencyOptions,
-} from '../banking';
+import { IdempotencyManager, IdempotencyOptions } from '../idempotency';
+import { OutboxDispatcher } from '../outbox';
 import { EntityEventBus, EventHandler } from '../events';
 import type { IConnectionPool } from '../pool/IConnectionPool';
 import { UnitOfWork } from '../uow/UnitOfWork';
@@ -145,11 +140,10 @@ export abstract class DbContext {
 
   private _idempotency?: IdempotencyManager;
   private _outbox?: OutboxDispatcher;
-  private _ledger?: LedgerManager;
 
   /**
-   * Financial and banking request idempotency manager.
-   * Guarantees that duplicate payment requests or network retries never execute twice.
+   * Request idempotency manager.
+   * Guarantees that duplicate requests or network retries never execute twice.
    */
   public get idempotency(): IdempotencyManager {
     if (!this._idempotency) {
@@ -169,17 +163,6 @@ export abstract class DbContext {
   }
 
   /**
-   * Enterprise Double-Entry Ledger Manager.
-   * Enforces debits == credits balancing and provides audit history for account ledgers.
-   */
-  public get ledger(): LedgerManager {
-    if (!this._ledger) {
-      this._ledger = new LedgerManager(this.adapter);
-    }
-    return this._ledger;
-  }
-
-  /**
    * The connection pool managing active connections, heartbeat, and diagnostics, if configured.
    */
   public get pool(): IConnectionPool | undefined {
@@ -187,22 +170,10 @@ export abstract class DbContext {
   }
 
   /**
-   * Creates a new Double-Entry Accounting Ledger Builder.
-   * Enforces that total debits equal total credits before persisting financial journal entries.
-   *
-   * @param reference - Optional business audit reference (e.g. transfer ID, order number).
-   */
-  public createLedger(reference?: string): LedgerEntryBuilder {
-    const builder = new LedgerEntryBuilder();
-    if (reference) builder.reference(reference);
-    return builder;
-  }
-
-  /**
-   * Executes a business or financial operation with automatic idempotency deduplication.
+   * Executes an operation with automatic idempotency deduplication.
    * If the key has already been completed, returns the cached result without repeating the operation.
    *
-   * @param key - Unique client idempotency key (e.g. UUID, orderId, payment ref).
+   * @param key - Unique client idempotency key (e.g. UUID, orderId, request ref).
    * @param fn - Business transaction function.
    * @param options - Idempotency lock and TTL configurations.
    */

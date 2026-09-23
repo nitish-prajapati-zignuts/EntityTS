@@ -5,7 +5,7 @@ export type LogFormat = 'prisma' | 'compact' | 'json';
 export interface StructuredQueryLoggerOptions {
   /**
    * Log badge / prefix.
-   * Defaults to `'prisma:query'` to match Prisma's output style, or custom string e.g. `'nsp:query'`.
+   * Defaults to `'prisma:query'` to match Prisma's output style, or custom string e.g. `'entityts:query'`.
    */
   prefix?: string;
 

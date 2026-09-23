@@ -42,12 +42,12 @@ describe('Event Bus / Domain Events (db.on, db.off, EntityCreated/Updated/Delete
     });
 
     const created = await db.accounts.add({
-      email: 'alex@bank.com',
+      email: 'alex@example.com',
       balance: 1000,
     });
 
     expect(receivedEntities).toHaveLength(1);
-    expect(receivedEntities[0].email).toBe('alex@bank.com');
+    expect(receivedEntities[0].email).toBe('alex@example.com');
     expect(receivedEntities[0].balance).toBe(1000);
     expect(receivedEntities[0]).toBe(created);
   });
@@ -56,7 +56,7 @@ describe('Event Bus / Domain Events (db.on, db.off, EntityCreated/Updated/Delete
     const updatedEvents: Account[] = [];
 
     const account = await db.accounts.add({
-      email: 'beth@bank.com',
+      email: 'beth@example.com',
       balance: 500,
     });
 
@@ -74,7 +74,7 @@ describe('Event Bus / Domain Events (db.on, db.off, EntityCreated/Updated/Delete
     const deletedEvents: any[] = [];
 
     const account = await db.accounts.add({
-      email: 'charlie@bank.com',
+      email: 'charlie@example.com',
       balance: 300,
     });
 
@@ -85,7 +85,7 @@ describe('Event Bus / Domain Events (db.on, db.off, EntityCreated/Updated/Delete
     await db.accounts.remove(account.id);
 
     expect(deletedEvents).toHaveLength(1);
-    expect(deletedEvents[0].email).toBe('charlie@bank.com');
+    expect(deletedEvents[0].email).toBe('charlie@example.com');
   });
 
   it('supports wildcard patterns such as *:created and Account:*', async () => {
@@ -101,7 +101,7 @@ describe('Event Bus / Domain Events (db.on, db.off, EntityCreated/Updated/Delete
     });
 
     const account = await db.accounts.add({
-      email: 'dave@bank.com',
+      email: 'dave@example.com',
       balance: 750,
     });
 
@@ -133,14 +133,14 @@ describe('Event Bus / Domain Events (db.on, db.off, EntityCreated/Updated/Delete
     });
 
     const account = await db.accounts.add({
-      email: 'eve@bank.com',
+      email: 'eve@example.com',
       balance: 100,
     });
 
     expect(createdDomainEvent).toBeInstanceOf(EntityCreated);
     expect(createdDomainEvent?.entityName).toBe('Account');
     expect(createdDomainEvent?.tableName).toBe('accounts');
-    expect(createdDomainEvent?.entity.email).toBe('eve@bank.com');
+    expect(createdDomainEvent?.entity.email).toBe('eve@example.com');
 
     await db.accounts.update(account.id, { balance: 200 });
     expect(updatedDomainEvent).toBeInstanceOf(EntityUpdated);

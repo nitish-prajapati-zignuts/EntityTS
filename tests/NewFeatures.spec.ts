@@ -30,7 +30,7 @@ function makeMock(provider: 'sqlite' | 'postgres' | 'mysql' | 'mssql' = 'sqlite'
   return mock;
 }
 
-describe('New Features in NSP', () => {
+describe('New Features in EntityTS', () => {
   // ─── 1. @Enum Decorator ──────────────────────────────────────────────────
   describe('@Enum decorator', () => {
     @Entity()
@@ -316,7 +316,7 @@ describe('New Features in NSP', () => {
 
       await runner.reset();
       expect(adapter.executeNonQuery).toHaveBeenCalledWith(
-        expect.stringContaining('DELETE FROM "__nsp_seeds"'),
+        expect.stringContaining('DELETE FROM "__entityts_seeds"'),
       );
     });
   });

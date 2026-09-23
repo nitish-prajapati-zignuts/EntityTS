@@ -12,13 +12,13 @@ export interface DecimalOptions {
 /**
  * Property decorator defining a high-precision decimal database column.
  * Typically maps to SQL DECIMAL(precision, scale) or NUMERIC(precision, scale).
- * Default precision is 18 and scale is 4, matching institutional banking standards.
+ * Default precision is 18 and scale is 4.
  *
  * @param options - Decimal precision and scale options.
  * @example
  * ```ts
  * @Decimal({ precision: 18, scale: 4 })
- * balance!: Money;
+ * balance!: string;
  * ```
  */
 export function Decimal(options?: DecimalOptions): PropertyDecorator {

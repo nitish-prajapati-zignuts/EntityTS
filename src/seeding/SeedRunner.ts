@@ -34,7 +34,7 @@ export interface SeedStatus {
 }
 
 /**
- * Tracks and executes structured seed modules, preventing double-execution via a `__nsp_seeds` table.
+ * Tracks and executes structured seed modules, preventing double-execution via a `__entityts_seeds` table.
  *
  * Models the same pattern as `MigrationRunner` for consistency.
  *
@@ -49,12 +49,12 @@ export interface SeedStatus {
  * ```
  */
 export class SeedRunner {
-  private readonly tableName = '__nsp_seeds';
+  private readonly tableName = '__entityts_seeds';
 
   constructor(private readonly adapter: IDbAdapter) {}
 
   /**
-   * Creates the `__nsp_seeds` tracking table if it doesn't exist.
+   * Creates the `__entityts_seeds` tracking table if it doesn't exist.
    */
   public async ensureSeedsTable(): Promise<void> {
     const table = this.adapter.escapeIdentifier(this.tableName);
@@ -150,7 +150,7 @@ export class SeedRunner {
   }
 
   /**
-   * Clears all entries from the `__nsp_seeds` tracking table, allowing all seeds to be re-run.
+   * Clears all entries from the `__entityts_seeds` tracking table, allowing all seeds to be re-run.
    *
    * **Warning**: This does NOT undo the data changes made by the seeds — it only resets the
    * tracking table. Use only in development/test environments.

@@ -60,7 +60,7 @@ describe('Field-Level Transparent Encryption (AES-256-GCM)', () => {
 
     it('works with custom 256-bit encryption keys', () => {
       const customKey = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
-      const text = 'bank-secret-token';
+      const text = 'enterprise-secret-token';
       const encrypted = EncryptionEngine.encrypt(text, { key: customKey });
       expect(encrypted?.startsWith('enc:v1:')).toBe(true);
 

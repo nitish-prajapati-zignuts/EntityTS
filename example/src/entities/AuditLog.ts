@@ -1,4 +1,4 @@
-import { Entity, Table, PrimaryKey, Column, CreatedAt, SqlType } from '@nsp/dbcontext';
+import { Entity, Table, PrimaryKey, Column, CreatedAt, SqlType } from 'entityts';
 
 @Entity()
 @Table('audit_logs')

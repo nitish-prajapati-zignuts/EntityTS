@@ -18,6 +18,6 @@ export * from './TenantId';
 export * from './EnumDecorator';
 export * from './UniqueDecorator';
 export * from './CompositeKey';
-export * from './BankingDecorators';
+export * from './DecimalDecorator';
 export * from './EncryptedDecorator';
 export * from './VectorDecorator';

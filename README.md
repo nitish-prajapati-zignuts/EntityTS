@@ -70,30 +70,30 @@ bun add entityts reflect-metadata
 
 ### Install ONLY the Database Driver You Need
 
-`@nsp/dbcontext` guarantees **driver isolation**. It does **not** install unused database drivers into your project.
+`entityts` guarantees **driver isolation**. It does **not** install unused database drivers into your project.
 
 Use the built-in CLI tool to install the driver for your specific database:
 
 ```bash
 # Microsoft SQL Server (installs mssql only — NEVER touches pg)
-npx nsp add mssql
+npx entityts add mssql
 
 # PostgreSQL (installs pg only — NEVER touches mssql)
-npx nsp add postgres
+npx entityts add postgres
 
 # MySQL / MariaDB (installs mysql2 only)
-npx nsp add mysql
+npx entityts add mysql
 
 # SQLite (installs better-sqlite3 only)
-npx nsp add sqlite
+npx entityts add sqlite
 
 # Serverless (Turso, Neon, PlanetScale)
-npx nsp add turso
-npx nsp add neon
-npx nsp add planetscale
+npx entityts add turso
+npx entityts add neon
+npx entityts add planetscale
 ```
 
-> 💡 **Driver Isolation Guard**: If your `DbContext` is configured for SQL Server (`mssql`), running `nsp add postgres` will automatically warn and block to prevent accidental package bloat.
+> 💡 **Driver Isolation Guard**: If your `DbContext` is configured for SQL Server (`mssql`), running `entityts add postgres` will automatically warn and block to prevent accidental package bloat.
 
 ### Enable TypeScript Decorators
 
@@ -116,7 +116,7 @@ Ensure your `tsconfig.json` contains:
 ### 1. Define Entity
 
 ```typescript
-import { Entity, Table, Column, PrimaryKey, CreatedAt, UpdatedAt, SqlType } from '@nsp/dbcontext';
+import { Entity, Table, Column, PrimaryKey, CreatedAt, UpdatedAt, SqlType } from 'entityts';
 
 @Entity()
 @Table('users')
@@ -145,7 +145,7 @@ export class User {
 ### 2. Define DbContext
 
 ```typescript
-import { DbContext, DbContextOptionsBuilder } from '@nsp/dbcontext';
+import { DbContext, DbContextOptionsBuilder } from 'entityts';
 import { User } from './User';
 
 export class AppDbContext extends DbContext {
@@ -253,7 +253,7 @@ options.usePlanetScale({
 
 ## Stored Procedures (Single & Multiple Tables)
 
-Stored procedures are first-class citizens in `@nsp/dbcontext`.
+Stored procedures are first-class citizens in `entityts`.
 
 ### 1. Basic Procedure Execution
 
@@ -278,7 +278,7 @@ const { rowsAffected, returnValue } = await db
 
 ### Multiple Result Sets (Multiple Tables)
 
-When a stored procedure executes multiple `SELECT` statements, `@nsp/dbcontext` returns the tables as a strongly typed tuple via `.queryMultiple<[T1, T2]>()`:
+When a stored procedure executes multiple `SELECT` statements, `entityts` returns the tables as a strongly typed tuple via `.queryMultiple<[T1, T2]>()`:
 
 ```typescript
 // Stored procedure executing 3 SELECT queries:
@@ -459,7 +459,7 @@ const users = await db.users.include({ orders: true, profile: false }).toList();
 
 ## Change Tracking & Entity Mutations
 
-`@nsp/dbcontext` features transparent Proxy-based change tracking:
+`entityts` features transparent Proxy-based change tracking:
 
 ```typescript
 // 1. Fetch and track an entity
@@ -596,7 +596,7 @@ app.get('/users', async (req, res) => {
 });
 
 // Pattern 2: Scoped Per-Request Middleware
-import { dbContextMiddleware } from '@nsp/dbcontext';
+import { dbContextMiddleware } from 'entityts';
 import { AppDbContext } from './AppDbContext';
 
 app.use(dbContextMiddleware(AppDbContext));
@@ -611,7 +611,7 @@ app.get('/users', async (req, res) => {
 ```typescript
 // app.module.ts
 import { Module } from '@nestjs/common';
-import { DbContextModule } from '@nsp/dbcontext';
+import { DbContextModule } from 'entityts';
 import { AppDbContext } from './AppDbContext';
 
 @Module({
@@ -625,7 +625,7 @@ export class AppModule {}
 
 // users.service.ts
 import { Injectable } from '@nestjs/common';
-import { InjectDbContext } from '@nsp/dbcontext';
+import { InjectDbContext } from 'entityts';
 import { AppDbContext } from './AppDbContext';
 
 @Injectable()
@@ -692,16 +692,16 @@ Includes:
 
 ```bash
 # Push entity metadata directly to database (ideal for development)
-npx nsp db:push --context src/database/AppDbContext.ts
+npx entityts db:push --context src/database/AppDbContext.ts
 
 # Dry run — inspect DDL statements without applying
-npx nsp db:push --context src/database/AppDbContext.ts --dry-run
+npx entityts db:push --context src/database/AppDbContext.ts --dry-run
 
 # Generate migration file from entity changes
-npx nsp db:migrate:generate AddUserColumns --context src/database/AppDbContext.ts
+npx entityts db:migrate:generate AddUserColumns --context src/database/AppDbContext.ts
 
 # Scaffold a blank migration file
-npx nsp db:migrate:create CustomDataMigration
+npx entityts db:migrate:create CustomDataMigration
 ```
 
 ### 4. Database-First Scaffolding
@@ -709,7 +709,7 @@ npx nsp db:migrate:create CustomDataMigration
 Reverse-engineer an existing database into TypeScript entity classes and a `DbContext`:
 
 ```bash
-npx nsp db:scaffold --context src/database/AppDbContext.ts --output src/entities
+npx entityts db:scaffold --context src/database/AppDbContext.ts --output src/entities
 ```
 
 ---
@@ -719,7 +719,7 @@ npx nsp db:scaffold --context src/database/AppDbContext.ts --output src/entities
 Write fast, deterministic unit tests without running a database server or container:
 
 ```typescript
-import { MockDbAdapter } from '@nsp/dbcontext';
+import { MockDbAdapter } from 'entityts';
 import { AppDbContext } from './AppDbContext';
 
 describe('UserService', () => {
@@ -755,4 +755,4 @@ describe('UserService', () => {
 
 ## License
 
-MIT © [NSP Team](https://github.com/nsp)
+MIT © [EntityTS Team](https://github.com/entityts)

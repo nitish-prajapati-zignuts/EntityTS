@@ -120,7 +120,7 @@ function generateEntityFile(table: IntrospectedTable, allTables: IntrospectedTab
     imports.add('PrimaryKey');
   }
 
-  lines.push(`import { ${Array.from(imports).sort().join(', ')} } from '@nsp/dbcontext';`);
+  lines.push(`import { ${Array.from(imports).sort().join(', ')} } from 'entityts';`);
 
   // Import related entity types
   const relatedClasses = new Set(relations.map(r => r.targetClass));
@@ -186,7 +186,7 @@ function generateContextFile(tables: IntrospectedTable[], contextName: string): 
     .join('\n');
 
   return [
-    `import { DbContext, DbContextOptionsBuilder, ModelBuilder } from '@nsp/dbcontext';`,
+    `import { DbContext, DbContextOptionsBuilder, ModelBuilder } from 'entityts';`,
     imports,
     ``,
     `export class ${contextName} extends DbContext {`,

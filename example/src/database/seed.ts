@@ -54,7 +54,7 @@ export async function seedDatabase(db: AppDbContext): Promise<void> {
   // 3. Seed Posts
   const post1 = await db.posts.add({
     userId: alice.id,
-    title: 'Getting Started with @nsp/dbcontext in TypeScript',
+    title: 'Getting Started with entityts in TypeScript',
     content: 'An in-depth guide on Entity Framework Core-style DbContext and DbSet in Node.js.',
   });
 

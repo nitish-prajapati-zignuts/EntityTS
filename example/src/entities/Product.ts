@@ -7,7 +7,7 @@ import {
   CreatedAt,
   UpdatedAt,
   SqlType,
-} from '@nsp/dbcontext';
+} from 'entityts';
 
 @Entity()
 @Table('products')

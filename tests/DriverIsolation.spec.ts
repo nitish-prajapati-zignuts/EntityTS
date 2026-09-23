@@ -109,7 +109,7 @@ describe('Database Driver Isolation', () => {
       } catch (err: any) {
         expect(err).toBeInstanceOf(ConnectionException);
         expect(err.message).toContain("Database driver 'mssql' is not installed");
-        expect(err.message).toContain('nsp add mssql');
+        expect(err.message).toContain('entityts add mssql');
         expect(err.message).toContain("Do NOT install 'pg'");
       }
     });
@@ -120,7 +120,7 @@ describe('Database Driver Isolation', () => {
       } catch (err: any) {
         expect(err).toBeInstanceOf(ConnectionException);
         expect(err.message).toContain("Database driver 'pg' is not installed");
-        expect(err.message).toContain('nsp add postgres');
+        expect(err.message).toContain('entityts add postgres');
         expect(err.message).toContain("Do NOT install 'mssql'");
       }
     });

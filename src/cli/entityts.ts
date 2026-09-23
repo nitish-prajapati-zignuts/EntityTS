@@ -11,7 +11,6 @@ EntityTS CLI tool
 
 Usage:
   entityts <command> [options]
-  nsp <command> [options]
 
 CODE FIRST commands:
   db:push                      Apply schema changes to the DB (no migration file)
@@ -31,7 +30,7 @@ DATABASE FIRST commands:
 SEED commands:
   db:seed                      Run all pending seed modules
   db:seed:status               Display applied/pending status of seeds
-  db:seed:reset                Clear __nsp_seeds tracking table (re-enable seeds)
+  db:seed:reset                Clear __entityts_seeds tracking table (re-enable seeds)
 
 BENCHMARK commands:
   benchmark                    Run ORM execution benchmarks (throughput, latency, memory)
@@ -40,14 +39,14 @@ BENCHMARK commands:
   benchmark --json             Output benchmark results in JSON format
 
 DRIVER ISOLATION commands:
-  add <provider>               Install ONLY the package for your database (e.g. nsp add mssql)
+  add <provider>               Install ONLY the package for your database (e.g. entityts add mssql)
                                Prevents installing unneeded drivers (e.g. will not install pg for mssql)
   init --db <provider>         Scaffold DbContext and install only the driver for that database
 
 ORM MIGRATION IMPORTERS:
   import --from <prisma|typeorm|drizzle> --input <path>
                                Automatically migrate from Prisma, TypeORM, or Drizzle
-                               into @nsp/dbcontext entities and DbContext
+                               into entityts entities and DbContext
   import --output <dir>        Output directory (default: ./src/database)
 
 Other:
@@ -254,7 +253,9 @@ async function cmdDbScaffold(flags: Record<string, string | boolean>): Promise<v
 
 function cmdMigrateCreate(name: string): void {
   if (!name) {
-    console.error('Error: Migration name required. Example: nsp db:migrate:create AddUsersTable');
+    console.error(
+      'Error: Migration name required. Example: entityts db:migrate:create AddUsersTable',
+    );
     process.exit(1);
   }
 
@@ -266,7 +267,7 @@ function cmdMigrateCreate(name: string): void {
     fs.mkdirSync(migrationsDir, { recursive: true });
   }
 
-  const template = `import { MigrationBuilder } from '@nsp/dbcontext';
+  const template = `import { MigrationBuilder } from 'entityts';
 
 export const id = '${timestamp}';
 export const name = '${name}';
@@ -455,7 +456,7 @@ async function cmdDbSeedReset(flags: Record<string, string | boolean>): Promise<
   const { SeedRunner } = await import('../seeding');
   const runner = new SeedRunner(adapter);
   await runner.reset();
-  console.log('✓ Cleared __nsp_seeds tracking table. All seeds can now be re-applied.');
+  console.log('✓ Cleared __entityts_seeds tracking table. All seeds can now be re-applied.');
 }
 
 // ─── Main ─────────────────────────────────────────────────────────────────
@@ -483,7 +484,9 @@ async function main(): Promise<void> {
   if (command === 'db:migrate:generate' || command === 'migration:generate') {
     const name = rawArgs[1];
     if (!name || name.startsWith('--')) {
-      console.error('Error: Migration name required. Example: nsp db:migrate:generate InitSchema');
+      console.error(
+        'Error: Migration name required. Example: entityts db:migrate:generate InitSchema',
+      );
       process.exit(1);
     }
     await cmdMigrateGenerate(name, flags);
@@ -629,7 +632,7 @@ async function cmdAdd(
   flags: Record<string, string | boolean>,
 ): Promise<void> {
   if (!providerArg || providerArg.startsWith('--')) {
-    console.error('Error: Database provider required. Example: nsp add mssql');
+    console.error('Error: Database provider required. Example: entityts add mssql');
     console.log('Supported providers: mssql, postgres, mysql, sqlite, turso, neon, planetscale');
     process.exit(1);
   }
@@ -660,7 +663,7 @@ async function cmdAdd(
       console.warn(
         `   To keep your dependencies minimal, only install the driver for your database:`,
       );
-      console.warn(`     nsp add ${configuredProvider}`);
+      console.warn(`     entityts add ${configuredProvider}`);
       console.warn(`   (If you really want to install both, pass --force to proceed anyway).\n`);
       process.exit(1);
     }
@@ -699,12 +702,12 @@ async function cmdAdd(
 async function cmdInit(flags: Record<string, string | boolean>): Promise<void> {
   const dbArg = (flags['db'] || flags['provider'] || flags['database']) as string | undefined;
   if (!dbArg) {
-    console.error('Error: --db <provider> is required for nsp init.');
+    console.error('Error: --db <provider> is required for entityts init.');
     console.log('Examples:');
-    console.log('  nsp init --db mssql');
-    console.log('  nsp init --db postgres');
-    console.log('  nsp init --db mysql');
-    console.log('  nsp init --db sqlite');
+    console.log('  entityts init --db mssql');
+    console.log('  entityts init --db postgres');
+    console.log('  entityts init --db mysql');
+    console.log('  entityts init --db sqlite');
     process.exit(1);
   }
 
@@ -742,7 +745,7 @@ async function cmdInit(flags: Record<string, string | boolean>): Promise<void> {
       configMethod =
         'options.usePlanetScale({ host: process.env.DATABASE_HOST, username: process.env.DATABASE_USERNAME, password: process.env.DATABASE_PASSWORD });';
 
-    const content = `import { DbContext, DbContextOptionsBuilder } from '@nsp/dbcontext';
+    const content = `import { DbContext, DbContextOptionsBuilder } from 'entityts';
 
 export class AppDbContext extends DbContext {
   protected override onConfiguring(options: DbContextOptionsBuilder): void {
@@ -826,7 +829,7 @@ async function cmdImport(flags: Record<string, string | boolean>): Promise<void>
   console.log(`📝 Generated DbContext: ${contextPath}`);
 
   console.log(
-    `\n✅ Successfully imported ${result.entities.length} entities from ${normalizedFrom} into @nsp/dbcontext!`,
+    `\n✅ Successfully imported ${result.entities.length} entities from ${normalizedFrom} into entityts!`,
   );
 }
 

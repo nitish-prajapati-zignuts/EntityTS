@@ -1,6 +1,6 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { AppDbContext } from '../database/AppDbContext';
-import { EntityNotFoundException } from '@nsp/dbcontext';
+import { EntityNotFoundException } from 'entityts';
 
 export const userRouter = Router();
 

@@ -1,5 +1,5 @@
 import { SqliteAdapter } from '../src/adapters/SqliteAdapter';
-import { OutboxDispatcher, OutboxMessage } from '../src/banking/OutboxDispatcher';
+import { OutboxDispatcher, OutboxMessage } from '../src/outbox/OutboxDispatcher';
 
 describe('Transactional Outbox Pattern', () => {
   let adapter: SqliteAdapter;
@@ -17,8 +17,8 @@ describe('Transactional Outbox Pattern', () => {
   });
 
   it('enqueues messages with PENDING status and tracks count', async () => {
-    const msgId = await outbox.enqueue('PAYMENT_INITIATED', {
-      transferId: 'TR-101',
+    const msgId = await outbox.enqueue('ORDER_INITIATED', {
+      orderId: 'ORD-101',
       amount: '500.00',
       currency: 'USD',
     });
@@ -47,7 +47,7 @@ describe('Transactional Outbox Pattern', () => {
   });
 
   it('increments retry count on dispatch failure and marks FAILED upon max retries', async () => {
-    await outbox.enqueue('NOTIFICATION_EMAIL', { to: 'user@bank.com' });
+    await outbox.enqueue('NOTIFICATION_EMAIL', { to: 'user@example.com' });
 
     // Attempt 1: fails
     const res1 = await outbox.dispatchPending(
@@ -79,7 +79,7 @@ describe('Transactional Outbox Pattern', () => {
   it('rolls back enqueued message if enclosing database transaction is aborted', async () => {
     const tx = await adapter.beginTransaction();
 
-    await outbox.enqueue('TRANSFER_CANCELLED', { reason: 'insufficient funds' }, tx);
+    await outbox.enqueue('ORDER_CANCELLED', { reason: 'user cancelled' }, tx);
 
     // Rollback the transaction
     await tx.rollback();

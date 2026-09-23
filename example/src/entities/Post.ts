@@ -9,7 +9,7 @@ import {
   BelongsTo,
   HasMany,
   SqlType,
-} from '@nsp/dbcontext';
+} from 'entityts';
 import { User } from './User';
 import { Comment } from './Comment';
 

@@ -284,7 +284,7 @@ export class DbSet<T extends object = any> {
   /**
    * Applies pessimistic row locking (e.g. FOR UPDATE or WITH (UPDLOCK, ROWLOCK)).
    * Ensures rows selected cannot be modified by concurrent transactions until this transaction commits.
-   * Essential for banking balances, inventory reservation, and payment processing.
+   * Essential for inventory reservation, financial records, and high-contention row updates.
    *
    * @param options - Optional lock modifiers:
    *   - `noWait`: Throw immediately if row is locked rather than waiting.
