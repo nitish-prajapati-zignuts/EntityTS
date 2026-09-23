@@ -18,7 +18,7 @@ concurrency:
 
 jobs:
   build-and-deploy:
-    name: Build & Deploy TypeDoc Documentation
+    name: Build & Deploy Docusaurus Documentation
     runs-on: ubuntu-latest
     environment:
       name: github-pages
@@ -44,7 +44,7 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build TypeDoc Documentation
+      - name: Build Docusaurus Documentation
         run: pnpm run docs:build
 
       - name: Setup GitHub Pages
@@ -53,7 +53,7 @@ jobs:
       - name: Upload documentation artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: docs
+          path: build/docs
 
       - name: Deploy to GitHub Pages
         id: deployment

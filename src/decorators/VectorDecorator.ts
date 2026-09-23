@@ -9,7 +9,7 @@ export interface VectorOptions {
 
 /**
  * Property decorator defining an AI vector embedding column (e.g. pgvector, OpenAI, Cohere, Llama).
- * Supports similarity searches with cosine distance (<=>), Euclidean/L2 distance (<->), and inner product (<#>).
+ * Supports similarity searches with cosine distance (`<=>`), Euclidean/L2 distance (`<->`), and inner product (`<#>`).
  *
  * @param dimensions - Vector dimensionality (e.g. 1536 for OpenAI, 384 for MiniLM, 768 for BERT).
  * @param options - Distance metric and column options.

@@ -448,7 +448,7 @@ export class DbSet<T extends object = any> {
    * 3. **Property name string**: `.include('posts')` (supports dot-nested paths like `'posts.comments'`)
    *
    * @usecase Prevent the N+1 query problem by loading parent-child relationships upfront, with conditional inclusion based on true/false flags just like in Prisma.
-   * @param navigationPropertyOrMap - Relation property name or an object mapping relation names to boolean flags.
+   * @param navigationProperty - Relation property name or path.
    * @param enabled - Optional boolean flag when passing a property name (defaults to `true`). If `false`, inclusion is skipped.
    * @returns A new cloned `DbSet` configured to eager load the specified navigation property.
    * @example
@@ -470,6 +470,11 @@ export class DbSet<T extends object = any> {
     navigationProperty: K,
     enabled?: boolean,
   ): DbSet<WithLoaded<T, K>>;
+  /**
+   * Eagerly loads related navigation properties using a boolean mapping object.
+   *
+   * @param includesMap - Object mapping relation property names to boolean flags.
+   */
   public include(includesMap: Partial<Record<ColumnKey<T>, boolean>>): DbSet<T>;
   public include(
     navigationPropertyOrMap: ColumnKey<T> | Partial<Record<ColumnKey<T>, boolean>>,
@@ -548,15 +553,17 @@ export class DbSet<T extends object = any> {
   // --- Filtering ---
 
   /**
-   * Filters records using an object of property-value pairs (equality, IN arrays, or IS NULL).
+   * Filters records using a column comparison (`column`, `operator`, `value`).
    *
-   * @usecase Use this for straightforward exact-match queries and filtering by status or foreign keys.
-   * @param predicate - An object with entity keys and expected values.
-   * @returns A new cloned `DbSet` with the filter conditions applied.
+   * @usecase Filter records using standard relational comparison operators.
+   * @param column - The column name or entity property key.
+   * @param operator - Relational operator (`=`, `!=`, `<`, `>`, `LIKE`, `IN`, etc.).
+   * @param value - Comparison value.
+   * @returns A new cloned `DbSet` with the filter condition applied.
    * @example
    * ```ts
    * const activeAdmins = await context.users
-   *   .where({ role: 'admin', isActive: true })
+   *   .where('role', '=', 'admin')
    *   .toList();
    * ```
    */
@@ -572,7 +579,17 @@ export class DbSet<T extends object = any> {
       '=' | '!=' | '<>' | '>' | '>=' | '<' | '<=' | 'LIKE' | 'ILIKE' | 'NOT LIKE' | 'IN' | 'NOT IN',
     value: any,
   ): DbSet<T>;
+  /**
+   * Filters records using an object of property-value pairs (equality, IN arrays, or IS NULL).
+   *
+   * @param predicate - An object with entity keys and expected values.
+   */
   public where(predicate: Partial<T>): DbSet<T>;
+  /**
+   * Filters records using a fluent WhereClause builder callback.
+   *
+   * @param fn - Callback receiving a WhereClause builder.
+   */
   public where(fn: (clause: WhereClause<T>) => void | WhereClause<T>): DbSet<T>;
   public where(
     ...conditions: (Partial<T> | ((clause: WhereClause<T>) => void | WhereClause<T>))[]
@@ -1576,23 +1593,34 @@ export class DbSet<T extends object = any> {
 
   /**
    * Counts the total number of matching rows in the table.
-   * Counts the total number of matching rows in the table.
-   *
-   * Supports an optional inline filter predicate (object or `WhereClause` builder callback)
-   * to count matching records directly in a single call.
    *
    * @usecase Total record counts for analytics, dashboards, and pagination calculations.
-   * @param predicate - Optional filter criteria (object or builder callback).
    * @returns A Promise resolving to the count as a number.
    * @example
    * ```ts
    * const total = await context.users.count();
-   * const activeAdmins = await context.users.count({ role: 'admin', isActive: true });
-   * const highSpenders = await context.orders.count(w => w.gt('total', 500));
    * ```
    */
   public async count(): Promise<number>;
+  /**
+   * Counts the total number of matching rows using an inline filter predicate.
+   *
+   * @param predicate - Filter criteria object.
+   * @example
+   * ```ts
+   * const activeAdmins = await context.users.count({ role: 'admin', isActive: true });
+   * ```
+   */
   public async count(predicate: Partial<T>): Promise<number>;
+  /**
+   * Counts the total number of matching rows using a WhereClause builder callback.
+   *
+   * @param fn - Builder callback function.
+   * @example
+   * ```ts
+   * const highSpenders = await context.orders.count(w => w.gt('total', 500));
+   * ```
+   */
   public async count(fn: (clause: WhereClause<T>) => void | WhereClause<T>): Promise<number>;
   public async count(
     predicate?: Partial<T> | ((clause: WhereClause<T>) => void | WhereClause<T>),
@@ -2061,6 +2089,24 @@ export class DbSet<T extends object = any> {
   }
 
   /**
+   * Updates an existing entity matching filter criteria with partial field updates.
+   *
+   * Automatically refreshes `updatedAt` and advances `@Version` properties.
+   *
+   * @usecase Update a unique record by matching where condition.
+   * @param args - Object containing `where` filter, `data` patch, and optional `select` projection.
+   * @returns A Promise resolving to the refreshed updated entity from the database.
+   * @example
+   * ```ts
+   * const updated = await context.users.update({ where: { id: 1 }, data: { name: 'Jane Doe' } });
+   * ```
+   */
+  public async update(args: {
+    where: Partial<T>;
+    data: Partial<T>;
+    select?: (keyof T)[];
+  }): Promise<T>;
+  /**
    * Updates an existing entity by primary key with partial field updates and optimistic concurrency checking.
    *
    * Automatically refreshes `updatedAt` and advances `@Version` properties.
@@ -2075,14 +2121,8 @@ export class DbSet<T extends object = any> {
    * @example
    * ```ts
    * const updated = await context.users.update(userId, { name: 'Jane Doe' });
-   * const updated = await context.users.update({ where: { id: 1 }, data: { name: 'Jane Doe' } });
    * ```
    */
-  public async update(args: {
-    where: Partial<T>;
-    data: Partial<T>;
-    select?: (keyof T)[];
-  }): Promise<T>;
   public async update(
     id: unknown,
     patch: Partial<T>,

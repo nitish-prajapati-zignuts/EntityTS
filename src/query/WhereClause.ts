@@ -118,7 +118,7 @@ export class WhereClause<T = any> {
    * Adds an equality condition (`column = value`).
    *
    * @usecase Filter records where a property exactly matches a specified value.
-   * @param column - Property selector function or column name.
+   * @param selector - Property selector function or column name.
    * @param value - Expected value.
    * @returns `this` instance for method chaining.
    * @example
@@ -137,7 +137,7 @@ export class WhereClause<T = any> {
    * Adds an inequality condition (`column <> value`).
    *
    * @usecase Filter out records matching an undesirable value.
-   * @param column - Property selector function or column name.
+   * @param selector - Property selector function or column name.
    * @param value - Value to exclude.
    * @returns `this` instance for method chaining.
    * @example
@@ -156,7 +156,7 @@ export class WhereClause<T = any> {
    * Adds a greater-than comparison (`column > value`).
    *
    * @usecase Numeric thresholds, date cutoffs, or price minimums.
-   * @param column - Property selector function or column name.
+   * @param selector - Property selector function or column name.
    * @param value - Threshold value.
    * @returns `this` instance for method chaining.
    */
@@ -171,7 +171,7 @@ export class WhereClause<T = any> {
    * Adds a greater-than-or-equal comparison (`column >= value`).
    *
    * @usecase Inclusive lower bounds on numbers and dates.
-   * @param column - Property selector function or column name.
+   * @param selector - Property selector function or column name.
    * @param value - Minimum inclusive value.
    * @returns `this` instance for method chaining.
    */
@@ -186,7 +186,7 @@ export class WhereClause<T = any> {
    * Adds a less-than comparison (`column < value`).
    *
    * @usecase Upper bounds, maximum limits, or dates strictly prior to cutoff.
-   * @param column - Property selector function or column name.
+   * @param selector - Property selector function or column name.
    * @param value - Threshold value.
    * @returns `this` instance for method chaining.
    */
@@ -201,7 +201,7 @@ export class WhereClause<T = any> {
    * Adds a less-than-or-equal comparison (`column <= value`).
    *
    * @usecase Inclusive upper bounds on numbers and dates.
-   * @param column - Property selector function or column name.
+   * @param selector - Property selector function or column name.
    * @param value - Maximum inclusive value.
    * @returns `this` instance for method chaining.
    */
@@ -216,7 +216,7 @@ export class WhereClause<T = any> {
    * Adds a pattern-matching condition (`column LIKE pattern`).
    *
    * @usecase Substring search or prefix/suffix wildcard matching with `%` and `_`.
-   * @param column - Property selector function or column name.
+   * @param selector - Property selector function or column name.
    * @param pattern - SQL wildcard pattern (e.g. `'%example.com'`).
    * @returns `this` instance for method chaining.
    * @example
@@ -234,7 +234,7 @@ export class WhereClause<T = any> {
    * Adds a negative pattern-matching condition (`column NOT LIKE pattern`).
    *
    * @usecase Exclude records matching a specific wildcard pattern.
-   * @param column - Property selector function or column name.
+   * @param selector - Property selector function or column name.
    * @param pattern - SQL wildcard pattern.
    * @returns `this` instance for method chaining.
    */
@@ -248,7 +248,7 @@ export class WhereClause<T = any> {
    * Adds a set inclusion test (`column IN (...)`).
    *
    * @usecase Filter records whose column matches any element in an array of candidate values.
-   * @param column - Property selector function or column name.
+   * @param selector - Property selector function or column name.
    * @param values - Array of matching values.
    * @returns `this` instance for method chaining.
    * @example
@@ -267,7 +267,7 @@ export class WhereClause<T = any> {
    * Adds a set exclusion test (`column NOT IN (...)`).
    *
    * @usecase Exclude records whose column matches any element in an array of values.
-   * @param column - Property selector function or column name.
+   * @param selector - Property selector function or column name.
    * @param values - Array of excluded values.
    * @returns `this` instance for method chaining.
    */
@@ -282,7 +282,7 @@ export class WhereClause<T = any> {
    * Adds an `IS NULL` condition.
    *
    * @usecase Filter records where a nullable column has no assigned value.
-   * @param column - Property selector function or column name.
+   * @param selector - Property selector function or column name.
    * @returns `this` instance for method chaining.
    */
   public isNull(selector: (entity: T) => unknown): this;
@@ -295,7 +295,7 @@ export class WhereClause<T = any> {
    * Adds an `IS NOT NULL` condition.
    *
    * @usecase Filter records where a nullable column contains a value.
-   * @param column - Property selector function or column name.
+   * @param selector - Property selector function or column name.
    * @returns `this` instance for method chaining.
    */
   public isNotNull(selector: (entity: T) => unknown): this;
@@ -308,7 +308,7 @@ export class WhereClause<T = any> {
    * Adds an inclusive range condition (`column BETWEEN start AND end`).
    *
    * @usecase Filter date ranges or numeric ranges cleanly without separate `>=` and `<=` calls.
-   * @param column - Property selector function or column name.
+   * @param selector - Property selector function or column name.
    * @param start - Lower range boundary (inclusive).
    * @param end - Upper range boundary (inclusive).
    * @returns `this` instance for method chaining.

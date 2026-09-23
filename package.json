@@ -53,7 +53,9 @@
   "scripts": {
     "build": "rm -rf dist && tsc -p tsconfig.build.json && tsc -p tsconfig.esm.json && node scripts/minify-dist.js",
     "build:fast": "tsc -p tsconfig.build.json",
-    "docs:build": "typedoc",
+    "docs:start": "docusaurus start website",
+    "docs:build": "docusaurus build website --out-dir build/docs",
+    "docs:serve": "docusaurus serve website --out-dir build/docs",
     "benchmark": "node scripts/benchmark.js",
     "test": "jest --passWithNoTests --runInBand",
     "test:coverage": "jest --coverage --runInBand",
@@ -112,6 +114,11 @@
   "devDependencies": {
     "@commitlint/cli": "^21.2.3",
     "@commitlint/config-conventional": "^21.2.3",
+    "@docusaurus/core": "^3.10.2",
+    "@docusaurus/module-type-aliases": "^3.10.2",
+    "@docusaurus/preset-classic": "^3.10.2",
+    "@docusaurus/tsconfig": "^3.10.2",
+    "@docusaurus/types": "^3.10.2",
     "@libsql/client": ">=0.5.0",
     "@neondatabase/serverless": ">=0.9.0",
     "@nestjs/common": "^11.2.5",
@@ -125,7 +132,11 @@
     "@types/mssql": "^9.0.8",
     "@types/node": "^22.13.9",
     "@types/pg": "^8.11.11",
+    "@types/react": "^18.3.31",
+    "@types/react-dom": "^18.3.7",
     "better-sqlite3": ">=9.0.0",
+    "clsx": "^2.1.1",
+    "docusaurus-plugin-typedoc": "^1.4.3",
     "esbuild": "^0.28.2",
     "express": "^5.2.1",
     "husky": "^9.1.7",
@@ -135,9 +146,13 @@
     "mysql2": ">=3.0.0",
     "pg": ">=8.0.0",
     "prettier": "^3.9.8",
+    "prism-react-renderer": "^2.4.1",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
     "semantic-release": "^25.0.9",
     "ts-jest": "^29.2.6",
     "typedoc": "^0.28.20",
+    "typedoc-plugin-markdown": "^4.13.1",
     "typescript": "^5.8.2"
   }
 }

@@ -5,6 +5,11 @@ node_modules/
 # Build artifacts & outputs
 dist/
 docs/
+build/
+.docusaurus/
+website/build/
+website/.docusaurus/
+website/docs/api/
 dist-backup/
 example/dist/
 example/data/

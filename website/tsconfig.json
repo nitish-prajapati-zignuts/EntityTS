@@ -1,0 +1,23 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "lib": ["ES2022", "DOM"],
+    "jsx": "react-jsx",
+    "allowJs": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "baseUrl": ".",
+    "paths": {
+      "@site/*": ["./*"],
+      "@theme/*": ["../node_modules/@docusaurus/theme-classic/lib/theme/*"],
+      "@docusaurus/*": ["../node_modules/@docusaurus/core/lib/client/exports/*"]
+    },
+    "types": ["node", "@docusaurus/module-type-aliases"],
+    "skipLibCheck": true,
+    "strict": false,
+    "noEmit": true
+  },
+  "include": ["src/**/*", "docusaurus.config.ts", "sidebars.ts"]
+}
