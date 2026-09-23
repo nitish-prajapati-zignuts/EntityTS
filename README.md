@@ -336,3 +336,124 @@ const returnValue = reader.returnValue;
 
 ---
 
+## DbSet LINQ Querying
+
+`DbSet<T>` provides full LINQ-style query chaining:
+
+```typescript
+const users = await db.users
+  .where(q => q.gt('score', 75).and().like('email', '%@company.com'))
+  .orderBy('score', 'desc')
+  .take(20)
+  .skip(0)
+  .toList();
+```
+
+### Keyset / Cursor Pagination
+
+Cursor-based pagination avoids the performance penalty of high `OFFSET` values:
+
+```typescript
+// Page 1
+const page1 = await db.users
+  .orderBy('id', 'asc')
+  .toCursorPage({ limit: 10, cursorColumn: 'id' });
+
+console.log(page1.items);       // 10 items
+console.log(page1.nextCursor);  // Opaque URL-safe token (e.g. 'eyJpZCI6MTB9')
+console.log(page1.hasNextPage); // true
+
+// Page 2 (pass cursor from client)
+const page2 = await db.users
+  .orderBy('id', 'asc')
+  .toCursorPage({ limit: 10, cursorColumn: 'id', cursor: page1.nextCursor });
+```
+
+---
+
+### Native JSON Path Querying
+
+Query JSON columns natively across SQL Server, PostgreSQL, MySQL, and SQLite:
+
+```typescript
+// Automatically compiles to:
+// - MSSQL:       JSON_VALUE(metadata, '$.address.city') = 'New York'
+// - PostgreSQL:  metadata->'address'->>'city' = 'New York'
+// - MySQL:       JSON_UNQUOTE(JSON_EXTRACT(metadata, '$.address.city')) = 'New York'
+// - SQLite:      json_extract(metadata, '$.address.city') = 'New York'
+const results = await db.users
+  .whereJson('metadata', 'address.city', '=', 'New York')
+  .toList();
+```
+
+---
+
+### Dialect-Aware Full-Text Search
+
+```typescript
+// Compiles to CONTAINS in MSSQL, to_tsvector in PostgreSQL, MATCH...AGAINST in MySQL:
+const articles = await db.articles
+  .whereSearch(['title', 'content'], 'typescript enterprise architecture')
+  .toList();
+```
+
+---
+
+### Safe Raw SQL ($queryRaw & $executeRaw)
+
+Execute raw SQL safely using tagged template literals. Variables are automatically converted into parameterized placeholders:
+
+```typescript
+const minScore = 80;
+const status = 'active';
+
+// Parameterized query execution
+const users = await db.$queryRaw<User>`
+  SELECT * FROM users 
+  WHERE score >= ${minScore} AND status = ${status}
+`;
+
+// Parameterized non-query execution
+const affected = await db.$executeRaw`
+  UPDATE users 
+  SET status = 'archived' 
+  WHERE last_login < ${cutoffDate}
+`;
+```
+
+---
+
+## Relations & Eager Loading (.include)
+
+Define relationships using decorators and eager load them without N+1 query problems:
+
+```typescript
+@Entity()
+@Table('orders')
+export class Order {
+  @PrimaryKey() id!: number;
+  @Column() total!: number;
+  @Column() userId!: number;
+
+  @BelongsTo(() => User, { foreignKey: 'userId' })
+  user?: User;
+
+  @HasMany(() => OrderItem, { foreignKey: 'orderId' })
+  items?: OrderItem[];
+}
+```
+
+```typescript
+// Eager load related orders and order items
+const usersWithOrders = await db.users
+  .include('orders.items')
+  .toList();
+
+// Prisma-style boolean inclusion object
+const users = await db.users
+  .include({ orders: true, profile: false })
+  .toList();
+```
+
+---
+
