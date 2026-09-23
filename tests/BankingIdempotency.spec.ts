@@ -58,13 +58,13 @@ describe('Banking Idempotency Engine', () => {
         { name: 'p4', value: Date.now() },
         { name: 'p5', value: Date.now() + 60_000 },
         { name: 'p6', value: Date.now() + 86_400_000 },
-      ]
+      ],
     );
 
     await expect(
       idempotency.execute('CONCURRENT-KEY', async () => {
         return { ok: true };
-      })
+      }),
     ).rejects.toThrow(IdempotencyConflictException);
   });
 
@@ -81,7 +81,7 @@ describe('Banking Idempotency Engine', () => {
           }
           return { success: true, attempts };
         },
-        { removeOnFailure: true }
+        { removeOnFailure: true },
       );
 
     await expect(flakyOperation()).rejects.toThrow('Downstream network timeout');

@@ -37,7 +37,7 @@ describe('Event Bus / Domain Events (db.on, db.off, EntityCreated/Updated/Delete
   it('emits Account:created when an entity is inserted via DbSet.add()', async () => {
     const receivedEntities: Account[] = [];
 
-    db.on<Account>('Account:created', async (entity) => {
+    db.on<Account>('Account:created', async entity => {
       receivedEntities.push(entity);
     });
 
@@ -60,7 +60,7 @@ describe('Event Bus / Domain Events (db.on, db.off, EntityCreated/Updated/Delete
       balance: 500,
     });
 
-    db.on<Account>('Account:updated', async (entity) => {
+    db.on<Account>('Account:updated', async entity => {
       updatedEvents.push(entity);
     });
 
@@ -78,7 +78,7 @@ describe('Event Bus / Domain Events (db.on, db.off, EntityCreated/Updated/Delete
       balance: 300,
     });
 
-    db.on('Account:deleted', async (entity) => {
+    db.on('Account:deleted', async entity => {
       deletedEvents.push(entity);
     });
 
@@ -92,11 +92,11 @@ describe('Event Bus / Domain Events (db.on, db.off, EntityCreated/Updated/Delete
     const wildcardCreated: any[] = [];
     const wildcardAccount: any[] = [];
 
-    db.on('*:created', (payload) => {
+    db.on('*:created', payload => {
       wildcardCreated.push(payload);
     });
 
-    db.on('Account:*', (payload) => {
+    db.on('Account:*', payload => {
       wildcardAccount.push(payload);
     });
 
@@ -120,15 +120,15 @@ describe('Event Bus / Domain Events (db.on, db.off, EntityCreated/Updated/Delete
     let updatedDomainEvent: EntityUpdated<Account> | undefined;
     let deletedDomainEvent: EntityDeleted<any> | undefined;
 
-    db.on<EntityCreated<Account>>('EntityCreated', (ev) => {
+    db.on<EntityCreated<Account>>('EntityCreated', ev => {
       createdDomainEvent = ev;
     });
 
-    db.on<EntityUpdated<Account>>('EntityUpdated', (ev) => {
+    db.on<EntityUpdated<Account>>('EntityUpdated', ev => {
       updatedDomainEvent = ev;
     });
 
-    db.on<EntityDeleted<any>>('EntityDeleted', (ev) => {
+    db.on<EntityDeleted<any>>('EntityDeleted', ev => {
       deletedDomainEvent = ev;
     });
 
@@ -182,7 +182,7 @@ describe('Event Bus / Domain Events (db.on, db.off, EntityCreated/Updated/Delete
   it('supports local listeners directly on DbSet via db.accounts.on()', async () => {
     const localEvents: Account[] = [];
 
-    db.accounts.on('created', (account) => {
+    db.accounts.on('created', account => {
       localEvents.push(account);
     });
 
@@ -194,7 +194,7 @@ describe('Event Bus / Domain Events (db.on, db.off, EntityCreated/Updated/Delete
 
   it('fires events during context.saveChanges() for tracked changes', async () => {
     const createdList: any[] = [];
-    db.on('Account:created', (entity) => {
+    db.on('Account:created', entity => {
       createdList.push(entity);
     });
 

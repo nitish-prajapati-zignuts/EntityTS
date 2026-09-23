@@ -11,7 +11,12 @@ import {
   decodeCursor,
 } from '../query/CursorPagination';
 import { DbTransaction } from '../transaction/DbTransaction';
-import { EntityMetadata, ModelMetadataRegistry, RelationMetadata, EntityLifecycleHooks } from '../model/EntityMetadata';
+import {
+  EntityMetadata,
+  ModelMetadataRegistry,
+  RelationMetadata,
+  EntityLifecycleHooks,
+} from '../model/EntityMetadata';
 import { EntityNotFoundException, DbException, DbUpdateConcurrencyException } from '../errors';
 import { GlobalQueryFilterRegistry } from '../filters/GlobalQueryFilter';
 import {
@@ -31,7 +36,13 @@ import { ValidationEngine } from '../validation/ValidationEngine';
 import { DatabaseErrorTranslator } from '../errors/DatabaseErrorTranslator';
 import { LazyRelation } from './LazyLoader';
 import { AuditEngine } from '../audit/AuditEngine';
-import { EntityEventBus, EventHandler, EntityCreated, EntityUpdated, EntityDeleted } from '../events';
+import {
+  EntityEventBus,
+  EventHandler,
+  EntityCreated,
+  EntityUpdated,
+  EntityDeleted,
+} from '../events';
 
 export type WithLoaded<T, K extends string> = T & {
   [P in K]: P extends keyof T ? NonNullable<T[P]> : any;
@@ -81,7 +92,7 @@ export class DbSet<T extends object = any> {
     queryBuilder?: QueryBuilder<T>,
     transaction?: DbTransaction,
     context?: any,
-    options?: DbSetOptions
+    options?: DbSetOptions,
   ) {
     if (typeof entityTarget === 'function') {
       this.metadata = ModelMetadataRegistry.getInstance().get(entityTarget);
@@ -159,19 +170,33 @@ export class DbSet<T extends object = any> {
   /**
    * Internal helper to dispatch lifecycle domain events to both the parent DbContext and local DbSet.
    */
-  private async emitLifecycleEvent(action: 'created' | 'updated' | 'deleted', entity: any, previous?: any): Promise<void> {
+  private async emitLifecycleEvent(
+    action: 'created' | 'updated' | 'deleted',
+    entity: any,
+    previous?: any,
+  ): Promise<void> {
     if (!entity) return;
-    const entityName = typeof this.entityTarget === 'function' ? this.entityTarget.name : this.tableName;
+    const entityName =
+      typeof this.entityTarget === 'function' ? this.entityTarget.name : this.tableName;
     const tableAlias = entityName !== this.tableName ? `${this.tableName}:${action}` : undefined;
 
     if (this.context && typeof this.context.emit === 'function') {
       await this.context.emit(`${entityName}:${action}`, entity, tableAlias);
       if (action === 'created') {
-        await this.context.emit('EntityCreated', new EntityCreated(entity, entityName, this.tableName));
+        await this.context.emit(
+          'EntityCreated',
+          new EntityCreated(entity, entityName, this.tableName),
+        );
       } else if (action === 'updated') {
-        await this.context.emit('EntityUpdated', new EntityUpdated(entity, entityName, this.tableName, previous));
+        await this.context.emit(
+          'EntityUpdated',
+          new EntityUpdated(entity, entityName, this.tableName, previous),
+        );
       } else if (action === 'deleted') {
-        await this.context.emit('EntityDeleted', new EntityDeleted(entity, entityName, this.tableName));
+        await this.context.emit(
+          'EntityDeleted',
+          new EntityDeleted(entity, entityName, this.tableName),
+        );
       }
     }
 
@@ -360,10 +385,14 @@ export class DbSet<T extends object = any> {
    */
   public lock(mode: 'pessimistic' | 'shared' | 'optimistic' | 'no-wait' | 'skip-locked'): DbSet<T> {
     switch (mode) {
-      case 'pessimistic': return this.forUpdate();
-      case 'shared':      return this.forShare();
-      case 'no-wait':     return this.forUpdateNoWait();
-      case 'skip-locked': return this.forUpdateSkipLocked();
+      case 'pessimistic':
+        return this.forUpdate();
+      case 'shared':
+        return this.forShare();
+      case 'no-wait':
+        return this.forUpdateNoWait();
+      case 'skip-locked':
+        return this.forUpdateSkipLocked();
       case 'optimistic':
       default:
         // Optimistic concurrency is handled via @Version — no SQL lock modifier needed.
@@ -439,12 +468,12 @@ export class DbSet<T extends object = any> {
    */
   public include<K extends string = ColumnKey<T>>(
     navigationProperty: K,
-    enabled?: boolean
+    enabled?: boolean,
   ): DbSet<WithLoaded<T, K>>;
   public include(includesMap: Partial<Record<ColumnKey<T>, boolean>>): DbSet<T>;
   public include(
     navigationPropertyOrMap: ColumnKey<T> | Partial<Record<ColumnKey<T>, boolean>>,
-    enabled = true
+    enabled = true,
   ): DbSet<any> {
     const existingIncludes = [...(this.options.includes || [])];
 
@@ -512,7 +541,7 @@ export class DbSet<T extends object = any> {
       qb,
       this.transaction,
       this.context,
-      this.options
+      this.options,
     );
   }
 
@@ -533,21 +562,20 @@ export class DbSet<T extends object = any> {
    */
   public where<K extends keyof T & string>(
     column: K,
-    operator: '=' | '!=' | '<>' | '>' | '>=' | '<' | '<=' | 'LIKE' | 'ILIKE' | 'NOT LIKE' | 'IN' | 'NOT IN',
-    value: any
+    operator:
+      '=' | '!=' | '<>' | '>' | '>=' | '<' | '<=' | 'LIKE' | 'ILIKE' | 'NOT LIKE' | 'IN' | 'NOT IN',
+    value: any,
   ): DbSet<T>;
   public where(
     column: string,
-    operator: '=' | '!=' | '<>' | '>' | '>=' | '<' | '<=' | 'LIKE' | 'ILIKE' | 'NOT LIKE' | 'IN' | 'NOT IN',
-    value: any
+    operator:
+      '=' | '!=' | '<>' | '>' | '>=' | '<' | '<=' | 'LIKE' | 'ILIKE' | 'NOT LIKE' | 'IN' | 'NOT IN',
+    value: any,
   ): DbSet<T>;
   public where(predicate: Partial<T>): DbSet<T>;
   public where(fn: (clause: WhereClause<T>) => void | WhereClause<T>): DbSet<T>;
   public where(
-    ...conditions: (
-      | Partial<T>
-      | ((clause: WhereClause<T>) => void | WhereClause<T>)
-    )[]
+    ...conditions: (Partial<T> | ((clause: WhereClause<T>) => void | WhereClause<T>))[]
   ): DbSet<T>;
   public where(...args: any[]): DbSet<T> {
     const qb = this.cloneQueryBuilder();
@@ -611,8 +639,9 @@ export class DbSet<T extends object = any> {
    */
   public withCte(
     name: string,
-    query: QueryBuilder<any> | DbSet<any> | Subquery<any> | string | ((qb: QueryBuilder<any>) => any),
-    recursive = false
+    query:
+      QueryBuilder<any> | DbSet<any> | Subquery<any> | string | ((qb: QueryBuilder<any>) => any),
+    recursive = false,
   ): DbSet<T> {
     const qb = this.cloneQueryBuilder();
     const effectiveQuery = (query as any)?.queryBuilder ? (query as any).queryBuilder : query;
@@ -635,10 +664,7 @@ export class DbSet<T extends object = any> {
    * @param subquery - Subquery, DbSet, QueryBuilder, or SQL string.
    * @param joinPredicate - Callback defining join predicate between outer entity and subquery.
    */
-  public whereExists(
-    subquery: any,
-    joinPredicate?: (outer: any, inner: any) => void
-  ): DbSet<T> {
+  public whereExists(subquery: any, joinPredicate?: (outer: any, inner: any) => void): DbSet<T> {
     const qb = this.cloneQueryBuilder();
     qb.getWhereClause().exists(subquery, joinPredicate);
     return this.createClone(qb);
@@ -650,10 +676,7 @@ export class DbSet<T extends object = any> {
    * @param subquery - Subquery, DbSet, QueryBuilder, or SQL string.
    * @param joinPredicate - Callback defining join predicate between outer entity and subquery.
    */
-  public whereNotExists(
-    subquery: any,
-    joinPredicate?: (outer: any, inner: any) => void
-  ): DbSet<T> {
+  public whereNotExists(subquery: any, joinPredicate?: (outer: any, inner: any) => void): DbSet<T> {
     const qb = this.cloneQueryBuilder();
     qb.getWhereClause().notExists(subquery, joinPredicate);
     return this.createClone(qb);
@@ -666,11 +689,7 @@ export class DbSet<T extends object = any> {
    * @param vector - Query embedding coordinates array.
    * @param options - Distance metric ('cosine', 'l2', 'inner_product') and limit.
    */
-  public nearest(
-    column: keyof T | string,
-    vector: number[],
-    options?: NearestOptions
-  ): DbSet<T> {
+  public nearest(column: keyof T | string, vector: number[], options?: NearestOptions): DbSet<T> {
     const qb = this.cloneQueryBuilder();
     const colName = this.mapPropertyToColumn(String(column));
     qb.nearest(colName, vector, options);
@@ -697,7 +716,7 @@ export class DbSet<T extends object = any> {
     column: ColumnKey<T>,
     path: string,
     operatorOrValue: string | unknown,
-    value?: unknown
+    value?: unknown,
   ): DbSet<T> {
     const qb = this.cloneQueryBuilder();
     const colName = this.mapPropertyToColumn(String(column));
@@ -723,7 +742,7 @@ export class DbSet<T extends object = any> {
   public whereSearch(
     columns: (ColumnKey<T> | ((entity: T) => unknown))[],
     query: string,
-    options?: SearchOptions
+    options?: SearchOptions,
   ): DbSet<T> {
     const qb = this.cloneQueryBuilder();
     const mappedColumns = columns.map(col => {
@@ -750,7 +769,7 @@ export class DbSet<T extends object = any> {
    */
   public whereBetween<K extends keyof T & string>(
     field: K | ((entity: T) => unknown),
-    range: [unknown, unknown]
+    range: [unknown, unknown],
   ): DbSet<T> {
     const qb = this.cloneQueryBuilder();
     const propName = this.resolvePropertySelector(field as any) || String(field);
@@ -773,7 +792,7 @@ export class DbSet<T extends object = any> {
    */
   public whereIn<K extends keyof T & string>(
     field: K | ((entity: T) => unknown),
-    values: unknown[]
+    values: unknown[],
   ): DbSet<T> {
     const qb = this.cloneQueryBuilder();
     const propName = this.resolvePropertySelector(field as any) || String(field);
@@ -792,7 +811,7 @@ export class DbSet<T extends object = any> {
    */
   public whereNotIn<K extends keyof T & string>(
     field: K | ((entity: T) => unknown),
-    values: unknown[]
+    values: unknown[],
   ): DbSet<T> {
     const qb = this.cloneQueryBuilder();
     const propName = this.resolvePropertySelector(field as any) || String(field);
@@ -811,7 +830,7 @@ export class DbSet<T extends object = any> {
    */
   public whereLike<K extends keyof T & string>(
     field: K | ((entity: T) => unknown),
-    pattern: string
+    pattern: string,
   ): DbSet<T> {
     const qb = this.cloneQueryBuilder();
     const propName = this.resolvePropertySelector(field as any) || String(field);
@@ -825,7 +844,7 @@ export class DbSet<T extends object = any> {
    */
   public whereNotLike<K extends keyof T & string>(
     field: K | ((entity: T) => unknown),
-    pattern: string
+    pattern: string,
   ): DbSet<T> {
     const qb = this.cloneQueryBuilder();
     const propName = this.resolvePropertySelector(field as any) || String(field);
@@ -837,9 +856,7 @@ export class DbSet<T extends object = any> {
   /**
    * Filters records where a column value is `NULL`.
    */
-  public whereNull<K extends keyof T & string>(
-    field: K | ((entity: T) => unknown)
-  ): DbSet<T> {
+  public whereNull<K extends keyof T & string>(field: K | ((entity: T) => unknown)): DbSet<T> {
     const qb = this.cloneQueryBuilder();
     const propName = this.resolvePropertySelector(field as any) || String(field);
     const colName = this.mapPropertyToColumn(propName);
@@ -850,9 +867,7 @@ export class DbSet<T extends object = any> {
   /**
    * Filters records where a column value is `NOT NULL`.
    */
-  public whereNotNull<K extends keyof T & string>(
-    field: K | ((entity: T) => unknown)
-  ): DbSet<T> {
+  public whereNotNull<K extends keyof T & string>(field: K | ((entity: T) => unknown)): DbSet<T> {
     const qb = this.cloneQueryBuilder();
     const propName = this.resolvePropertySelector(field as any) || String(field);
     const colName = this.mapPropertyToColumn(propName);
@@ -876,21 +891,12 @@ export class DbSet<T extends object = any> {
    *   .toList();
    * ```
    */
-  public orderBy<V>(
-    field: (entity: T) => V,
-    direction?: 'asc' | 'desc'
-  ): DbSet<T>;
-  public orderBy<K extends keyof T & string>(
-    field: K,
-    direction?: 'asc' | 'desc'
-  ): DbSet<T>;
-  public orderBy(
-    field: string & {},
-    direction?: 'asc' | 'desc'
-  ): DbSet<T>;
+  public orderBy<V>(field: (entity: T) => V, direction?: 'asc' | 'desc'): DbSet<T>;
+  public orderBy<K extends keyof T & string>(field: K, direction?: 'asc' | 'desc'): DbSet<T>;
+  public orderBy(field: string & {}, direction?: 'asc' | 'desc'): DbSet<T>;
   public orderBy(
     field: ColumnKey<T> | ((entity: T) => unknown),
-    direction: 'asc' | 'desc' = 'asc'
+    direction: 'asc' | 'desc' = 'asc',
   ): DbSet<T> {
     const qb = this.cloneQueryBuilder();
     const colName = this.resolvePropertySelector(field);
@@ -933,21 +939,12 @@ export class DbSet<T extends object = any> {
    *   .toList();
    * ```
    */
-  public thenBy<V>(
-    field: (entity: T) => V,
-    direction?: 'asc' | 'desc'
-  ): DbSet<T>;
-  public thenBy<K extends keyof T & string>(
-    field: K,
-    direction?: 'asc' | 'desc'
-  ): DbSet<T>;
-  public thenBy(
-    field: string & {},
-    direction?: 'asc' | 'desc'
-  ): DbSet<T>;
+  public thenBy<V>(field: (entity: T) => V, direction?: 'asc' | 'desc'): DbSet<T>;
+  public thenBy<K extends keyof T & string>(field: K, direction?: 'asc' | 'desc'): DbSet<T>;
+  public thenBy(field: string & {}, direction?: 'asc' | 'desc'): DbSet<T>;
   public thenBy(
     field: ColumnKey<T> | ((entity: T) => unknown),
-    direction: 'asc' | 'desc' = 'asc'
+    direction: 'asc' | 'desc' = 'asc',
   ): DbSet<T> {
     return this.orderBy(field as any, direction);
   }
@@ -1047,7 +1044,7 @@ export class DbSet<T extends object = any> {
     target: EntityTarget<R>,
     on: { left: ColumnKey<T>; right: ColumnKey<R> },
     type: 'INNER' | 'LEFT' | 'RIGHT' | 'FULL' = 'INNER',
-    alias?: string
+    alias?: string,
   ): DbSet<T & Partial<R>> {
     const qb = this.cloneQueryBuilder<T & Partial<R>>();
     let otherTable = '';
@@ -1067,7 +1064,7 @@ export class DbSet<T extends object = any> {
       qb,
       this.transaction,
       this.context,
-      this.options
+      this.options,
     );
   }
 
@@ -1089,7 +1086,7 @@ export class DbSet<T extends object = any> {
   public leftJoin<R extends object>(
     target: EntityTarget<R>,
     on: { left: ColumnKey<T>; right: ColumnKey<R> },
-    alias?: string
+    alias?: string,
   ): DbSet<T & Partial<R>> {
     return this.join(target, on, 'LEFT', alias);
   }
@@ -1114,8 +1111,7 @@ export class DbSet<T extends object = any> {
     let cacheKey: string | undefined;
     if (cache && this.options.cacheTtlMs) {
       cacheKey =
-        this.options.cacheKey ||
-        `${this.tableName}:${sql}:${JSON.stringify(params || [])}`;
+        this.options.cacheKey || `${this.tableName}:${sql}:${JSON.stringify(params || [])}`;
       const cached = await cache.get<T[]>(cacheKey);
       if (cached) {
         return cached;
@@ -1128,7 +1124,7 @@ export class DbSet<T extends object = any> {
       rows = await effectiveAdapter.executeQuery<Record<string, unknown>>(
         sql,
         params,
-        this.transaction
+        this.transaction,
       );
     } catch (err) {
       throw DatabaseErrorTranslator.translate(err, sql, effectiveAdapter.provider);
@@ -1211,7 +1207,7 @@ export class DbSet<T extends object = any> {
    */
   public async chunk(
     size: number,
-    callback: (batch: T[], index: number) => Promise<boolean | void> | boolean | void
+    callback: (batch: T[], index: number) => Promise<boolean | void> | boolean | void,
   ): Promise<number> {
     if (!size || size <= 0) {
       throw new Error(`Chunk size must be greater than 0, received ${size}`);
@@ -1268,7 +1264,7 @@ export class DbSet<T extends object = any> {
       const iterable = effectiveAdapter.executeStream<Record<string, unknown>>(
         sql,
         params,
-        this.transaction
+        this.transaction,
       );
       for await (const row of iterable) {
         yield this.mapRowToEntity(row);
@@ -1304,7 +1300,7 @@ export class DbSet<T extends object = any> {
    */
   public async toPagedList(
     pageOrOptions: number | PagedListOptions,
-    maybePageSize?: number
+    maybePageSize?: number,
   ): Promise<PagedResult<T>> {
     let page: number;
     let pageSize: number;
@@ -1354,9 +1350,7 @@ export class DbSet<T extends object = any> {
    * });
    * ```
    */
-  public async toCursorPage(
-    options: CursorPaginationOptions<T>
-  ): Promise<CursorPageResult<T>> {
+  public async toCursorPage(options: CursorPaginationOptions<T>): Promise<CursorPageResult<T>> {
     const limit = options.limit;
     const direction = (options.direction || 'asc').toLowerCase() as 'asc' | 'desc';
     const orderCol = this.mapPropertyToColumn(extractColumnName(options.orderBy));
@@ -1497,9 +1491,7 @@ export class DbSet<T extends object = any> {
   public async firstOrThrow(predicate?: Partial<T>): Promise<T> {
     const item = await this.first(predicate);
     if (!item) {
-      throw new EntityNotFoundException(
-        `Entity '${this.tableName}' not found matching predicate.`
-      );
+      throw new EntityNotFoundException(`Entity '${this.tableName}' not found matching predicate.`);
     }
     return item;
   }
@@ -1523,9 +1515,7 @@ export class DbSet<T extends object = any> {
     }
     const list = await set.take(2).toList();
     if (list.length > 1) {
-      throw new DbException(
-        `Sequence contains more than one element in '${this.tableName}'.`
-      );
+      throw new DbException(`Sequence contains more than one element in '${this.tableName}'.`);
     }
     return list.length === 1 ? list[0] : null;
   }
@@ -1546,9 +1536,7 @@ export class DbSet<T extends object = any> {
   public async singleOrThrow(predicate?: Partial<T>): Promise<T> {
     const item = await this.single(predicate);
     if (!item) {
-      throw new EntityNotFoundException(
-        `Entity '${this.tableName}' not found matching predicate.`
-      );
+      throw new EntityNotFoundException(`Entity '${this.tableName}' not found matching predicate.`);
     }
     return item;
   }
@@ -1607,10 +1595,10 @@ export class DbSet<T extends object = any> {
   public async count(predicate: Partial<T>): Promise<number>;
   public async count(fn: (clause: WhereClause<T>) => void | WhereClause<T>): Promise<number>;
   public async count(
-    predicate?: Partial<T> | ((clause: WhereClause<T>) => void | WhereClause<T>)
+    predicate?: Partial<T> | ((clause: WhereClause<T>) => void | WhereClause<T>),
   ): Promise<number>;
   public async count(
-    predicate?: Partial<T> | ((builder: WhereClause<T>) => void | WhereClause<T>)
+    predicate?: Partial<T> | ((builder: WhereClause<T>) => void | WhereClause<T>),
   ): Promise<number> {
     let set: DbSet<T> = this;
     if (predicate) {
@@ -1622,8 +1610,6 @@ export class DbSet<T extends object = any> {
     const res = await adapter.executeScalar<number | string>(sql, params, this.transaction);
     return Number(res) || 0;
   }
-
-
 
   /**
    * Computes the mathematical sum of a numeric column across matching rows.
@@ -1771,7 +1757,7 @@ export class DbSet<T extends object = any> {
       qb,
       keySelector,
       this.metadata,
-      this.transaction
+      this.transaction,
     );
   }
 
@@ -2010,7 +1996,9 @@ export class DbSet<T extends object = any> {
         const childSet = this.context
           ? this.context.set(targetEntity as any)
           : new DbSet(this.adapter, targetEntity as any, undefined, this.transaction, this.context);
-        const scopedChildSet = this.transaction ? childSet.inTransaction(this.transaction) : childSet;
+        const scopedChildSet = this.transaction
+          ? childSet.inTransaction(this.transaction)
+          : childSet;
 
         if (rel.type === 'hasMany' && Array.isArray(payload)) {
           const insertedChildren: any[] = [];
@@ -2040,7 +2028,7 @@ export class DbSet<T extends object = any> {
         (resultEntity as any)[pk],
         AuditEngine.snapshot(resultEntity),
         undefined,
-        this.context?.currentUser
+        this.context?.currentUser,
       );
       await AuditEngine.write(entry, this.adapter, auditOpts.tableName, this.transaction);
     }
@@ -2090,20 +2078,22 @@ export class DbSet<T extends object = any> {
    * const updated = await context.users.update({ where: { id: 1 }, data: { name: 'Jane Doe' } });
    * ```
    */
-  public async update(
-    args: { where: Partial<T>; data: Partial<T>; select?: (keyof T)[] }
-  ): Promise<T>;
+  public async update(args: {
+    where: Partial<T>;
+    data: Partial<T>;
+    select?: (keyof T)[];
+  }): Promise<T>;
   public async update(
     id: unknown,
     patch: Partial<T>,
     expectedVersion?: unknown,
-    concurrencyOriginals?: Record<string, unknown>
+    concurrencyOriginals?: Record<string, unknown>,
   ): Promise<T>;
   public async update(
     idOrArgs: unknown,
     patch?: Partial<T>,
     expectedVersion?: unknown,
-    concurrencyOriginals?: Record<string, unknown>
+    concurrencyOriginals?: Record<string, unknown>,
   ): Promise<T> {
     if (
       idOrArgs &&
@@ -2117,7 +2107,9 @@ export class DbSet<T extends object = any> {
     this.ensureNotView('update');
     const toUpdate = { ...patch } as any;
     if (typeof this.entityTarget === 'function') {
-      ValidationEngine.validateOrThrow(toUpdate, this.entityTarget as Function, this.tableName, { partial: true });
+      ValidationEngine.validateOrThrow(toUpdate, this.entityTarget as Function, this.tableName, {
+        partial: true,
+      });
     }
     await this.executeHooks(toUpdate, 'beforeUpdate');
 
@@ -2131,7 +2123,10 @@ export class DbSet<T extends object = any> {
       }
     }
 
-    if (this.metadata?.updatedAtProperty && toUpdate[this.metadata.updatedAtProperty] === undefined) {
+    if (
+      this.metadata?.updatedAtProperty &&
+      toUpdate[this.metadata.updatedAtProperty] === undefined
+    ) {
       toUpdate[this.metadata.updatedAtProperty] = new Date();
     }
 
@@ -2144,7 +2139,8 @@ export class DbSet<T extends object = any> {
 
       let nextVersion: unknown;
       if (vp.strategy === 'number') {
-        const curNum = typeof versionToCheck === 'number' ? versionToCheck : Number(versionToCheck) || 0;
+        const curNum =
+          typeof versionToCheck === 'number' ? versionToCheck : Number(versionToCheck) || 0;
         nextVersion = curNum + 1;
       } else if (vp.strategy === 'timestamp') {
         nextVersion = new Date();
@@ -2194,17 +2190,20 @@ export class DbSet<T extends object = any> {
 
     if (
       (this.metadata?.versionProperty && versionToCheck !== undefined && res.rowsAffected === 0) ||
-      (this.metadata?.concurrencyCheckProperties && this.metadata.concurrencyCheckProperties.size > 0 && res.rowsAffected === 0)
+      (this.metadata?.concurrencyCheckProperties &&
+        this.metadata.concurrencyCheckProperties.size > 0 &&
+        res.rowsAffected === 0)
     ) {
       throw new DbUpdateConcurrencyException(
         `Database operation expected to affect 1 row, but affected 0 rows due to a concurrency conflict in '${this.tableName}'.`,
         this.tableName,
-        id
+        id,
       );
     }
 
     if (this.metadata?.versionProperty && typeof patch === 'object' && patch !== null) {
-      (patch as any)[this.metadata.versionProperty.propertyName] = toUpdate[this.metadata.versionProperty.propertyName];
+      (patch as any)[this.metadata.versionProperty.propertyName] =
+        toUpdate[this.metadata.versionProperty.propertyName];
     }
 
     const updated = await this.findOrThrow(id);
@@ -2219,7 +2218,7 @@ export class DbSet<T extends object = any> {
         id,
         AuditEngine.snapshot(updated),
         _auditOldSnapshot,
-        this.context?.currentUser
+        this.context?.currentUser,
       );
       await AuditEngine.write(entry, this.adapter, auditOpts.tableName, this.transaction);
     }
@@ -2241,10 +2240,7 @@ export class DbSet<T extends object = any> {
    * );
    * ```
    */
-  public async upsert(
-    conflictTarget: Partial<T>,
-    updatePayload: Partial<T>
-  ): Promise<T>;
+  public async upsert(conflictTarget: Partial<T>, updatePayload: Partial<T>): Promise<T>;
   public async upsert(args: {
     where: Partial<T>;
     update: Partial<T>;
@@ -2261,7 +2257,7 @@ export class DbSet<T extends object = any> {
           create: Partial<T>;
           select?: (keyof T)[];
         },
-    keys?: (keyof T)[] | Partial<T>
+    keys?: (keyof T)[] | Partial<T>,
   ): Promise<T> {
     // Case 1: Native upsert with conflictTarget and updatePayload
     if (
@@ -2274,7 +2270,12 @@ export class DbSet<T extends object = any> {
       return this.nativeUpsert(entityOrArgs as Partial<T>, keys as Partial<T>);
     }
 
-    if (entityOrArgs && 'where' in entityOrArgs && 'update' in entityOrArgs && 'create' in entityOrArgs) {
+    if (
+      entityOrArgs &&
+      'where' in entityOrArgs &&
+      'update' in entityOrArgs &&
+      'create' in entityOrArgs
+    ) {
       const args = entityOrArgs as {
         where: Partial<T>;
         update: Partial<T>;
@@ -2289,7 +2290,9 @@ export class DbSet<T extends object = any> {
     }
 
     const entity = entityOrArgs as Partial<T>;
-    const checkKeys = (keys as (keyof T)[] | undefined) || [this.getPrimaryKeyProperty() as keyof T];
+    const checkKeys = (keys as (keyof T)[] | undefined) || [
+      this.getPrimaryKeyProperty() as keyof T,
+    ];
     const whereObj: Partial<T> = {};
     for (const k of checkKeys) {
       whereObj[k] = entity[k];
@@ -2318,16 +2321,31 @@ export class DbSet<T extends object = any> {
 
     const now = new Date();
     if (this.metadata) {
-      if (this.metadata.createdAtProperty && toInsert[this.metadata.createdAtProperty] === undefined) {
+      if (
+        this.metadata.createdAtProperty &&
+        toInsert[this.metadata.createdAtProperty] === undefined
+      ) {
         toInsert[this.metadata.createdAtProperty] = now;
       }
-      if (this.metadata.updatedAtProperty && toInsert[this.metadata.updatedAtProperty] === undefined) {
+      if (
+        this.metadata.updatedAtProperty &&
+        toInsert[this.metadata.updatedAtProperty] === undefined
+      ) {
         toInsert[this.metadata.updatedAtProperty] = now;
       }
-      if (this.metadata.createdByProperty && toInsert[this.metadata.createdByProperty] === undefined && this.context?.currentUser) {
+      if (
+        this.metadata.createdByProperty &&
+        toInsert[this.metadata.createdByProperty] === undefined &&
+        this.context?.currentUser
+      ) {
         toInsert[this.metadata.createdByProperty] = this.context.currentUser;
       }
-      if (!this.options.ignoreTenant && this.metadata.tenantIdProperty && toInsert[this.metadata.tenantIdProperty] === undefined && this.context?.tenantId !== undefined) {
+      if (
+        !this.options.ignoreTenant &&
+        this.metadata.tenantIdProperty &&
+        toInsert[this.metadata.tenantIdProperty] === undefined &&
+        this.context?.tenantId !== undefined
+      ) {
         toInsert[this.metadata.tenantIdProperty] = this.context.tenantId;
       }
     }
@@ -2413,7 +2431,9 @@ export class DbSet<T extends object = any> {
 
     // Capture snapshot for audit before mutation
     const _auditOldSnapshot: Record<string, unknown> | undefined =
-      existing && typeof this.entityTarget === 'function' && AuditEngine.shouldLog(this.entityTarget)
+      existing &&
+      typeof this.entityTarget === 'function' &&
+      AuditEngine.shouldLog(this.entityTarget)
         ? AuditEngine.snapshot(existing)
         : undefined;
 
@@ -2445,23 +2465,37 @@ export class DbSet<T extends object = any> {
         }
         const { sql, params } = qb.toUpdateSql({ [colName]: now });
         const res = await this.adapter.executeNonQuery(sql, params, this.transaction);
-        if (this.metadata?.versionProperty && expectedVersion !== undefined && res.rowsAffected === 0) {
+        if (
+          this.metadata?.versionProperty &&
+          expectedVersion !== undefined &&
+          res.rowsAffected === 0
+        ) {
           throw new DbUpdateConcurrencyException(
             `Database operation expected to affect 1 row, but affected 0 rows due to a concurrency conflict in '${this.tableName}'.`,
             this.tableName,
-            actualId
+            actualId,
           );
         }
       }
 
       // Cascade soft-delete to hasMany / hasOne children
-      if (this.metadata.softDelete.cascade && this.metadata.relations && this.metadata.relations.size > 0) {
+      if (
+        this.metadata.softDelete.cascade &&
+        this.metadata.relations &&
+        this.metadata.relations.size > 0
+      ) {
         for (const [, rel] of this.metadata.relations) {
           if (rel.type !== 'hasMany' && rel.type !== 'hasOne') continue;
           const childTarget = rel.target();
           const childSet = this.context
             ? this.context.set(childTarget as any)
-            : new DbSet(this.adapter, childTarget as any, undefined, this.transaction, this.context);
+            : new DbSet(
+                this.adapter,
+                childTarget as any,
+                undefined,
+                this.transaction,
+                this.context,
+              );
           const scoped = this.transaction ? childSet.inTransaction(this.transaction) : childSet;
           // removeWhere uses soft-delete automatically if child also has @SoftDelete
           await scoped.removeWhere({ [rel.foreignKey]: actualId } as any);
@@ -2484,12 +2518,15 @@ export class DbSet<T extends object = any> {
         actualId,
         undefined,
         _auditOldSnapshot,
-        this.context?.currentUser
+        this.context?.currentUser,
       );
       await AuditEngine.write(entry, this.adapter, auditOpts.tableName, this.transaction);
     }
 
-    await this.emitLifecycleEvent('deleted', existing || { [this.getPrimaryKeyProperty()]: actualId });
+    await this.emitLifecycleEvent(
+      'deleted',
+      existing || { [this.getPrimaryKeyProperty()]: actualId },
+    );
   }
 
   /**
@@ -2540,7 +2577,7 @@ export class DbSet<T extends object = any> {
       throw new DbUpdateConcurrencyException(
         `Database operation expected to affect 1 row, but affected 0 rows due to a concurrency conflict in '${this.tableName}'.`,
         this.tableName,
-        actualId
+        actualId,
       );
     }
   }
@@ -2610,7 +2647,7 @@ export class DbSet<T extends object = any> {
   public async restore(id: unknown): Promise<void> {
     if (!this.metadata?.softDelete) {
       throw new Error(
-        `Cannot restore '${this.tableName}': entity does not have @SoftDelete configured.`
+        `Cannot restore '${this.tableName}': entity does not have @SoftDelete configured.`,
       );
     }
 
@@ -2654,7 +2691,7 @@ export class DbSet<T extends object = any> {
   public async restoreWhere(predicate: Partial<T>): Promise<number> {
     if (!this.metadata?.softDelete) {
       throw new Error(
-        `Cannot restoreWhere '${this.tableName}': entity does not have @SoftDelete configured.`
+        `Cannot restoreWhere '${this.tableName}': entity does not have @SoftDelete configured.`,
       );
     }
 
@@ -2667,8 +2704,6 @@ export class DbSet<T extends object = any> {
     const res = await this.adapter.executeNonQuery(sql, params, this.transaction);
     return res.rowsAffected;
   }
-
-
 
   /**
    * Finds a unique entity matching the `where` criteria.
@@ -2705,14 +2740,16 @@ export class DbSet<T extends object = any> {
    * });
    * ```
    */
-  public async findFirst(args: {
-    where?: Partial<T> | ((clause: WhereClause<T>) => void);
-    orderBy?: Record<string, 'asc' | 'desc'> | keyof T;
-    skip?: number;
-    take?: number;
-    select?: (keyof T)[];
-    include?: any;
-  } = {}): Promise<T | null> {
+  public async findFirst(
+    args: {
+      where?: Partial<T> | ((clause: WhereClause<T>) => void);
+      orderBy?: Record<string, 'asc' | 'desc'> | keyof T;
+      skip?: number;
+      take?: number;
+      select?: (keyof T)[];
+      include?: any;
+    } = {},
+  ): Promise<T | null> {
     let set: DbSet<any> = args.where ? this.where(args.where as any) : this;
     if (args.include) set = set.include(args.include);
     if (args.select && args.select.length > 0) set = set.select(...(args.select as any));
@@ -2744,15 +2781,17 @@ export class DbSet<T extends object = any> {
    * });
    * ```
    */
-  public async findMany(args: {
-    where?: Partial<T> | ((clause: WhereClause<T>) => void);
-    orderBy?: Record<string, 'asc' | 'desc'> | keyof T;
-    skip?: number;
-    take?: number;
-    select?: (keyof T)[];
-    include?: any;
-    distinct?: (keyof T)[];
-  } = {}): Promise<T[]> {
+  public async findMany(
+    args: {
+      where?: Partial<T> | ((clause: WhereClause<T>) => void);
+      orderBy?: Record<string, 'asc' | 'desc'> | keyof T;
+      skip?: number;
+      take?: number;
+      select?: (keyof T)[];
+      include?: any;
+      distinct?: (keyof T)[];
+    } = {},
+  ): Promise<T[]> {
     let set: DbSet<any> = args.where ? this.where(args.where as any) : this;
     if (args.include) set = set.include(args.include);
     if (args.select && args.select.length > 0) set = set.select(...(args.select as any));
@@ -2781,10 +2820,7 @@ export class DbSet<T extends object = any> {
    * const user = await db.users.create({ data: { name: 'Alice', email: 'alice@example.com' } });
    * ```
    */
-  public async create(args: {
-    data: Partial<T>;
-    select?: (keyof T)[];
-  }): Promise<T> {
+  public async create(args: { data: Partial<T>; select?: (keyof T)[] }): Promise<T> {
     const created = await this.add(args.data);
     if (args.select && args.select.length > 0) {
       const filtered: any = {};
@@ -2869,10 +2905,7 @@ export class DbSet<T extends object = any> {
   /**
    * Deletes a single unique entity matching where criteria and returns the deleted record.
    */
-  public async deleteUnique(args: {
-    where: Partial<T>;
-    select?: (keyof T)[];
-  }): Promise<T> {
+  public async deleteUnique(args: { where: Partial<T>; select?: (keyof T)[] }): Promise<T> {
     const existing = await this.findUnique({ where: args.where });
     if (!existing) {
       throw new Error(`Record to delete not found matching where criteria`);
@@ -2908,9 +2941,11 @@ export class DbSet<T extends object = any> {
    * const { count } = await db.users.deleteMany({ where: { status: 'inactive' } });
    * ```
    */
-  public async deleteMany(args: {
-    where?: Partial<T> | ((clause: WhereClause<T>) => void);
-  } = {}): Promise<{ count: number }> {
+  public async deleteMany(
+    args: {
+      where?: Partial<T> | ((clause: WhereClause<T>) => void);
+    } = {},
+  ): Promise<{ count: number }> {
     this.ensureNotView('deleteMany');
     const qb = this.cloneQueryBuilder();
     if (args.where) {
@@ -2998,16 +3033,13 @@ export class DbSet<T extends object = any> {
    * const inserted = await context.products.bulkInsert(newProductList, { batchSize: 500 });
    * ```
    */
-  public async bulkInsert(
-    entities: Partial<T>[],
-    options?: BulkInsertOptions
-  ): Promise<number> {
+  public async bulkInsert(entities: Partial<T>[], options?: BulkInsertOptions): Promise<number> {
     const builder = new BulkInsertBuilder<T>(
       this.adapter,
       this.tableName,
       this.metadata,
       this.transaction,
-      this.context
+      this.context,
     );
     return builder.execute(entities, options);
   }
@@ -3024,15 +3056,12 @@ export class DbSet<T extends object = any> {
    * await context.products.bulkUpdate(updatedProducts, { keyColumns: ['id'], batchSize: 250 });
    * ```
    */
-  public async bulkUpdate(
-    entities: Partial<T>[],
-    options: BulkUpdateOptions<T>
-  ): Promise<number> {
+  public async bulkUpdate(entities: Partial<T>[], options: BulkUpdateOptions<T>): Promise<number> {
     const builder = new BulkUpdateBuilder<T>(
       this.adapter,
       this.tableName,
       this.metadata,
-      this.transaction
+      this.transaction,
     );
     return builder.execute(entities, options);
   }
@@ -3049,16 +3078,13 @@ export class DbSet<T extends object = any> {
    * await context.products.bulkUpsert(syncedItems, { keyColumns: ['sku'], batchSize: 500 });
    * ```
    */
-  public async bulkUpsert(
-    entities: Partial<T>[],
-    options: BulkUpsertOptions<T>
-  ): Promise<number> {
+  public async bulkUpsert(entities: Partial<T>[], options: BulkUpsertOptions<T>): Promise<number> {
     const builder = new BulkUpsertBuilder<T>(
       this.adapter,
       this.tableName,
       this.metadata,
       this.transaction,
-      this.context
+      this.context,
     );
     return builder.execute(entities, options);
   }
@@ -3075,15 +3101,12 @@ export class DbSet<T extends object = any> {
    * await context.notifications.bulkDelete({ isRead: true });
    * ```
    */
-  public async bulkDelete(
-    predicate: Partial<T>,
-    options?: BulkDeleteOptions
-  ): Promise<number> {
+  public async bulkDelete(predicate: Partial<T>, options?: BulkDeleteOptions): Promise<number> {
     const builder = new BulkDeleteBuilder<T>(
       this.adapter,
       this.tableName,
       this.metadata,
-      this.transaction
+      this.transaction,
     );
     return builder.execute(predicate, options);
   }
@@ -3112,7 +3135,7 @@ export class DbSet<T extends object = any> {
     const rows = await this.adapter.executeQuery<Record<string, unknown>>(
       sql,
       adapterParams,
-      this.transaction
+      this.transaction,
     );
     return rows.map(r => this.mapRowToEntity(r));
   }
@@ -3121,7 +3144,7 @@ export class DbSet<T extends object = any> {
   private createClone<R extends object = T>(
     qb?: QueryBuilder<R>,
     overrideOptions?: Partial<DbSetOptions>,
-    transaction?: DbTransaction
+    transaction?: DbTransaction,
   ): DbSet<R> {
     return new DbSet<R>(
       this.adapter,
@@ -3132,7 +3155,7 @@ export class DbSet<T extends object = any> {
       {
         ...this.options,
         ...overrideOptions,
-      }
+      },
     );
   }
 
@@ -3167,9 +3190,7 @@ export class DbSet<T extends object = any> {
         }
       }
       if (typeof this.entityTarget === 'function') {
-        const globalFilters = GlobalQueryFilterRegistry.getInstance().getFilters(
-          this.entityTarget
-        );
+        const globalFilters = GlobalQueryFilterRegistry.getInstance().getFilters(this.entityTarget);
         for (const filter of globalFilters) {
           filter(qb.getWhereClause());
         }
@@ -3241,7 +3262,9 @@ export class DbSet<T extends object = any> {
 
         const map = new Map<string, any[]>();
         for (const c of children) {
-          const fkVal = (c as any)[rel.foreignKey] ?? (c as any)[(childSet as any).mapPropertyToColumn(rel.foreignKey)];
+          const fkVal =
+            (c as any)[rel.foreignKey] ??
+            (c as any)[(childSet as any).mapPropertyToColumn(rel.foreignKey)];
           const key = normalizeKey(fkVal);
           const list = map.get(key) || [];
           list.push(c);
@@ -3279,7 +3302,9 @@ export class DbSet<T extends object = any> {
 
         const map = new Map<string, any>();
         for (const c of children) {
-          const fkVal = (c as any)[rel.foreignKey] ?? (c as any)[(childSet as any).mapPropertyToColumn(rel.foreignKey)];
+          const fkVal =
+            (c as any)[rel.foreignKey] ??
+            (c as any)[(childSet as any).mapPropertyToColumn(rel.foreignKey)];
           const key = normalizeKey(fkVal);
           map.set(key, c);
         }
@@ -3300,7 +3325,9 @@ export class DbSet<T extends object = any> {
         };
 
         const fkValues = entities
-          .map(e => (e as any)[rel.foreignKey] ?? (e as any)[this.mapPropertyToColumn(rel.foreignKey)])
+          .map(
+            e => (e as any)[rel.foreignKey] ?? (e as any)[this.mapPropertyToColumn(rel.foreignKey)],
+          )
           .filter(id => id !== undefined && id !== null);
 
         if (fkValues.length === 0) continue;
@@ -3321,7 +3348,9 @@ export class DbSet<T extends object = any> {
         }
 
         for (const parent of entities) {
-          const fkVal = (parent as any)[rel.foreignKey] ?? (parent as any)[this.mapPropertyToColumn(rel.foreignKey)];
+          const fkVal =
+            (parent as any)[rel.foreignKey] ??
+            (parent as any)[this.mapPropertyToColumn(rel.foreignKey)];
           const key = normalizeKey(fkVal);
           (parent as any)[relName] = map.get(key) || null;
         }
@@ -3353,7 +3382,7 @@ export class DbSet<T extends object = any> {
   private ensureNotView(operation: string): void {
     if (this.metadata?.isView) {
       throw new Error(
-        `Cannot execute '${operation}' on '${this.tableName}': View entities decorated with @ViewEntity are read-only.`
+        `Cannot execute '${operation}' on '${this.tableName}': View entities decorated with @ViewEntity are read-only.`,
       );
     }
   }
@@ -3364,7 +3393,7 @@ export class DbSet<T extends object = any> {
       if (this.metadata) {
         for (const [propName, col] of this.metadata.columns) {
           const colKey = Object.keys(row).find(
-            k => k.toLowerCase() === col.columnName.toLowerCase()
+            k => k.toLowerCase() === col.columnName.toLowerCase(),
           );
           if (colKey !== undefined) {
             let val = row[colKey];
@@ -3427,10 +3456,7 @@ export class DbSet<T extends object = any> {
     }
   }
 
-  private async executeHooks(
-    entity: any,
-    eventName: keyof EntityLifecycleHooks
-  ): Promise<void> {
+  private async executeHooks(entity: any, eventName: keyof EntityLifecycleHooks): Promise<void> {
     if (!this.metadata?.lifecycleHooks || !entity) return;
     const methods = this.metadata.lifecycleHooks[eventName];
     if (!methods || methods.length === 0) return;

@@ -37,23 +37,22 @@ describe('Simplified Stored Procedure API', () => {
 
   describe('.input()', () => {
     it('accepts a plain object and registers all keys as Input params', () => {
-      const builder = new StoredProcedureBuilder(adapter, 'usp_Filter')
-        .input({
-          Name: 'Alice',
-          Age: 30,
-          Active: true,
-          Score: 9.5,
-          CreatedAt: new Date('2024-01-01'),
-        });
+      const builder = new StoredProcedureBuilder(adapter, 'usp_Filter').input({
+        Name: 'Alice',
+        Age: 30,
+        Active: true,
+        Score: 9.5,
+        CreatedAt: new Date('2024-01-01'),
+      });
 
       const params = builder.getParams();
       expect(params).toHaveLength(5);
 
-      const name  = params.find(p => p.name === 'Name');
-      const age   = params.find(p => p.name === 'Age');
+      const name = params.find(p => p.name === 'Name');
+      const age = params.find(p => p.name === 'Age');
       const active = params.find(p => p.name === 'Active');
       const score = params.find(p => p.name === 'Score');
-      const date  = params.find(p => p.name === 'CreatedAt');
+      const date = params.find(p => p.name === 'CreatedAt');
 
       // Auto inferred types
       expect(name?.type).toBe(SqlType.NVarChar);
@@ -67,8 +66,7 @@ describe('Simplified Stored Procedure API', () => {
     });
 
     it('strips leading @ from parameter names', () => {
-      const builder = new StoredProcedureBuilder(adapter, 'usp_Test')
-        .input({ '@UserId': 1 });
+      const builder = new StoredProcedureBuilder(adapter, 'usp_Test').input({ '@UserId': 1 });
 
       const params = builder.getParams();
       expect(params[0].name).toBe('UserId');
@@ -90,7 +88,10 @@ describe('Simplified Stored Procedure API', () => {
   describe('.query<T>()', () => {
     it('returns a plain typed array without wrapping in result object', async () => {
       adapter.registerProcedure('usp_GetOrders', {
-        records: [{ id: 1, amount: 99 }, { id: 2, amount: 150 }],
+        records: [
+          { id: 1, amount: 99 },
+          { id: 2, amount: 150 },
+        ],
         returnValue: 0,
         rowsAffected: 2,
       });
@@ -136,8 +137,7 @@ describe('Simplified Stored Procedure API', () => {
     it('returns null when no rows', async () => {
       adapter.registerProcedure('usp_CountPending', { records: [] });
 
-      const count = await new StoredProcedureBuilder(adapter, 'usp_CountPending')
-        .scalar<number>();
+      const count = await new StoredProcedureBuilder(adapter, 'usp_CountPending').scalar<number>();
 
       expect(count).toBeNull();
     });
@@ -182,7 +182,7 @@ describe('Simplified Stored Procedure API', () => {
 
       const { out, rowsAffected, returnValue } = await new StoredProcedureBuilder(
         adapter,
-        'usp_CreateUser'
+        'usp_CreateUser',
       )
         .input({ Name: 'Alice Smith', Email: 'alice@example.com' })
         .output<CreateResult>(['NewUserId', 'SlugGenerated'])
@@ -208,16 +208,16 @@ describe('Simplified Stored Procedure API', () => {
       }
 
       adapter.registerProcedure('usp_GetOrderSummary', {
-        records: [{ id: 1, amount: 99 }, { id: 2, amount: 150 }],
+        records: [
+          { id: 1, amount: 99 },
+          { id: 2, amount: 150 },
+        ],
         outputParams: { TotalAmount: 249, ProcessedAt: '2024-09-21' },
         returnValue: 0,
         rowsAffected: 2,
       });
 
-      const { records, out } = await new StoredProcedureBuilder(
-        adapter,
-        'usp_GetOrderSummary'
-      )
+      const { records, out } = await new StoredProcedureBuilder(adapter, 'usp_GetOrderSummary')
         .input({ CustomerId: 10, StatusFilter: 'paid' })
         .output<SummaryOut>(['TotalAmount', 'ProcessedAt'])
         .query<Order>();
@@ -240,19 +240,13 @@ describe('Simplified Stored Procedure API', () => {
       }
 
       adapter.registerProcedure('usp_GetDashboard', {
-        records: [
-          [{ id: 1, amount: 100 }],
-          [{ sku: 'ABC', stock: 50 }],
-        ],
+        records: [[{ id: 1, amount: 100 }], [{ sku: 'ABC', stock: 50 }]],
         outputParams: { LastRefreshed: '2024-09-21T10:00:00Z' },
         returnValue: 0,
         rowsAffected: 2,
       });
 
-      const { records, out } = await new StoredProcedureBuilder(
-        adapter,
-        'usp_GetDashboard'
-      )
+      const { records, out } = await new StoredProcedureBuilder(adapter, 'usp_GetDashboard')
         .input({ DeptId: 4 })
         .output<DashboardOut>(['LastRefreshed'])
         .queryMultiple<[Order[], Product[]]>();
@@ -277,9 +271,9 @@ describe('Simplified Stored Procedure API', () => {
       });
 
       const result = await new StoredProcedureBuilder(adapter, 'usp_AdvancedProc')
-        .input({ UserId: 42 })                          // simplified input
-        .withOutputParam('ResultCode', SqlType.Int)     // advanced output
-        .withTimeout(5000)                              // advanced option
+        .input({ UserId: 42 }) // simplified input
+        .withOutputParam('ResultCode', SqlType.Int) // advanced output
+        .withTimeout(5000) // advanced option
         .execute();
 
       expect(result.outputParams['ResultCode']).toBe(200);

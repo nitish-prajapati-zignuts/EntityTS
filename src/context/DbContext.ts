@@ -200,7 +200,7 @@ export abstract class DbContext {
   public async withIdempotencyKey<T>(
     key: string,
     fn: () => Promise<T>,
-    options?: IdempotencyOptions
+    options?: IdempotencyOptions,
   ): Promise<T> {
     return this.idempotency.execute(key, fn, options);
   }
@@ -239,7 +239,7 @@ export abstract class DbContext {
 
       if (!this._options.adapter) {
         throw new DbException(
-          'No database adapter configured. Please configure an adapter in onConfiguring() or pass options to constructor.'
+          'No database adapter configured. Please configure an adapter in onConfiguring() or pass options to constructor.',
         );
       }
       this._adapter = this._options.adapter;
@@ -249,7 +249,7 @@ export abstract class DbContext {
       this._adapter = new InterceptingDbAdapter(
         this._adapter,
         this._options.hooks,
-        this._options.logging
+        this._options.logging,
       );
     }
 
@@ -394,10 +394,7 @@ export abstract class DbContext {
    * console.log(`Deactivated ${res.rowsAffected} users`);
    * ```
    */
-  public async executeSql(
-    sql: string,
-    params?: unknown[]
-  ): Promise<{ rowsAffected: number }> {
+  public async executeSql(sql: string, params?: unknown[]): Promise<{ rowsAffected: number }> {
     const adapterParams = params
       ? params.map((val, idx) => ({ name: `p${idx}`, value: val }))
       : undefined;
@@ -443,7 +440,7 @@ export abstract class DbContext {
    */
   public async useTransaction<T>(
     fn: (tx: DbTransaction) => Promise<T>,
-    isolationLevel?: IsolationLevel
+    isolationLevel?: IsolationLevel,
   ): Promise<T> {
     const tx = await this.beginTransaction(isolationLevel);
     try {
@@ -586,15 +583,15 @@ export abstract class DbContext {
    */
   public async $transaction<R>(
     operations: Promise<R>[],
-    options?: { isolationLevel?: IsolationLevel; timeout?: number }
+    options?: { isolationLevel?: IsolationLevel; timeout?: number },
   ): Promise<R[]>;
   public async $transaction<R>(
     operations: (tx: this) => Promise<R>,
-    options?: { isolationLevel?: IsolationLevel; timeout?: number }
+    options?: { isolationLevel?: IsolationLevel; timeout?: number },
   ): Promise<R>;
   public async $transaction<R>(
     operations: Promise<R>[] | ((tx: this) => Promise<R>),
-    options?: { isolationLevel?: IsolationLevel; timeout?: number }
+    options?: { isolationLevel?: IsolationLevel; timeout?: number },
   ): Promise<R | R[]> {
     if (Array.isArray(operations)) {
       return this.useTransaction(async () => {
@@ -606,12 +603,14 @@ export abstract class DbContext {
       }, options?.isolationLevel);
     }
     if (typeof operations === 'function') {
-      return this.useTransaction(async (tx) => {
+      return this.useTransaction(async tx => {
         const txCtx = this.inTransaction(tx);
         return operations(txCtx);
       }, options?.isolationLevel);
     }
-    throw new Error('Invalid $transaction arguments: must provide an array of promises or an async function');
+    throw new Error(
+      'Invalid $transaction arguments: must provide an array of promises or an async function',
+    );
   }
 
   // ---------------------------------------------------------------------------
@@ -621,10 +620,7 @@ export abstract class DbContext {
   /**
    * Executes a parameterized SELECT query returning typed rows.
    */
-  public async queryRaw<T = unknown>(
-    sql: string,
-    params?: unknown[]
-  ): Promise<T[]> {
+  public async queryRaw<T = unknown>(sql: string, params?: unknown[]): Promise<T[]> {
     try {
       const adapterParams = params
         ? params.map((val, idx) => ({ name: `p${idx}`, value: val }))
@@ -638,10 +634,7 @@ export abstract class DbContext {
   /**
    * Executes a parameterized command (INSERT, UPDATE, DELETE, DDL) returning rowsAffected.
    */
-  public async executeRaw(
-    sql: string,
-    params?: unknown[]
-  ): Promise<{ rowsAffected: number }> {
+  public async executeRaw(sql: string, params?: unknown[]): Promise<{ rowsAffected: number }> {
     try {
       const adapterParams = params
         ? params.map((val, idx) => ({ name: `p${idx}`, value: val }))
@@ -655,10 +648,7 @@ export abstract class DbContext {
   /**
    * Executes a query returning the first column value of the first row (e.g. `COUNT(*)`, `SUM(x)`).
    */
-  public async queryScalar<T = unknown>(
-    sql: string,
-    params?: unknown[]
-  ): Promise<T | null> {
+  public async queryScalar<T = unknown>(sql: string, params?: unknown[]): Promise<T | null> {
     try {
       const adapterParams = params
         ? params.map((val, idx) => ({ name: `p${idx}`, value: val }))
@@ -687,7 +677,7 @@ export abstract class DbContext {
    */
   public async withTransaction<T>(
     fn: (tx: DbTransaction) => Promise<T>,
-    isolationLevel?: IsolationLevel
+    isolationLevel?: IsolationLevel,
   ): Promise<T> {
     return this.useTransaction(fn, isolationLevel);
   }
@@ -709,7 +699,7 @@ export abstract class DbContext {
    */
   public async executeResilientTransaction<T>(
     fn: (tx: DbTransaction) => Promise<T>,
-    isolationLevel?: IsolationLevel
+    isolationLevel?: IsolationLevel,
   ): Promise<T> {
     const strategy =
       this._options.executionStrategy ||
@@ -813,10 +803,10 @@ export abstract class DbContext {
         this._adapter.provider === 'mssql'
           ? 'SELECT @@VERSION'
           : this._adapter.provider === 'sqlite' ||
-            this._adapter.provider === 'turso' ||
-            this._adapter.provider === 'd1'
-          ? 'SELECT sqlite_version()'
-          : 'SELECT version()';
+              this._adapter.provider === 'turso' ||
+              this._adapter.provider === 'd1'
+            ? 'SELECT sqlite_version()'
+            : 'SELECT version()';
 
       let serverVersion: string | undefined;
       try {
@@ -900,12 +890,14 @@ export abstract class DbContext {
    * ```
    */
   public async saveChanges(): Promise<number> {
-    const entries = this.changeTracker.entries().filter(
-      e =>
-        e.state === EntityState.Added ||
-        e.state === EntityState.Modified ||
-        e.state === EntityState.Deleted
-    );
+    const entries = this.changeTracker
+      .entries()
+      .filter(
+        e =>
+          e.state === EntityState.Added ||
+          e.state === EntityState.Modified ||
+          e.state === EntityState.Deleted,
+      );
 
     if (entries.length === 0) {
       return 0;
@@ -1010,8 +1002,7 @@ export abstract class DbContext {
   public async ensureCreated(entityClasses?: Function[]): Promise<void> {
     const registry = ModelMetadataRegistry.getInstance();
     const classes =
-      entityClasses ??
-      Array.from((registry as any).entities?.keys() ?? []) as Function[];
+      entityClasses ?? (Array.from((registry as any).entities?.keys() ?? []) as Function[]);
     const generator = new SchemaGenerator(this._adapter, classes);
     await generator.ensureCreated();
   }
@@ -1029,13 +1020,10 @@ export abstract class DbContext {
    * console.log('Applied migrations:', applied);
    * ```
    */
-  public async migrate(
-    migrations: MigrationModule[]
-  ): Promise<{ applied: string[] }> {
+  public async migrate(migrations: MigrationModule[]): Promise<{ applied: string[] }> {
     const runner = new MigrationRunner(this._adapter);
     return runner.up(migrations);
   }
-
 
   /**
    * Dynamically fetches a related navigation property on an entity instance.
@@ -1050,7 +1038,7 @@ export abstract class DbContext {
    */
   public async fetchRelation<E extends object, R = any>(
     entity: E,
-    relationName: string
+    relationName: string,
   ): Promise<R> {
     const proto = Object.getPrototypeOf(entity);
     const targetConstructor = proto ? proto.constructor : undefined;
@@ -1066,7 +1054,7 @@ export abstract class DbContext {
    */
   public async loadRelation<E extends object, R = any>(
     entity: E,
-    relationName: string
+    relationName: string,
   ): Promise<R> {
     return this.fetchRelation<E, R>(entity, relationName);
   }

@@ -54,7 +54,7 @@ describe('Transactional Outbox Pattern', () => {
       async () => {
         throw new Error('SMTP connection timed out');
       },
-      { maxRetries: 2 }
+      { maxRetries: 2 },
     );
     expect(res1.failedCount).toBe(1);
 
@@ -67,7 +67,7 @@ describe('Transactional Outbox Pattern', () => {
       async () => {
         throw new Error('SMTP connection timed out again');
       },
-      { maxRetries: 2 }
+      { maxRetries: 2 },
     );
     expect(res2.failedCount).toBe(1);
 

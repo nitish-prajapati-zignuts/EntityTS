@@ -25,33 +25,33 @@ export interface IDbAdapter {
   executeQuery<T = unknown>(
     sql: string,
     params?: AdapterParam[],
-    transaction?: DbTransaction
+    transaction?: DbTransaction,
   ): Promise<T[]>;
 
   executeNonQuery(
     sql: string,
     params?: AdapterParam[],
-    transaction?: DbTransaction
+    transaction?: DbTransaction,
   ): Promise<{ rowsAffected: number; insertId?: unknown }>;
 
   executeScalar<T = unknown>(
     sql: string,
     params?: AdapterParam[],
-    transaction?: DbTransaction
+    transaction?: DbTransaction,
   ): Promise<T>;
 
   executeProcedure<T = unknown>(
     name: string,
     params: AdapterParam[],
     timeoutMs?: number,
-    transaction?: DbTransaction
+    transaction?: DbTransaction,
   ): Promise<StoredProcedureResult<T[]>>;
 
   executeProcedureMultiple<T extends unknown[] = unknown[]>(
     name: string,
     params: AdapterParam[],
     timeoutMs?: number,
-    transaction?: DbTransaction
+    transaction?: DbTransaction,
   ): Promise<StoredProcedureResult<T>>;
 
   beginTransaction(isolationLevel?: IsolationLevel): Promise<DbTransaction>;
@@ -68,6 +68,6 @@ export interface IDbAdapter {
   executeStream?<T = unknown>(
     sql: string,
     params?: AdapterParam[],
-    transaction?: DbTransaction
+    transaction?: DbTransaction,
   ): AsyncIterable<T>;
 }

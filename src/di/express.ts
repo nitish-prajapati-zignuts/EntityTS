@@ -13,9 +13,8 @@ export interface DbContextMiddlewareOptions<TContext extends DbContext> {
  */
 export function dbContextMiddleware<TContext extends DbContext>(
   contextClassOrOptions:
-    | (new (options?: DbContextOptions) => TContext)
-    | DbContextMiddlewareOptions<TContext>,
-  defaultOptions?: DbContextOptions
+    (new (options?: DbContextOptions) => TContext) | DbContextMiddlewareOptions<TContext>,
+  defaultOptions?: DbContextOptions,
 ) {
   let contextClass: new (options?: DbContextOptions) => TContext;
   let options: DbContextOptions | undefined = defaultOptions;

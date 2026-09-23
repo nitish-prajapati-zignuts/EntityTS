@@ -49,7 +49,7 @@ describe('Execution Benchmarks', () => {
         silent: true,
         filter: 'Direct Adapter',
       },
-      mock
+      mock,
     );
 
     expect(results).toHaveLength(1);

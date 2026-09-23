@@ -50,7 +50,7 @@ export class AggregateExpression<R = number> {
 
   constructor(
     public readonly func: 'COUNT' | 'SUM' | 'AVG' | 'MIN' | 'MAX',
-    public readonly column: string
+    public readonly column: string,
   ) {}
 
   public toSql(adapter: IDbAdapter): string {
@@ -114,9 +114,7 @@ export interface IGroupProxy<T, TKey = any> {
 }
 
 export type UnpackAggregate<V> =
-  V extends AggregateExpression<infer R> ? R :
-  V extends GroupKeyExpression<infer K> ? K :
-  V;
+  V extends AggregateExpression<infer R> ? R : V extends GroupKeyExpression<infer K> ? K : V;
 
 export type ProjectedResult<TProjection> = {
   [K in keyof TProjection]: UnpackAggregate<TProjection[K]>;
@@ -135,7 +133,7 @@ export class GroupedQueryBuilder<T extends object, TKey = any> {
     private readonly queryBuilder: QueryBuilder<T>,
     keySelector: (entity: T) => TKey,
     private readonly metadata?: EntityMetadata,
-    private readonly transaction?: DbTransaction
+    private readonly transaction?: DbTransaction,
   ) {
     this.extractGroupColumns(keySelector);
   }
@@ -217,16 +215,21 @@ export class GroupedQueryBuilder<T extends object, TKey = any> {
 
     return {
       key: keyObject as any,
-      count: (sel?: (e: T) => unknown) => new AggregateExpression<number>('COUNT', this.resolveSelector(sel)),
-      sum: (sel: (e: T) => number) => new AggregateExpression<number>('SUM', this.resolveSelector(sel)),
-      avg: (sel: (e: T) => number) => new AggregateExpression<number>('AVG', this.resolveSelector(sel)),
-      min: <R = number>(sel: (e: T) => R) => new AggregateExpression<R>('MIN', this.resolveSelector(sel)),
-      max: <R = number>(sel: (e: T) => R) => new AggregateExpression<R>('MAX', this.resolveSelector(sel)),
+      count: (sel?: (e: T) => unknown) =>
+        new AggregateExpression<number>('COUNT', this.resolveSelector(sel)),
+      sum: (sel: (e: T) => number) =>
+        new AggregateExpression<number>('SUM', this.resolveSelector(sel)),
+      avg: (sel: (e: T) => number) =>
+        new AggregateExpression<number>('AVG', this.resolveSelector(sel)),
+      min: <R = number>(sel: (e: T) => R) =>
+        new AggregateExpression<R>('MIN', this.resolveSelector(sel)),
+      max: <R = number>(sel: (e: T) => R) =>
+        new AggregateExpression<R>('MAX', this.resolveSelector(sel)),
     };
   }
 
   public having(
-    havingFn: (group: IGroupProxy<T, TKey>) => HavingCondition | HavingCondition[]
+    havingFn: (group: IGroupProxy<T, TKey>) => HavingCondition | HavingCondition[],
   ): this {
     const proxy = this.createGroupProxy();
     const conditionOrConditions = havingFn(proxy);
@@ -239,7 +242,7 @@ export class GroupedQueryBuilder<T extends object, TKey = any> {
   }
 
   public select<TProjection extends Record<string, unknown>>(
-    projectionFn: (group: IGroupProxy<T, TKey>) => TProjection
+    projectionFn: (group: IGroupProxy<T, TKey>) => TProjection,
   ): ProjectedGroupedQuery<T, ProjectedResult<TProjection>> {
     const proxy = this.createGroupProxy();
     const projection = projectionFn(proxy);
@@ -250,7 +253,7 @@ export class GroupedQueryBuilder<T extends object, TKey = any> {
       this.groupColumns,
       this.havingConditions,
       projection as any,
-      this.transaction
+      this.transaction,
     );
   }
 }
@@ -269,12 +272,12 @@ export class ProjectedGroupedQuery<T extends object, TResult extends Record<stri
     private readonly groupColumns: string[],
     private readonly havingConditions: HavingCondition[],
     private readonly projection: TResult,
-    private readonly transaction?: DbTransaction
+    private readonly transaction?: DbTransaction,
   ) {}
 
   public orderBy(
     field: (keyof TResult & string) | (string & {}),
-    direction: 'asc' | 'desc' = 'asc'
+    direction: 'asc' | 'desc' = 'asc',
   ): this {
     this._orderByClauses.push({
       column: String(field),
@@ -333,7 +336,7 @@ export class ProjectedGroupedQuery<T extends object, TResult extends Record<stri
     const rows = await this.adapter.executeQuery<Record<string, unknown>>(
       sql,
       params,
-      this.transaction
+      this.transaction,
     );
 
     return rows.map(r => this.mapRow(r));

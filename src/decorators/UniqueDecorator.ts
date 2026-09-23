@@ -39,7 +39,7 @@ export function Unique(): PropertyDecorator {
     const colName = existing.columnName || propName;
     const idxName = `uq_${colName}`;
     const alreadyRegistered = metadata.indexes.some(
-      idx => idx.unique && idx.columns.length === 1 && idx.columns[0] === colName
+      idx => idx.unique && idx.columns.length === 1 && idx.columns[0] === colName,
     );
     if (!alreadyRegistered) {
       metadata.indexes.push({ name: idxName, columns: [colName], unique: true });

@@ -362,7 +362,7 @@ export class WhereClause<T = any> {
     column: ColumnKey<T> | ((entity: T) => unknown),
     path: string,
     operatorOrValue: string | unknown,
-    value?: unknown
+    value?: unknown,
   ): this {
     let operator = '=';
     let val = operatorOrValue;
@@ -391,7 +391,7 @@ export class WhereClause<T = any> {
     column: ColumnKey<T> | ((entity: T) => unknown),
     path: string,
     operatorOrValue: string | unknown,
-    value?: unknown
+    value?: unknown,
   ): this {
     return this.whereJson(column, path, operatorOrValue, value);
   }
@@ -408,7 +408,7 @@ export class WhereClause<T = any> {
   public whereSearch(
     columns: (ColumnKey<T> | ((entity: T) => unknown))[],
     query: string,
-    options?: SearchOptions
+    options?: SearchOptions,
   ): this {
     const colNames = columns.map(c => extractColumnName(c));
     this.conditions.push({
@@ -431,7 +431,7 @@ export class WhereClause<T = any> {
   public search(
     columns: (ColumnKey<T> | ((entity: T) => unknown))[],
     query: string,
-    options?: SearchOptions
+    options?: SearchOptions,
   ): this {
     return this.whereSearch(columns, query, options);
   }
@@ -453,7 +453,6 @@ export class WhereClause<T = any> {
     this.currentLogical = 'AND';
     return this;
   }
-
 
   /**
    * Adds an SQL EXISTS (SELECT ...) subquery condition.

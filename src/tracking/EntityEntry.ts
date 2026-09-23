@@ -8,7 +8,7 @@ export class EntityEntry<T extends object = any> {
   constructor(
     public readonly entity: T,
     public readonly metadata?: EntityMetadata,
-    initialState: EntityState = EntityState.Unchanged
+    initialState: EntityState = EntityState.Unchanged,
   ) {
     this._state = initialState;
     this.snapshot();

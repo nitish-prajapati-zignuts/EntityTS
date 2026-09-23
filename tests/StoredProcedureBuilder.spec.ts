@@ -40,8 +40,10 @@ describe('StoredProcedureBuilder', () => {
   });
 
   it('configures multiple parameters from an object using withParams', () => {
-    const builder = new StoredProcedureBuilder(adapter, 'usp_Filter')
-      .withParams({ age: 30, status: 'active' });
+    const builder = new StoredProcedureBuilder(adapter, 'usp_Filter').withParams({
+      age: 30,
+      status: 'active',
+    });
 
     const params = builder.getParams();
     expect(params).toHaveLength(2);
@@ -123,20 +125,17 @@ describe('StoredProcedureBuilder', () => {
 
   it('executes procedure returning multiple result sets', async () => {
     adapter.registerProcedure('usp_GetDashboard', {
-      records: [
-        [{ id: 1, name: 'Widget' }],
-        [{ orderId: 50, total: 199.99 }],
-      ],
+      records: [[{ id: 1, name: 'Widget' }], [{ orderId: 50, total: 199.99 }]],
       outputParams: {},
       returnValue: 0,
       rowsAffected: 2,
     });
 
     const builder = new StoredProcedureBuilder(adapter, 'usp_GetDashboard');
-    const result = await builder.executeMultiple<[
-      { id: number; name: string }[],
-      { orderId: number; total: number }[]
-    ]>();
+    const result =
+      await builder.executeMultiple<
+        [{ id: number; name: string }[], { orderId: number; total: number }[]]
+      >();
 
     expect(result.records).toHaveLength(2);
     expect(result.records[0][0].name).toBe('Widget');
@@ -144,7 +143,7 @@ describe('StoredProcedureBuilder', () => {
   });
 
   it('supports dynamic mock handler function for custom logic', async () => {
-    adapter.registerProcedure('usp_Add', (params) => {
+    adapter.registerProcedure('usp_Add', params => {
       const a = Number(params['a'] || 0);
       const b = Number(params['b'] || 0);
       return {

@@ -20,7 +20,7 @@ sqlRouter.get('/raw-query', async (req: Request, res: Response, next: NextFuncti
     // Secure parameterized query with @p0, @p1 placeholders
     const rows = await db.fromSql<{ id: number; name: string; email: string; score: number }>(
       'SELECT id, name, email, score FROM users WHERE score >= @p0 AND deleted_at IS NULL ORDER BY score DESC',
-      [minScore]
+      [minScore],
     );
 
     res.json({
@@ -46,7 +46,7 @@ sqlRouter.post('/raw-execute', async (req: Request, res: Response, next: NextFun
 
     const result = await db.executeSql(
       'UPDATE users SET score = score + @p0 WHERE role = @p1 AND deleted_at IS NULL',
-      [bonus, role]
+      [bonus, role],
     );
 
     res.json({
@@ -102,7 +102,7 @@ sqlRouter.get('/procedure-demo', async (req: Request, res: Response, next: NextF
       .withOutputParam('TotalMatched', SqlType.Int)
       .withReturnValue();
 
-    console.log(procBuilder)
+    console.log(procBuilder);
 
     res.json({
       message: 'Stored Procedure builder initialized with typed parameters.',

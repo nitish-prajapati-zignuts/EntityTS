@@ -167,7 +167,7 @@ describe('Enterprise Banking & Financial Transactions E2E', () => {
       await expect(
         db.ledger.postEntry(b => {
           b.debit('CASH', Money.usd('300.00')).credit('SAVINGS', Money.usd('250.00'));
-        })
+        }),
       ).rejects.toThrow(UnbalancedLedgerException);
     });
   });

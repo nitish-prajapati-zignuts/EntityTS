@@ -16,7 +16,9 @@ export interface AppConfig {
 
 export const config: AppConfig = {
   port: parseInt(process.env.PORT || '3000', 10),
-  dbProvider: (process.env.DB_PROVIDER as 'sqlite' | 'postgres') || (process.env.DATABASE_URL ? 'postgres' : 'sqlite'),
+  dbProvider:
+    (process.env.DB_PROVIDER as 'sqlite' | 'postgres') ||
+    (process.env.DATABASE_URL ? 'postgres' : 'sqlite'),
   sqlitePath: process.env.SQLITE_PATH || path.resolve(__dirname, '../../data/app.db'),
   databaseUrl: process.env.DATABASE_URL,
   logQueries: process.env.LOG_QUERIES !== 'false',

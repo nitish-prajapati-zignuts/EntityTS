@@ -32,9 +32,7 @@ export class BenchmarkDbContext extends DbContext {
   public users = this.set(BenchmarkUser);
 
   public async getUserSummary(minScore: number): Promise<unknown> {
-    return this.procedure('GetUserSummary')
-      .input({ minScore })
-      .execute();
+    return this.procedure('GetUserSummary').input({ minScore }).execute();
   }
 }
 
@@ -42,13 +40,19 @@ export class BenchmarkDbContext extends DbContext {
  * Creates and configures the Execution Benchmark Suite for EntityTS.
  */
 export async function createExecutionBenchmarkSuite(
-  customAdapter?: IDbAdapter
+  customAdapter?: IDbAdapter,
 ): Promise<{ runner: BenchmarkRunner; context: BenchmarkDbContext; cleanup: () => Promise<void> }> {
   let adapter: IDbAdapter;
   let isSqlite = false;
 
   // 1,000 initial benchmark seed records
-  const initialUsers: Array<{ id: number; name: string; role: string; score: number; email: string }> = [];
+  const initialUsers: Array<{
+    id: number;
+    name: string;
+    role: string;
+    score: number;
+    email: string;
+  }> = [];
   for (let i = 1; i <= 1000; i++) {
     initialUsers.push({
       id: i,
@@ -105,7 +109,7 @@ export async function createExecutionBenchmarkSuite(
           { name: 'p2', value: u.role },
           { name: 'p3', value: u.score },
           { name: 'p4', value: u.email },
-        ]
+        ],
       );
     }
   }
@@ -296,9 +300,7 @@ export async function createExecutionBenchmarkSuite(
     name: 'StoredProcedureBuilder Execution',
     category: 'Stored Procedure',
     fn: async () => {
-      await context.procedure(sprocTarget)
-        .input({ minScore: 70 })
-        .execute();
+      await context.procedure(sprocTarget).input({ minScore: 70 }).execute();
     },
   });
 
@@ -328,7 +330,7 @@ export async function createExecutionBenchmarkSuite(
  */
 export async function runExecutionBenchmarks(
   options: BenchmarkOptions = {},
-  adapter?: IDbAdapter
+  adapter?: IDbAdapter,
 ): Promise<BenchmarkResult[]> {
   const { runner, cleanup } = await createExecutionBenchmarkSuite(adapter);
   try {

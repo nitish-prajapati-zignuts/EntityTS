@@ -3,7 +3,7 @@ import { ModelMetadataRegistry, EntityLifecycleHooks } from '../model/EntityMeta
 function registerLifecycleHook(
   eventName: keyof EntityLifecycleHooks,
   target: any,
-  propertyKey: string | symbol
+  propertyKey: string | symbol,
 ): void {
   const constructor = typeof target === 'function' ? target : target.constructor;
   const metadata = ModelMetadataRegistry.getInstance().getOrCreate(constructor);

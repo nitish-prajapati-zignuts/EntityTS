@@ -58,9 +58,7 @@ class AuditTestContext extends DbContext {
           { id: 1, owner: 'Alice', balance: 1000 },
           { id: 2, owner: 'Bob', balance: 2500 },
         ],
-        invoices: [
-          { id: 1, amount: 500 },
-        ],
+        invoices: [{ id: 1, amount: 500 }],
         _audit_log: [],
       },
     });
@@ -116,7 +114,7 @@ describe('Audit Logging (@Auditable)', () => {
         42,
         { id: 42, owner: 'Charlie', balance: 300 },
         undefined,
-        'admin'
+        'admin',
       );
       expect(entry.operation).toBe('INSERT');
       expect(entry.entity_key).toBe('42');
@@ -133,7 +131,7 @@ describe('Audit Logging (@Auditable)', () => {
         1,
         { id: 1, owner: 'Alice', balance: 2000 },
         { id: 1, owner: 'Alice', balance: 1000 },
-        'admin'
+        'admin',
       );
       expect(entry.operation).toBe('UPDATE');
       expect(entry.old_values).toContain('1000');
@@ -147,7 +145,7 @@ describe('Audit Logging (@Auditable)', () => {
         2,
         undefined,
         { id: 2, owner: 'Bob', balance: 2500 },
-        'admin'
+        'admin',
       );
       expect(entry.operation).toBe('DELETE');
       expect(entry.old_values).toContain('Bob');
@@ -223,7 +221,12 @@ describe('Audit Logging (@Auditable)', () => {
       };
 
       const entry = AuditEngine.buildEntry(
-        'INSERT', 'accounts', 1, { id: 1, owner: 'Alice' }, undefined, 'admin'
+        'INSERT',
+        'accounts',
+        1,
+        { id: 1, owner: 'Alice' },
+        undefined,
+        'admin',
       );
       await AuditEngine.write(entry, mockAdapter, '_audit_log');
 

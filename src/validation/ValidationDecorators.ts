@@ -77,7 +77,10 @@ export function Length(min: number, max?: number, options?: ValidationOptions): 
       if (max !== undefined && val.length > max) return false;
       return true;
     },
-    defaultMessage: max !== undefined ? `length must be between ${min} and ${max}` : `length must be at least ${min}`,
+    defaultMessage:
+      max !== undefined
+        ? `length must be between ${min} and ${max}`
+        : `length must be at least ${min}`,
     customMessage: resolveMessage(options),
   });
 }
@@ -170,7 +173,7 @@ export function IsUrl(options?: ValidationOptions): PropertyDecorator {
  */
 export function CustomValidator(
   validatorFn: (value: any, entity: any) => boolean | string,
-  options?: ValidationOptions
+  options?: ValidationOptions,
 ): PropertyDecorator {
   return registerDecorator({
     type: 'custom',

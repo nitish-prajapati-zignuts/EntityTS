@@ -12,7 +12,7 @@ export class LazyRelation<T = any> {
   constructor(
     private readonly parentEntity: any,
     private readonly relationMeta: RelationMetadata,
-    private readonly dbSet: DbSet<any>
+    private readonly dbSet: DbSet<any>,
   ) {}
 
   /**
@@ -35,13 +35,9 @@ export class LazyRelation<T = any> {
 
     let result: any;
     if (rel.type === 'hasMany') {
-      result = await childSet
-        .where((clause: any) => clause.eq(rel.foreignKey, parentId))
-        .toList();
+      result = await childSet.where((clause: any) => clause.eq(rel.foreignKey, parentId)).toList();
     } else if (rel.type === 'hasOne') {
-      result = await childSet
-        .where((clause: any) => clause.eq(rel.foreignKey, parentId))
-        .first();
+      result = await childSet.where((clause: any) => clause.eq(rel.foreignKey, parentId)).first();
     } else if (rel.type === 'belongsTo') {
       const fkValue = this.parentEntity[rel.foreignKey];
       const targetMeta = (childSet as any).metadata;

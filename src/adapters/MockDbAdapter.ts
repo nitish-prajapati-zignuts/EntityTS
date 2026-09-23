@@ -66,7 +66,10 @@ export class MockDbAdapter implements IDbAdapter {
   }
 
   public registerTable(name: string, data: Record<string, unknown>[]): void {
-    this.tables.set(name.toLowerCase(), data.map(r => ({ ...r })));
+    this.tables.set(
+      name.toLowerCase(),
+      data.map(r => ({ ...r })),
+    );
   }
 
   public getTableData(name: string): Record<string, unknown>[] {
@@ -84,11 +87,14 @@ export class MockDbAdapter implements IDbAdapter {
   public async executeQuery<T = unknown>(
     sql: string,
     params?: AdapterParam[],
-    _transaction?: DbTransaction
+    _transaction?: DbTransaction,
   ): Promise<T[]> {
     this.executedQueries.push({ sql, params });
 
-    if (/^(INSERT|MERGE)\b/i.test(sql) && (/RETURNING/i.test(sql) || /OUTPUT\s+INSERTED/i.test(sql))) {
+    if (
+      /^(INSERT|MERGE)\b/i.test(sql) &&
+      (/RETURNING/i.test(sql) || /OUTPUT\s+INSERTED/i.test(sql))
+    ) {
       const res = await this.executeNonQuery(sql, params, _transaction);
       // Remove duplicate recording caused by internal call
       this.executedQueries.pop();
@@ -120,7 +126,7 @@ export class MockDbAdapter implements IDbAdapter {
   public async executeNonQuery(
     sql: string,
     params?: AdapterParam[],
-    _transaction?: DbTransaction
+    _transaction?: DbTransaction,
   ): Promise<{ rowsAffected: number; insertId?: unknown }> {
     this.executedQueries.push({ sql, params });
 
@@ -150,14 +156,16 @@ export class MockDbAdapter implements IDbAdapter {
         let existingRow: Record<string, unknown> | undefined;
         if (onMatch) {
           const onExpr = onMatch[1];
-          const conds = Array.from(onExpr.matchAll(/target\.([`"[\]\w.]+)\s*=\s*source\.([`"[\]\w.]+)/gi));
+          const conds = Array.from(
+            onExpr.matchAll(/target\.([`"[\]\w.]+)\s*=\s*source\.([`"[\]\w.]+)/gi),
+          );
           if (conds.length > 0) {
             existingRow = rows.find(r =>
               conds.every(cond => {
                 const targetCol = cond[1].replace(/[`"[\]]/g, '');
                 const sourceCol = cond[2].replace(/[`"[\]]/g, '');
                 return r[targetCol] !== undefined && r[targetCol] === rowObj[sourceCol];
-              })
+              }),
             );
           }
         }
@@ -209,15 +217,22 @@ export class MockDbAdapter implements IDbAdapter {
             // Check conflict for upsert
             let existingRow: Record<string, unknown> | undefined;
             if (onConflictMatch) {
-              const conflictCols = onConflictMatch[1].split(',').map(c => c.replace(/[`"[\]\s]/g, ''));
+              const conflictCols = onConflictMatch[1]
+                .split(',')
+                .map(c => c.replace(/[`"[\]\s]/g, ''));
               existingRow = rows.find(row =>
-                conflictCols.every(c => row[c] !== undefined && row[c] === rowObj[c])
+                conflictCols.every(c => row[c] !== undefined && row[c] === rowObj[c]),
               );
             } else if (onDuplicateKey) {
-              const candidateCols = colNames.filter(c => c === 'id' || c === 'email' || c.endsWith('_id') || c === 'sku');
-              existingRow = candidateCols.length > 0
-                ? rows.find(row => candidateCols.some(c => row[c] !== undefined && row[c] === rowObj[c]))
-                : undefined;
+              const candidateCols = colNames.filter(
+                c => c === 'id' || c === 'email' || c.endsWith('_id') || c === 'sku',
+              );
+              existingRow =
+                candidateCols.length > 0
+                  ? rows.find(row =>
+                      candidateCols.some(c => row[c] !== undefined && row[c] === rowObj[c]),
+                    )
+                  : undefined;
             }
 
             if (existingRow) {
@@ -298,7 +313,7 @@ export class MockDbAdapter implements IDbAdapter {
   public async executeScalar<T = unknown>(
     sql: string,
     params?: AdapterParam[],
-    transaction?: DbTransaction
+    transaction?: DbTransaction,
   ): Promise<T> {
     if (/COUNT\s*\(/i.test(sql)) {
       const match = sql.match(/FROM\s+([`"[\]\w.]+)/i);
@@ -358,7 +373,7 @@ export class MockDbAdapter implements IDbAdapter {
   private filterRows(
     rows: Record<string, unknown>[],
     sql: string,
-    params?: AdapterParam[]
+    params?: AdapterParam[],
   ): Record<string, unknown>[] {
     let result = rows;
 
@@ -396,11 +411,14 @@ export class MockDbAdapter implements IDbAdapter {
       let wherePart = sql.substring(whereIdx);
 
       // Check multi-column LIKE disjunctions: (col1 LIKE ph OR col2 LIKE ph ...)
-      const likeDisjunctionRegex = /\(([`"[\]\w]+\s+LIKE\s+(@p\d+|\?|\$\d+)(?:\s+OR\s+[`"[\]\w]+\s+LIKE\s+(@p\d+|\?|\$\d+))+)\)/gi;
+      const likeDisjunctionRegex =
+        /\(([`"[\]\w]+\s+LIKE\s+(@p\d+|\?|\$\d+)(?:\s+OR\s+[`"[\]\w]+\s+LIKE\s+(@p\d+|\?|\$\d+))+)\)/gi;
       const likeGroups = Array.from(wherePart.matchAll(likeDisjunctionRegex));
       for (const lg of likeGroups) {
         const groupSql = lg[1];
-        const arms = Array.from(groupSql.matchAll(/[`"[\]]?(\w+)[`"[\]]?\s+LIKE\s+(@p\d+|\?|\$\d+)/gi));
+        const arms = Array.from(
+          groupSql.matchAll(/[`"[\]]?(\w+)[`"[\]]?\s+LIKE\s+(@p\d+|\?|\$\d+)/gi),
+        );
         result = result.filter(r => {
           return arms.some(arm => {
             const col = arm[1];
@@ -428,7 +446,9 @@ export class MockDbAdapter implements IDbAdapter {
       // Equality (=) matches both quoted and unquoted identifiers
       // Inequalities (<, >, <=, >=, !=, <>) match quoted identifiers to avoid breaking unquoted raw SQL tests
       const compMatches = Array.from(
-        wherePart.matchAll(/(?:WHERE\s+|AND\s+|OR\s+|,\s*|\(\s*)(?:[`"[\]](\w+)[`"[\]]\s*(=|!=|<>|>=|<=|>|<|LIKE)|[`"[\]]?(\w+)[`"[\]]?\s*(=))\s*(@p\d+|\?|\$\d+)/gi)
+        wherePart.matchAll(
+          /(?:WHERE\s+|AND\s+|OR\s+|,\s*|\(\s*)(?:[`"[\]](\w+)[`"[\]]\s*(=|!=|<>|>=|<=|>|<|LIKE)|[`"[\]]?(\w+)[`"[\]]?\s*(=))\s*(@p\d+|\?|\$\d+)/gi,
+        ),
       );
       let wherePlaceholderIdx = 0;
       for (const m of compMatches) {
@@ -460,7 +480,9 @@ export class MockDbAdapter implements IDbAdapter {
 
       // 2. Full-text search matching (Postgres, MySQL, MSSQL, SQLite)
       const tsMatches = Array.from(
-        wherePart.matchAll(/(?:to_tsvector\s*\([^)]*\)\s*@@\s*\w+_to_tsquery\s*\([^,]+,\s*(@p\d+|\?|\$\d+)\)|MATCH\s*\(([^)]+)\)\s*AGAINST\s*\(\s*(@p\d+|\?|\$\d+)|CONTAINS\s*\([^,]+,\s*(@p\d+|\?|\$\d+)\))/gi)
+        wherePart.matchAll(
+          /(?:to_tsvector\s*\([^)]*\)\s*@@\s*\w+_to_tsquery\s*\([^,]+,\s*(@p\d+|\?|\$\d+)\)|MATCH\s*\(([^)]+)\)\s*AGAINST\s*\(\s*(@p\d+|\?|\$\d+)|CONTAINS\s*\([^,]+,\s*(@p\d+|\?|\$\d+)\))/gi,
+        ),
       );
       for (const tm of tsMatches) {
         const placeholder = tm[1] || tm[3] || tm[4];
@@ -478,7 +500,9 @@ export class MockDbAdapter implements IDbAdapter {
 
       // 3. JSON path extraction (SQLite json_extract, MySQL JSON_UNQUOTE)
       const jsonExtractMatches = Array.from(
-        wherePart.matchAll(/(?:json_extract|JSON_UNQUOTE\s*\(\s*JSON_EXTRACT)\s*\(\s*[`"[\]]?(\w+)[`"[\]]?\s*,\s*'([^']+)'\s*\)\s*(=|!=|<>|>|>=|<|<=|LIKE)\s*(@p\d+|\?|\$\d+)/gi)
+        wherePart.matchAll(
+          /(?:json_extract|JSON_UNQUOTE\s*\(\s*JSON_EXTRACT)\s*\(\s*[`"[\]]?(\w+)[`"[\]]?\s*,\s*'([^']+)'\s*\)\s*(=|!=|<>|>|>=|<|<=|LIKE)\s*(@p\d+|\?|\$\d+)/gi,
+        ),
       );
       for (const jm of jsonExtractMatches) {
         const col = jm[1];
@@ -493,7 +517,9 @@ export class MockDbAdapter implements IDbAdapter {
             const colKey = Object.keys(r).find(k => k.toLowerCase() === col.toLowerCase());
             let current: any = colKey ? r[colKey] : undefined;
             if (typeof current === 'string') {
-              try { current = JSON.parse(current); } catch {}
+              try {
+                current = JSON.parse(current);
+              } catch {}
             }
             for (const part of pathParts) {
               if (current === null || current === undefined) break;
@@ -516,7 +542,9 @@ export class MockDbAdapter implements IDbAdapter {
 
       // 4. PostgreSQL style JSON arrows: col->'a'->>'b' = ph
       const pgMatches = Array.from(
-        wherePart.matchAll(/[`"[\]]?(\w+)[`"[\]]?(->(?:'[^']+'|\d+))*->>(?:'([^']+)'|(\d+))\s*(=|!=|<>|>|>=|<|<=|LIKE)\s*(@p\d+|\?|\$\d+)/gi)
+        wherePart.matchAll(
+          /[`"[\]]?(\w+)[`"[\]]?(->(?:'[^']+'|\d+))*->>(?:'([^']+)'|(\d+))\s*(=|!=|<>|>|>=|<|<=|LIKE)\s*(@p\d+|\?|\$\d+)/gi,
+        ),
       );
       for (const pm of pgMatches) {
         const fullExpr = pm[0];
@@ -525,7 +553,9 @@ export class MockDbAdapter implements IDbAdapter {
         const op = pm[5];
         const placeholder = pm[6];
 
-        const innerArrows = Array.from(fullExpr.matchAll(/->(?:'([^']+)'|(\d+))/g)).map(m => m[1] || m[2]);
+        const innerArrows = Array.from(fullExpr.matchAll(/->(?:'([^']+)'|(\d+))/g)).map(
+          m => m[1] || m[2],
+        );
         const allParts = [...innerArrows, lastPart];
 
         const paramVal = getParamVal(placeholder, 0);
@@ -535,7 +565,9 @@ export class MockDbAdapter implements IDbAdapter {
             const colKey = Object.keys(r).find(k => k.toLowerCase() === col.toLowerCase());
             let current: any = colKey ? r[colKey] : undefined;
             if (typeof current === 'string') {
-              try { current = JSON.parse(current); } catch {}
+              try {
+                current = JSON.parse(current);
+              } catch {}
             }
             for (const part of allParts) {
               if (current === null || current === undefined) break;
@@ -563,7 +595,10 @@ export class MockDbAdapter implements IDbAdapter {
       const orderDefs = orderMatch[1].split(',').map(part => {
         const trimmed = part.trim();
         const desc = /DESC$/i.test(trimmed);
-        const col = trimmed.replace(/\s+(ASC|DESC)$/i, '').replace(/[`"[\]]/g, '').trim();
+        const col = trimmed
+          .replace(/\s+(ASC|DESC)$/i, '')
+          .replace(/[`"[\]]/g, '')
+          .trim();
         return { col, desc };
       });
       result = [...result].sort((a, b) => {
@@ -613,7 +648,7 @@ export class MockDbAdapter implements IDbAdapter {
     name: string,
     params: AdapterParam[],
     _timeoutMs?: number,
-    _transaction?: DbTransaction
+    _transaction?: DbTransaction,
   ): Promise<StoredProcedureResult<T[]>> {
     this.executedProcedures.push({ name, params });
 
@@ -654,7 +689,7 @@ export class MockDbAdapter implements IDbAdapter {
 
     throw new ProcedureNotFoundException(
       `Stored procedure '${name}' does not exist in the database.`,
-      name
+      name,
     );
   }
 
@@ -662,7 +697,7 @@ export class MockDbAdapter implements IDbAdapter {
     name: string,
     params: AdapterParam[],
     timeoutMs?: number,
-    transaction?: DbTransaction
+    transaction?: DbTransaction,
   ): Promise<StoredProcedureResult<T>> {
     const single = await this.executeProcedure<any>(name, params, timeoutMs, transaction);
     const records = (Array.isArray(single.records) && Array.isArray(single.records[0])
@@ -677,7 +712,9 @@ export class MockDbAdapter implements IDbAdapter {
     };
   }
 
-  public async beginTransaction(isolationLevel = IsolationLevel.ReadCommitted): Promise<DbTransaction> {
+  public async beginTransaction(
+    isolationLevel = IsolationLevel.ReadCommitted,
+  ): Promise<DbTransaction> {
     const driver = {
       commit: async () => {},
       rollback: async () => {},

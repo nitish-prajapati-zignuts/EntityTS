@@ -62,7 +62,7 @@ describe('SchemaIntrospector (SQLite)', () => {
       }
       if (sql.includes('PRAGMA table_info')) {
         return [
-          { cid: 0, name: 'id',   type: 'INTEGER', notnull: 1, dflt_value: null, pk: 1 },
+          { cid: 0, name: 'id', type: 'INTEGER', notnull: 1, dflt_value: null, pk: 1 },
           { cid: 1, name: 'name', type: 'VARCHAR(100)', notnull: 1, dflt_value: null, pk: 0 },
         ] as T[];
       }
@@ -90,7 +90,10 @@ describe('SchemaIntrospector (SQLite)', () => {
       if (sql.includes('sqlite_master')) {
         return [{ name: 'users' }, { name: 'orders' }, { name: 'products' }] as T[];
       }
-      if (sql.includes('PRAGMA table_info')) return [{ cid: 0, name: 'id', type: 'INTEGER', notnull: 1, dflt_value: null, pk: 1 }] as T[];
+      if (sql.includes('PRAGMA table_info'))
+        return [
+          { cid: 0, name: 'id', type: 'INTEGER', notnull: 1, dflt_value: null, pk: 1 },
+        ] as T[];
       if (sql.includes('PRAGMA foreign_key_list')) return [] as T[];
       return [] as T[];
     };
@@ -112,7 +115,7 @@ describe('SchemaIntrospector (SQLite)', () => {
       }
       if (sql.includes('PRAGMA table_info')) {
         return [
-          { cid: 0, name: 'id',      type: 'INTEGER', notnull: 1, dflt_value: null, pk: 1 },
+          { cid: 0, name: 'id', type: 'INTEGER', notnull: 1, dflt_value: null, pk: 1 },
           { cid: 1, name: 'user_id', type: 'INTEGER', notnull: 1, dflt_value: null, pk: 0 },
         ] as T[];
       }
@@ -139,11 +142,11 @@ describe('EntityScaffolder.previewEntity', () => {
   test('generates @Entity, @Table, @Column decorators', () => {
     const table = makeIntrospectedTable();
     const src = scaffolder.previewEntity(table, [table]);
-    expect(src).toContain("@Entity()");
+    expect(src).toContain('@Entity()');
     expect(src).toContain("@Table('users')");
-    expect(src).toContain("@Column(");
-    expect(src).toContain("@PrimaryKey(");
-    expect(src).toContain("export class User");
+    expect(src).toContain('@Column(');
+    expect(src).toContain('@PrimaryKey(');
+    expect(src).toContain('export class User');
   });
 
   test('marks nullable column as optional property', () => {
@@ -165,11 +168,30 @@ describe('EntityScaffolder.previewEntity', () => {
     const ordersTable: IntrospectedTable = {
       name: 'orders',
       columns: [
-        { name: 'id', dataType: 'integer', isNullable: false, isPrimary: true, isAutoIncrement: true },
-        { name: 'user_id', dataType: 'integer', isNullable: false, isPrimary: false, isAutoIncrement: false },
+        {
+          name: 'id',
+          dataType: 'integer',
+          isNullable: false,
+          isPrimary: true,
+          isAutoIncrement: true,
+        },
+        {
+          name: 'user_id',
+          dataType: 'integer',
+          isNullable: false,
+          isPrimary: false,
+          isAutoIncrement: false,
+        },
       ],
       primaryKeys: ['id'],
-      foreignKeys: [{ columnName: 'user_id', referencedTable: 'users', referencedColumn: 'id', constraintName: 'fk_orders_user_id' }],
+      foreignKeys: [
+        {
+          columnName: 'user_id',
+          referencedTable: 'users',
+          referencedColumn: 'id',
+          constraintName: 'fk_orders_user_id',
+        },
+      ],
     };
 
     const src = scaffolder.previewEntity(usersTable, [usersTable, ordersTable]);
@@ -182,11 +204,30 @@ describe('EntityScaffolder.previewEntity', () => {
     const ordersTable: IntrospectedTable = {
       name: 'orders',
       columns: [
-        { name: 'id', dataType: 'integer', isNullable: false, isPrimary: true, isAutoIncrement: true },
-        { name: 'user_id', dataType: 'integer', isNullable: false, isPrimary: false, isAutoIncrement: false },
+        {
+          name: 'id',
+          dataType: 'integer',
+          isNullable: false,
+          isPrimary: true,
+          isAutoIncrement: true,
+        },
+        {
+          name: 'user_id',
+          dataType: 'integer',
+          isNullable: false,
+          isPrimary: false,
+          isAutoIncrement: false,
+        },
       ],
       primaryKeys: ['id'],
-      foreignKeys: [{ columnName: 'user_id', referencedTable: 'users', referencedColumn: 'id', constraintName: 'fk_orders_user_id' }],
+      foreignKeys: [
+        {
+          columnName: 'user_id',
+          referencedTable: 'users',
+          referencedColumn: 'id',
+          constraintName: 'fk_orders_user_id',
+        },
+      ],
     };
 
     const src = scaffolder.previewEntity(ordersTable, [usersTable, ordersTable]);

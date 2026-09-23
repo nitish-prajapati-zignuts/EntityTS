@@ -1,7 +1,7 @@
 import { DbContext } from '../../context/DbContext';
 
 export function getDbContextToken<TContext extends DbContext>(
-  contextClass: new (...args: any[]) => TContext
+  contextClass: new (...args: any[]) => TContext,
 ): string {
   return `${contextClass.name}_TOKEN`;
 }
@@ -10,7 +10,7 @@ export function getDbContextToken<TContext extends DbContext>(
  * Parameter decorator for injecting DbContext into NestJS constructors.
  */
 export function InjectDbContext<TContext extends DbContext>(
-  contextClass: new (...args: any[]) => TContext
+  contextClass: new (...args: any[]) => TContext,
 ) {
   return (target: object, propertyKey: string | symbol | undefined, parameterIndex: number) => {
     try {

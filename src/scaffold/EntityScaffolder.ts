@@ -1,6 +1,10 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { IntrospectedTable, IntrospectedColumn, IntrospectedForeignKey } from './SchemaIntrospector';
+import {
+  IntrospectedTable,
+  IntrospectedColumn,
+  IntrospectedForeignKey,
+} from './SchemaIntrospector';
 
 export interface EntityScaffolderOptions {
   /** Output directory for generated files (default: './src/entities') */
@@ -18,8 +22,7 @@ function mapDbTypeToTs(dbType: string): { tsType: string; sqlTypeImport?: string
   const t = dbType.toLowerCase();
   if (['int', 'integer', 'smallint', 'tinyint', 'mediumint'].some(k => t.startsWith(k)))
     return { tsType: 'number', sqlTypeImport: 'SqlType.Int' };
-  if (t.startsWith('bigint'))
-    return { tsType: 'number', sqlTypeImport: 'SqlType.BigInt' };
+  if (t.startsWith('bigint')) return { tsType: 'number', sqlTypeImport: 'SqlType.BigInt' };
   if (t.startsWith('float') || t.startsWith('double') || t.startsWith('real'))
     return { tsType: 'number', sqlTypeImport: 'SqlType.Float' };
   if (t.startsWith('decimal') || t.startsWith('numeric') || t.startsWith('money'))
@@ -34,10 +37,8 @@ function mapDbTypeToTs(dbType: string): { tsType: string; sqlTypeImport?: string
     return { tsType: 'boolean', sqlTypeImport: 'SqlType.Bit' };
   if (t.startsWith('timestamp') || t.startsWith('datetime'))
     return { tsType: 'Date', sqlTypeImport: 'SqlType.DateTime2' };
-  if (t === 'date')
-    return { tsType: 'Date', sqlTypeImport: 'SqlType.Date' };
-  if (t === 'time')
-    return { tsType: 'string', sqlTypeImport: 'SqlType.Time' };
+  if (t === 'date') return { tsType: 'Date', sqlTypeImport: 'SqlType.Date' };
+  if (t === 'time') return { tsType: 'string', sqlTypeImport: 'SqlType.Time' };
   if (t === 'uuid' || t === 'uniqueidentifier' || t === 'guid')
     return { tsType: 'string', sqlTypeImport: 'SqlType.UniqueIdentifier' };
   if (t === 'json' || t === 'jsonb')
@@ -60,10 +61,7 @@ function toCamelCase(str: string): string {
   return pascal.charAt(0).toLowerCase() + pascal.slice(1);
 }
 
-function generateEntityFile(
-  table: IntrospectedTable,
-  allTables: IntrospectedTable[]
-): string {
+function generateEntityFile(table: IntrospectedTable, allTables: IntrospectedTable[]): string {
   const className = toPascalCase(table.name);
   const tableSet = new Set(allTables.map(t => t.name.toLowerCase()));
 
@@ -175,10 +173,7 @@ function generateEntityFile(
   return lines.join('\n');
 }
 
-function generateContextFile(
-  tables: IntrospectedTable[],
-  contextName: string
-): string {
+function generateContextFile(tables: IntrospectedTable[], contextName: string): string {
   const classNames = tables.map(t => toPascalCase(t.name));
   const imports = classNames.map(c => `import { ${c} } from './${c}';`).join('\n');
 

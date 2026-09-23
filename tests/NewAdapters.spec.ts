@@ -62,9 +62,7 @@ describe('Serverless & Edge Adapters (Neon, PlanetScale, Turso, CockroachDB, D1,
         }),
       };
 
-      const options = new DbContextOptionsBuilder()
-        .useD1(mockD1)
-        .build();
+      const options = new DbContextOptionsBuilder().useD1(mockD1).build();
 
       expect(options.provider).toBe('d1');
       expect(options.adapter).toBeInstanceOf(D1Adapter);
@@ -73,7 +71,9 @@ describe('Serverless & Edge Adapters (Neon, PlanetScale, Turso, CockroachDB, D1,
 
     it('configures useSupabase correctly', () => {
       const options = new DbContextOptionsBuilder()
-        .useSupabase('postgresql://postgres.project:secret@aws-0-us-east-1.pooler.supabase.com:6543/postgres')
+        .useSupabase(
+          'postgresql://postgres.project:secret@aws-0-us-east-1.pooler.supabase.com:6543/postgres',
+        )
         .build();
 
       expect(options.provider).toBe('supabase');
@@ -149,17 +149,16 @@ describe('Serverless & Edge Adapters (Neon, PlanetScale, Turso, CockroachDB, D1,
 
       const rows = await adapter.executeQuery<{ id: number; name: string }>(
         'SELECT * FROM users WHERE id = ?',
-        [{ name: 'p0', value: 1 }]
+        [{ name: 'p0', value: 1 }],
       );
 
       expect(mockD1.prepare).toHaveBeenCalledWith('SELECT * FROM users WHERE id = ?');
       expect(mockStmt.bind).toHaveBeenCalledWith(1);
       expect(rows).toEqual([{ id: 1, name: 'Alice' }]);
 
-      const nonQuery = await adapter.executeNonQuery(
-        'INSERT INTO users (name) VALUES (?)',
-        [{ name: 'p0', value: 'Bob' }]
-      );
+      const nonQuery = await adapter.executeNonQuery('INSERT INTO users (name) VALUES (?)', [
+        { name: 'p0', value: 'Bob' },
+      ]);
 
       expect(nonQuery.rowsAffected).toBe(1);
       expect(nonQuery.insertId).toBe(42);
@@ -207,7 +206,9 @@ describe('Serverless & Edge Adapters (Neon, PlanetScale, Turso, CockroachDB, D1,
 
       const sql = mb.getSqlStatements(ps);
       expect(sql[0]).toContain('`id` INT AUTO_INCREMENT PRIMARY KEY');
-      expect(sql[1]).toContain('ALTER TABLE `products` CHANGE COLUMN `name` `product_name` VARCHAR(150);');
+      expect(sql[1]).toContain(
+        'ALTER TABLE `products` CHANGE COLUMN `name` `product_name` VARCHAR(150);',
+      );
     });
 
     it('MigrationBuilder generates SQLite dialect DDL for Turso and D1', () => {
@@ -230,26 +231,52 @@ describe('Serverless & Edge Adapters (Neon, PlanetScale, Turso, CockroachDB, D1,
     });
 
     it('BulkInsertBuilder handles ignoreDuplicates across all dialect families', async () => {
-      const dummyTx = { commit: jest.fn(), rollback: jest.fn(), isCompleted: false, getDriver: () => ({}) } as any;
+      const dummyTx = {
+        commit: jest.fn(),
+        rollback: jest.fn(),
+        isCompleted: false,
+        getDriver: () => ({}),
+      } as any;
 
       const neon = new NeonAdapter('postgresql://localhost/db');
       neon.executeNonQuery = jest.fn().mockResolvedValue({ rowsAffected: 2 });
 
-      const bibNeon = new BulkInsertBuilder<{ id: number; name: string }>(neon, 'users', undefined, dummyTx);
+      const bibNeon = new BulkInsertBuilder<{ id: number; name: string }>(
+        neon,
+        'users',
+        undefined,
+        dummyTx,
+      );
       await bibNeon.execute([{ id: 1, name: 'Alice' }], { ignoreDuplicates: true });
-      expect((neon.executeNonQuery as jest.Mock).mock.calls[0][0]).toContain('ON CONFLICT DO NOTHING');
+      expect((neon.executeNonQuery as jest.Mock).mock.calls[0][0]).toContain(
+        'ON CONFLICT DO NOTHING',
+      );
 
       const ps = new PlanetScaleAdapter('mysql://localhost/db');
       ps.executeNonQuery = jest.fn().mockResolvedValue({ rowsAffected: 1 });
-      const bibPs = new BulkInsertBuilder<{ id: number; name: string }>(ps, 'users', undefined, dummyTx);
+      const bibPs = new BulkInsertBuilder<{ id: number; name: string }>(
+        ps,
+        'users',
+        undefined,
+        dummyTx,
+      );
       await bibPs.execute([{ id: 1, name: 'Bob' }], { ignoreDuplicates: true });
-      expect((ps.executeNonQuery as jest.Mock).mock.calls[0][0]).toContain('INSERT IGNORE INTO `users`');
+      expect((ps.executeNonQuery as jest.Mock).mock.calls[0][0]).toContain(
+        'INSERT IGNORE INTO `users`',
+      );
 
       const turso = new TursoAdapter({ url: 'libsql://localhost' });
       turso.executeNonQuery = jest.fn().mockResolvedValue({ rowsAffected: 1 });
-      const bibTurso = new BulkInsertBuilder<{ id: number; name: string }>(turso, 'users', undefined, dummyTx);
+      const bibTurso = new BulkInsertBuilder<{ id: number; name: string }>(
+        turso,
+        'users',
+        undefined,
+        dummyTx,
+      );
       await bibTurso.execute([{ id: 1, name: 'Charlie' }], { ignoreDuplicates: true });
-      expect((turso.executeNonQuery as jest.Mock).mock.calls[0][0]).toContain('INSERT OR IGNORE INTO "users"');
+      expect((turso.executeNonQuery as jest.Mock).mock.calls[0][0]).toContain(
+        'INSERT OR IGNORE INTO "users"',
+      );
     });
   });
 });

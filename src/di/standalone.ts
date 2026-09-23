@@ -4,7 +4,7 @@ import { DbContextOptionsBuilder } from '../context/DbContextOptionsBuilder';
 
 export function createDbContext<TContext extends DbContext>(
   contextClass: new (options?: DbContextOptions) => TContext,
-  configure?: (options: DbContextOptionsBuilder) => void
+  configure?: (options: DbContextOptionsBuilder) => void,
 ): TContext {
   if (configure) {
     const builder = new DbContextOptionsBuilder();

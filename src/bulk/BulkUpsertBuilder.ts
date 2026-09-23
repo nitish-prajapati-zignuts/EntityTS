@@ -15,7 +15,7 @@ export class BulkUpsertBuilder<T extends object> {
     private readonly tableName: string,
     private readonly metadata?: EntityMetadata,
     private readonly transaction?: DbTransaction,
-    private readonly context?: any
+    private readonly context?: any,
   ) {}
 
   public async execute(entities: Partial<T>[], options: BulkUpsertOptions<T>): Promise<number> {
@@ -35,7 +35,11 @@ export class BulkUpsertBuilder<T extends object> {
             qb.getWhereClause().eq(colName, (entity as any)[kStr]);
           }
           const { sql: checkSql, params: checkParams } = qb.toCountSql();
-          const count = await this.adapter.executeScalar<number | string>(checkSql, checkParams, tx);
+          const count = await this.adapter.executeScalar<number | string>(
+            checkSql,
+            checkParams,
+            tx,
+          );
 
           if (Number(count) > 0) {
             // Update
@@ -95,7 +99,8 @@ export class BulkUpsertBuilder<T extends object> {
               toInsert[this.metadata.versionProperty.propertyName] === undefined
             ) {
               const vp = this.metadata.versionProperty;
-              toInsert[vp.propertyName] = vp.strategy === 'number' ? 1 : vp.strategy === 'timestamp' ? now : '1';
+              toInsert[vp.propertyName] =
+                vp.strategy === 'number' ? 1 : vp.strategy === 'timestamp' ? now : '1';
             }
 
             const insertRow: Record<string, unknown> = {};

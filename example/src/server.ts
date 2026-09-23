@@ -8,7 +8,9 @@ async function bootstrap() {
   console.log('──────────────────────────────────────────────────────────────────');
 
   // 1. Initialize Database Schema & Seed Data
-  console.log(`[BOOT] Initializing database provider: \x1b[35m${config.dbProvider.toUpperCase()}\x1b[0m`);
+  console.log(
+    `[BOOT] Initializing database provider: \x1b[35m${config.dbProvider.toUpperCase()}\x1b[0m`,
+  );
   const initDb = new AppDbContext();
 
   try {

@@ -9,8 +9,8 @@ export class InterceptingDbAdapter implements IDbAdapter {
   constructor(
     private readonly inner: IDbAdapter,
     private readonly hooks?: QueryHooks,
-    private readonly logging?: LogMode
-  ) { }
+    private readonly logging?: LogMode,
+  ) {}
 
   public get provider(): DbProvider {
     return this.inner.provider;
@@ -47,7 +47,7 @@ export class InterceptingDbAdapter implements IDbAdapter {
   public async executeQuery<T = unknown>(
     sql: string,
     params?: AdapterParam[],
-    transaction?: DbTransaction
+    transaction?: DbTransaction,
   ): Promise<T[]> {
     return this.intercept(sql, params, () => this.inner.executeQuery<T>(sql, params, transaction));
   }
@@ -55,7 +55,7 @@ export class InterceptingDbAdapter implements IDbAdapter {
   public async executeNonQuery(
     sql: string,
     params?: AdapterParam[],
-    transaction?: DbTransaction
+    transaction?: DbTransaction,
   ): Promise<{ rowsAffected: number; insertId?: unknown }> {
     return this.intercept(sql, params, () => this.inner.executeNonQuery(sql, params, transaction));
   }
@@ -63,7 +63,7 @@ export class InterceptingDbAdapter implements IDbAdapter {
   public async executeScalar<T = unknown>(
     sql: string,
     params?: AdapterParam[],
-    transaction?: DbTransaction
+    transaction?: DbTransaction,
   ): Promise<T> {
     return this.intercept(sql, params, () => this.inner.executeScalar<T>(sql, params, transaction));
   }
@@ -72,11 +72,11 @@ export class InterceptingDbAdapter implements IDbAdapter {
     name: string,
     params: AdapterParam[],
     timeoutMs?: number,
-    transaction?: DbTransaction
+    transaction?: DbTransaction,
   ): Promise<StoredProcedureResult<T[]>> {
     const pseudoSql = `EXEC ${name}`;
     return this.intercept(pseudoSql, params, () =>
-      this.inner.executeProcedure<T>(name, params, timeoutMs, transaction)
+      this.inner.executeProcedure<T>(name, params, timeoutMs, transaction),
     );
   }
 
@@ -84,18 +84,18 @@ export class InterceptingDbAdapter implements IDbAdapter {
     name: string,
     params: AdapterParam[],
     timeoutMs?: number,
-    transaction?: DbTransaction
+    transaction?: DbTransaction,
   ): Promise<StoredProcedureResult<T>> {
     const pseudoSql = `EXEC ${name}`;
     return this.intercept(pseudoSql, params, () =>
-      this.inner.executeProcedureMultiple<T>(name, params, timeoutMs, transaction)
+      this.inner.executeProcedureMultiple<T>(name, params, timeoutMs, transaction),
     );
   }
 
   private async intercept<R>(
     sql: string,
     params: AdapterParam[] | undefined,
-    action: () => Promise<R>
+    action: () => Promise<R>,
   ): Promise<R> {
     const rawParams = params?.map(p => p.value);
 
@@ -157,15 +157,17 @@ export class InterceptingDbAdapter implements IDbAdapter {
           query: sql,
           params: params ?? [],
           durationMs: ms,
-        })
+        }),
       );
     } else if (this.logging === 'compact') {
       const pStr = params && params.length ? ` ${cGray}-- params: ${paramStr}${cReset}` : '';
-      console.log(`${cCyan}query${cReset} ${cWhite}${sql}${cReset}${pStr} ${cGreen}(${ms}ms)${cReset}`);
+      console.log(
+        `${cCyan}query${cReset} ${cWhite}${sql}${cReset}${pStr} ${cGreen}(${ms}ms)${cReset}`,
+      );
     } else {
       // Default: Prisma-style multi-line structured format
       console.log(
-        `${cCyan}query${cReset} ${cWhite}${sql}${cReset}\n  ${cGray}Duration:${cReset} ${cGreen}${ms}ms${cReset}\n  ${cGray}Params:  ${cReset} ${paramStr}`
+        `${cCyan}query${cReset} ${cWhite}${sql}${cReset}\n  ${cGray}Duration:${cReset} ${cGreen}${ms}ms${cReset}\n  ${cGray}Params:  ${cReset} ${paramStr}`,
       );
     }
   }
@@ -192,11 +194,11 @@ export class InterceptingDbAdapter implements IDbAdapter {
           params: params ?? [],
           error: err?.message,
           durationMs,
-        })
+        }),
       );
     } else {
       console.error(
-        `${cRed}error${cReset} ${cWhite}${sql}${cReset}\n  ${cGray}Params:  ${cReset} ${paramStr}\n  ${cRed}Error:   ${err?.message}${cReset}`
+        `${cRed}error${cReset} ${cWhite}${sql}${cReset}\n  ${cGray}Params:  ${cReset} ${paramStr}\n  ${cRed}Error:   ${err?.message}${cReset}`,
       );
     }
   }

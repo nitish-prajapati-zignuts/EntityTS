@@ -131,8 +131,7 @@ export class PrismaImporter {
     if (enums.length > 0) {
       enumDeclarations = enums
         .map(
-          e =>
-            `export enum ${e.name} {\n${e.values.map(v => `  ${v} = '${v}',`).join('\n')}\n}\n`
+          e => `export enum ${e.name} {\n${e.values.map(v => `  ${v} = '${v}',`).join('\n')}\n}\n`,
         )
         .join('\n');
     }
@@ -200,8 +199,12 @@ export class PrismaImporter {
       contextLines.push(`  public readonly ${propName}!: DbSet<${m.name}>;`);
     }
     contextLines.push('');
-    contextLines.push('  protected override onConfiguring(options: DbContextOptionsBuilder): void {');
-    contextLines.push("    options.usePostgres(process.env.DATABASE_URL || 'postgresql://localhost:5432/mydb');");
+    contextLines.push(
+      '  protected override onConfiguring(options: DbContextOptionsBuilder): void {',
+    );
+    contextLines.push(
+      "    options.usePostgres(process.env.DATABASE_URL || 'postgresql://localhost:5432/mydb');",
+    );
     contextLines.push('  }');
     contextLines.push('}');
 

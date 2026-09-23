@@ -43,7 +43,8 @@ describe('Field-Level Transparent Encryption (AES-256-GCM)', () => {
     });
 
     it('does not re-encrypt already encrypted payloads', () => {
-      const payload = 'enc:v1:0123456789abcdef01234567:0123456789abcdef0123456789abcdef:c29tZXRoaW5n';
+      const payload =
+        'enc:v1:0123456789abcdef01234567:0123456789abcdef0123456789abcdef:c29tZXRoaW5n';
       expect(EncryptionEngine.encrypt(payload)).toBe(payload);
     });
 
@@ -131,7 +132,9 @@ describe('Field-Level Transparent Encryption (AES-256-GCM)', () => {
       const rawRows = (adapter as any).tables.get('patients');
       const stored = rawRows.find((r: any) => r.id === 2);
       expect(stored.medicalNotes.startsWith('enc:v1:')).toBe(true);
-      expect(EncryptionEngine.decrypt(stored.medicalNotes)).toBe('Updated prescription: Amoxicillin');
+      expect(EncryptionEngine.decrypt(stored.medicalNotes)).toBe(
+        'Updated prescription: Amoxicillin',
+      );
     });
   });
 });

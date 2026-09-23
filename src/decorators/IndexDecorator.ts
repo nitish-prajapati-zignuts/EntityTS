@@ -24,15 +24,8 @@ export interface IndexOptions {
  * }
  * ```
  */
-export function Index(
-  columnsOrOptions?: string[] | IndexOptions,
-  options?: IndexOptions
-): any {
-  return (
-    target: Function | Object,
-    propertyKey?: string | symbol,
-    _descriptor?: any
-  ) => {
+export function Index(columnsOrOptions?: string[] | IndexOptions, options?: IndexOptions): any {
+  return (target: Function | Object, propertyKey?: string | symbol, _descriptor?: any) => {
     if (propertyKey !== undefined) {
       // Property decorator usage
       const constructor = (target as any).constructor;

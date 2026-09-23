@@ -3,7 +3,12 @@ import { AdapterParam } from './AdapterParam';
 import { StoredProcedureResult } from '../procedure/StoredProcedureResult';
 import { ParameterDirection } from '../procedure/ParameterDirection';
 import { IsolationLevel, DbTransaction, IDbTransactionDriver } from '../transaction';
-import { ConnectionException, ProcedureException, QueryException, DatabaseErrorTranslator } from '../errors';
+import {
+  ConnectionException,
+  ProcedureException,
+  QueryException,
+  DatabaseErrorTranslator,
+} from '../errors';
 
 export interface MysqlAdapterConfig {
   uri?: string;
@@ -61,7 +66,7 @@ export class MysqlAdapter implements IDbAdapter {
   public async executeQuery<T = unknown>(
     sql: string,
     params?: AdapterParam[],
-    transaction?: DbTransaction
+    transaction?: DbTransaction,
   ): Promise<T[]> {
     await this.connect();
     const conn = transaction ? transaction.getDriver<any>().connection : this.pool;
@@ -78,7 +83,7 @@ export class MysqlAdapter implements IDbAdapter {
   public async executeNonQuery(
     sql: string,
     params?: AdapterParam[],
-    transaction?: DbTransaction
+    transaction?: DbTransaction,
   ): Promise<{ rowsAffected: number; insertId?: unknown }> {
     await this.connect();
     const conn = transaction ? transaction.getDriver<any>().connection : this.pool;
@@ -98,7 +103,7 @@ export class MysqlAdapter implements IDbAdapter {
   public async executeScalar<T = unknown>(
     sql: string,
     params?: AdapterParam[],
-    transaction?: DbTransaction
+    transaction?: DbTransaction,
   ): Promise<T> {
     const rows = await this.executeQuery<Record<string, unknown>>(sql, params, transaction);
     if (!rows || rows.length === 0) return null as unknown as T;
@@ -111,7 +116,7 @@ export class MysqlAdapter implements IDbAdapter {
     name: string,
     params: AdapterParam[],
     _timeoutMs?: number,
-    transaction?: DbTransaction
+    transaction?: DbTransaction,
   ): Promise<StoredProcedureResult<T[]>> {
     await this.connect();
     const conn = transaction ? transaction.getDriver<any>().connection : this.pool;
@@ -185,7 +190,7 @@ export class MysqlAdapter implements IDbAdapter {
     name: string,
     params: AdapterParam[],
     timeoutMs?: number,
-    transaction?: DbTransaction
+    transaction?: DbTransaction,
   ): Promise<StoredProcedureResult<T>> {
     await this.connect();
     const conn = transaction ? transaction.getDriver<any>().connection : this.pool;
@@ -194,7 +199,7 @@ export class MysqlAdapter implements IDbAdapter {
       const callPlaceholders = params.map(() => '?').join(', ');
       const [res] = await conn.query(
         `CALL ${this.escapeIdentifier(name)}(${callPlaceholders})`,
-        params.map(p => p.value)
+        params.map(p => p.value),
       );
 
       const resultSets = Array.isArray(res)
@@ -211,12 +216,14 @@ export class MysqlAdapter implements IDbAdapter {
       throw new ProcedureException(
         `Failed to execute MySQL procedure multiple: ${(err as Error).message}`,
         name,
-        err
+        err,
       );
     }
   }
 
-  public async beginTransaction(isolationLevel = IsolationLevel.ReadCommitted): Promise<DbTransaction> {
+  public async beginTransaction(
+    isolationLevel = IsolationLevel.ReadCommitted,
+  ): Promise<DbTransaction> {
     await this.connect();
     const connection = await this.pool.getConnection();
     await connection.query(`SET TRANSACTION ISOLATION LEVEL ${isolationLevel}`);

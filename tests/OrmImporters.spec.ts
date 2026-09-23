@@ -96,8 +96,10 @@ export class Account {
 
       const translated = TypeormImporter.translateEntity(typeormCode);
 
-      expect(translated).toContain("import { Table, PrimaryKey, Column, Unique, CreatedAt, UpdatedAt, Version, HasMany, BelongsTo } from '@nsp/dbcontext';");
-      expect(translated).not.toContain('from \'typeorm\'');
+      expect(translated).toContain(
+        "import { Table, PrimaryKey, Column, Unique, CreatedAt, UpdatedAt, Version, HasMany, BelongsTo } from '@nsp/dbcontext';",
+      );
+      expect(translated).not.toContain("from 'typeorm'");
       expect(translated).toContain("@Table('accounts')");
       expect(translated).toContain('@PrimaryKey()');
       expect(translated).toContain('@Unique()');

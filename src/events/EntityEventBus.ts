@@ -82,7 +82,9 @@ export class EntityEventBus {
     if (!handler) {
       this._listeners = this._listeners.filter(l => l.pattern !== event);
     } else {
-      this._listeners = this._listeners.filter(l => !(l.pattern === event && l.handler === handler));
+      this._listeners = this._listeners.filter(
+        l => !(l.pattern === event && l.handler === handler),
+      );
     }
     return this;
   }

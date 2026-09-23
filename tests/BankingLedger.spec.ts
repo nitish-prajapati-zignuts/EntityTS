@@ -23,7 +23,7 @@ describe('Double-Entry Banking Ledger', () => {
       ledger.postEntry(b => {
         b.debit('ACC-ASSET-01', Money.usd('100.00'));
         b.credit('ACC-LIABILITY-01', Money.usd('90.00')); // Out of balance by $10
-      })
+      }),
     ).rejects.toThrow(UnbalancedLedgerException);
   });
 
@@ -31,7 +31,7 @@ describe('Double-Entry Banking Ledger', () => {
     await expect(
       ledger.postEntry(b => {
         b.debit('ACC-01', Money.usd('50.00'));
-      })
+      }),
     ).rejects.toThrow(/must contain at least two journal lines/);
   });
 

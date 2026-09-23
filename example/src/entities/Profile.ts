@@ -1,11 +1,4 @@
-import {
-  Entity,
-  Table,
-  PrimaryKey,
-  Column,
-  BelongsTo,
-  SqlType,
-} from '@nsp/dbcontext';
+import { Entity, Table, PrimaryKey, Column, BelongsTo, SqlType } from '@nsp/dbcontext';
 import { User } from './User';
 
 @Entity()

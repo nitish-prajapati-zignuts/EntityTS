@@ -20,7 +20,7 @@ export interface FastifyDbContextOptions<TContext extends DbContext> {
  */
 export async function fastifyDbContext<TContext extends DbContext>(
   fastify: any,
-  opts: FastifyDbContextOptions<TContext> | (new (options?: DbContextOptions) => TContext)
+  opts: FastifyDbContextOptions<TContext> | (new (options?: DbContextOptions) => TContext),
 ): Promise<void> {
   let contextClass: new (options?: DbContextOptions) => TContext;
   let options: DbContextOptions | undefined;

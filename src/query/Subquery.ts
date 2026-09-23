@@ -8,7 +8,10 @@ export interface Subquery<T = any> {
   readonly alias: string;
   readonly tableName: string;
   readonly queryBuilder: QueryBuilder<T>;
-  toSelectSql(params?: AdapterParam[], nextParamIdx?: () => number): { sql: string; params: AdapterParam[] };
+  toSelectSql(
+    params?: AdapterParam[],
+    nextParamIdx?: () => number,
+  ): { sql: string; params: AdapterParam[] };
 }
 
 /**
@@ -63,7 +66,7 @@ export type JoinProxy<T> = {
  */
 export function createJoinProxy<T = any>(
   tableName: string,
-  recordedComparisons: JoinComparison[]
+  recordedComparisons: JoinComparison[],
 ): JoinProxy<T> {
   return new Proxy({} as any, {
     get: (_, propName) => {

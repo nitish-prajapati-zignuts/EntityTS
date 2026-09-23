@@ -77,7 +77,9 @@ export class Money {
 
   private ensureSameCurrency(other: Money): void {
     if (this.currency !== other.currency) {
-      throw new Error(`Currency mismatch in operation: cannot combine ${this.currency} with ${other.currency}`);
+      throw new Error(
+        `Currency mismatch in operation: cannot combine ${this.currency} with ${other.currency}`,
+      );
     }
   }
 
@@ -108,7 +110,10 @@ export class Money {
    * Divides monetary amount with Banker's Rounding (HALF_EVEN by default).
    */
   public divide(divisor: number | string | bigint, mode: RoundingMode = 'HALF_EVEN'): Money {
-    const divBig = typeof divisor === 'bigint' ? divisor * Money.MULTIPLIER : Money.from(divisor, this.currency).units;
+    const divBig =
+      typeof divisor === 'bigint'
+        ? divisor * Money.MULTIPLIER
+        : Money.from(divisor, this.currency).units;
     if (divBig === 0n) {
       throw new Error('Division by zero in Money calculation');
     }
@@ -125,12 +130,12 @@ export class Money {
 
       if (mode === 'HALF_EVEN') {
         // Banker's Rounding: round to nearest even integer on exact half
-        if (absRemainder > halfDivisor || (absRemainder === halfDivisor && (quotient % 2n !== 0n))) {
-          quotient += (numerator > 0n ? 1n : -1n);
+        if (absRemainder > halfDivisor || (absRemainder === halfDivisor && quotient % 2n !== 0n)) {
+          quotient += numerator > 0n ? 1n : -1n;
         }
       } else if (mode === 'HALF_UP') {
         if (absRemainder >= halfDivisor) {
-          quotient += (numerator > 0n ? 1n : -1n);
+          quotient += numerator > 0n ? 1n : -1n;
         }
       } else if (mode === 'CEIL' && numerator > 0n) {
         quotient += 1n;

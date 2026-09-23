@@ -10,7 +10,7 @@ export class TypeormImporter {
     // Replace import statement
     result = result.replace(
       /import\s+\{[^}]*\}\s+from\s+['"]typeorm['"];?/g,
-      `import { Table, PrimaryKey, Column, Unique, CreatedAt, UpdatedAt, Version, HasMany, BelongsTo } from '@nsp/dbcontext';`
+      `import { Table, PrimaryKey, Column, Unique, CreatedAt, UpdatedAt, Version, HasMany, BelongsTo } from '@nsp/dbcontext';`,
     );
 
     // Replace @Entity('tableName') with @Table('tableName')
@@ -30,7 +30,10 @@ export class TypeormImporter {
 
     // Replace relations
     result = result.replace(/@OneToMany\(\s*\(\)\s*=>\s*(\w+)[^)]*\)/g, '@HasMany(() => $1)');
-    result = result.replace(/@ManyToOne\(\s*\(\)\s*=>\s*(\w+)[^)]*\)/g, '@BelongsTo(() => $1, "$1Id")');
+    result = result.replace(
+      /@ManyToOne\(\s*\(\)\s*=>\s*(\w+)[^)]*\)/g,
+      '@BelongsTo(() => $1, "$1Id")',
+    );
 
     // Replace unique column options: @Column({ ..., unique: true }) -> @Unique()\n  @Column()
     result = result.replace(/@Column\(\{[^}]*unique:\s*true[^}]*\}\)/g, '@Unique()\n  @Column()');
@@ -43,7 +46,7 @@ export class TypeormImporter {
    */
   public static importEntities(
     entities: { name: string; content: string }[],
-    contextName = 'AppDbContext'
+    contextName = 'AppDbContext',
   ): ImportResult {
     const entityFiles: GeneratedFile[] = [];
     const modelNames: string[] = [];
@@ -73,8 +76,12 @@ export class TypeormImporter {
       contextLines.push(`  public readonly ${propName}!: DbSet<${name}>;`);
     }
     contextLines.push('');
-    contextLines.push('  protected override onConfiguring(options: DbContextOptionsBuilder): void {');
-    contextLines.push("    options.usePostgres(process.env.DATABASE_URL || 'postgresql://localhost:5432/mydb');");
+    contextLines.push(
+      '  protected override onConfiguring(options: DbContextOptionsBuilder): void {',
+    );
+    contextLines.push(
+      "    options.usePostgres(process.env.DATABASE_URL || 'postgresql://localhost:5432/mydb');",
+    );
     contextLines.push('  }');
     contextLines.push('}');
 

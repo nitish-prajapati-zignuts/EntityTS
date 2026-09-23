@@ -10,7 +10,10 @@ import { CreatedAt } from '../src/decorators/CreatedAt';
 import { UpdatedAt } from '../src/decorators/UpdatedAt';
 import { SqlType } from '../src/procedure/SqlType';
 import { SchemaGenerator } from '../src/codegen/SchemaGenerator';
-import { entityToMigrationBuilder, sqlTypeToColumnType } from '../src/codegen/EntityToMigrationBuilder';
+import {
+  entityToMigrationBuilder,
+  sqlTypeToColumnType,
+} from '../src/codegen/EntityToMigrationBuilder';
 
 // ─── Test entities ────────────────────────────────────────────────────────
 
@@ -209,10 +212,17 @@ describe('SchemaGenerator.diff', () => {
       }
       if (sql.includes('PRAGMA table_info')) {
         return [
-          { name: 'id',            type: 'INTEGER', notnull: 1, dflt_value: null, pk: 1, cid: 0 },
-          { name: 'product_name',  type: 'VARCHAR(150)', notnull: 1, dflt_value: null, pk: 0, cid: 1 },
-          { name: 'price',         type: 'DECIMAL', notnull: 1, dflt_value: null, pk: 0, cid: 2 },
-          { name: 'active',        type: 'BOOLEAN', notnull: 0, dflt_value: null, pk: 0, cid: 3 },
+          { name: 'id', type: 'INTEGER', notnull: 1, dflt_value: null, pk: 1, cid: 0 },
+          {
+            name: 'product_name',
+            type: 'VARCHAR(150)',
+            notnull: 1,
+            dflt_value: null,
+            pk: 0,
+            cid: 1,
+          },
+          { name: 'price', type: 'DECIMAL', notnull: 1, dflt_value: null, pk: 0, cid: 2 },
+          { name: 'active', type: 'BOOLEAN', notnull: 0, dflt_value: null, pk: 0, cid: 3 },
         ] as T[];
       }
       return [] as T[];

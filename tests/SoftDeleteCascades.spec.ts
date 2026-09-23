@@ -77,9 +77,7 @@ function buildCtx() {
             { id: 11, title: 'Post B', userId: 1, deleted_at: null },
             { id: 12, title: 'Post C', userId: 2, deleted_at: null },
           ],
-          sd_categories: [
-            { id: 100, name: 'Tech' },
-          ],
+          sd_categories: [{ id: 100, name: 'Tech' }],
         },
       });
     }
@@ -95,7 +93,6 @@ function buildCtx() {
 // ─── Tests ───────────────────────────────────────────────────────────────────
 
 describe('Soft Delete Cascades', () => {
-
   describe('@SoftDelete decorator with cascade option', () => {
     it('persists cascade:true flag in entity metadata for SdUser', () => {
       const meta = ModelMetadataRegistry.getInstance().get(SdUser);
@@ -122,7 +119,7 @@ describe('Soft Delete Cascades', () => {
     it('throws if entity does not have @SoftDelete configured', async () => {
       const ctx = buildCtx();
       await expect(ctx.categories.restore(100)).rejects.toThrow(
-        /Cannot restore.*sd_categories.*@SoftDelete/i
+        /Cannot restore.*sd_categories.*@SoftDelete/i,
       );
     });
 
@@ -141,7 +138,7 @@ describe('Soft Delete Cascades', () => {
     it('throws if entity does not have @SoftDelete configured', async () => {
       const ctx = buildCtx();
       await expect(ctx.categories.restoreWhere({ id: 100 })).rejects.toThrow(
-        /Cannot restoreWhere.*sd_categories/i
+        /Cannot restoreWhere.*sd_categories/i,
       );
     });
 

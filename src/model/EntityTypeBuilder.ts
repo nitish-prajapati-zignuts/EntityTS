@@ -39,7 +39,7 @@ export class EntityTypeBuilder<T extends object> {
    * b.hasKey(u => u.id);
    * ```
    */
-  public hasKey(keySelector: PropertySelector<T, unknown> | (keyof T)): this {
+  public hasKey(keySelector: PropertySelector<T, unknown> | keyof T): this {
     const propName = this.extractPropertyName(keySelector);
     if (!this.metadata.primaryKeys.includes(propName)) {
       this.metadata.primaryKeys.push(propName);
@@ -62,8 +62,8 @@ export class EntityTypeBuilder<T extends object> {
    * ```
    */
   public property<R>(
-    propSelector: PropertySelector<T, R> | (keyof T),
-    configure?: (builder: PropertyBuilder<T, R>) => void
+    propSelector: PropertySelector<T, R> | keyof T,
+    configure?: (builder: PropertyBuilder<T, R>) => void,
   ): PropertyBuilder<T, R> {
     const propName = this.extractPropertyName(propSelector);
     const col = this.getOrCreateColumn(propName);
@@ -81,7 +81,7 @@ export class EntityTypeBuilder<T extends object> {
    * @param propSelector - Property accessor lambda or property name.
    * @returns `this` builder instance for chaining.
    */
-  public ignore(propSelector: PropertySelector<T, unknown> | (keyof T)): this {
+  public ignore(propSelector: PropertySelector<T, unknown> | keyof T): this {
     const propName = this.extractPropertyName(propSelector);
     this.metadata.ignoredProperties.add(propName);
     this.metadata.columns.delete(propName);
@@ -128,7 +128,7 @@ export class EntityTypeBuilder<T extends object> {
     return col;
   }
 
-  private extractPropertyName(selector: PropertySelector<T, unknown> | (keyof T)): string {
+  private extractPropertyName(selector: PropertySelector<T, unknown> | keyof T): string {
     if (typeof selector === 'string') {
       return selector;
     }

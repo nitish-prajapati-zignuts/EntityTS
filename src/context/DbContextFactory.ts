@@ -8,7 +8,7 @@ export interface IDbContextFactory<TContext extends DbContext> {
 export class DbContextFactory<TContext extends DbContext> implements IDbContextFactory<TContext> {
   constructor(
     private readonly contextClass: new (options?: DbContextOptions) => TContext,
-    private readonly options?: DbContextOptions
+    private readonly options?: DbContextOptions,
   ) {}
 
   public createDbContext(): TContext {

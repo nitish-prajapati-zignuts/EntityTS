@@ -83,7 +83,11 @@ describe('Query and Stored Procedure Error Handling Edge Cases', () => {
           code: '42P01',
           message: 'relation "non_existent_orders" does not exist',
         };
-        const err = DatabaseErrorTranslator.translate(pgErr, 'SELECT * FROM non_existent_orders', 'postgres');
+        const err = DatabaseErrorTranslator.translate(
+          pgErr,
+          'SELECT * FROM non_existent_orders',
+          'postgres',
+        );
         expect(err).toBeInstanceOf(TableNotFoundException);
         expect((err as TableNotFoundException).tableName).toBe('non_existent_orders');
       });
@@ -94,14 +98,22 @@ describe('Query and Stored Procedure Error Handling Edge Cases', () => {
           code: 'ER_NO_SUCH_TABLE',
           message: "Table 'my_db.missing_table' doesn't exist",
         };
-        const err = DatabaseErrorTranslator.translate(myErr, 'SELECT * FROM missing_table', 'mysql');
+        const err = DatabaseErrorTranslator.translate(
+          myErr,
+          'SELECT * FROM missing_table',
+          'mysql',
+        );
         expect(err).toBeInstanceOf(TableNotFoundException);
         expect((err as TableNotFoundException).tableName).toBe('missing_table');
       });
 
       it('translates SQLite no such table error', () => {
         const sqliteErr = new Error('no such table: archive_logs');
-        const err = DatabaseErrorTranslator.translate(sqliteErr, 'SELECT * FROM archive_logs', 'sqlite');
+        const err = DatabaseErrorTranslator.translate(
+          sqliteErr,
+          'SELECT * FROM archive_logs',
+          'sqlite',
+        );
         expect(err).toBeInstanceOf(TableNotFoundException);
         expect((err as TableNotFoundException).tableName).toBe('archive_logs');
       });
@@ -123,7 +135,11 @@ describe('Query and Stored Procedure Error Handling Edge Cases', () => {
           code: '42703',
           message: 'column "non_existent_field" of relation "users" does not exist',
         };
-        const err = DatabaseErrorTranslator.translate(pgErr, 'SELECT non_existent_field FROM users', 'postgres');
+        const err = DatabaseErrorTranslator.translate(
+          pgErr,
+          'SELECT non_existent_field FROM users',
+          'postgres',
+        );
         expect(err).toBeInstanceOf(ColumnNotFoundException);
         expect((err as ColumnNotFoundException).columnName).toBe('non_existent_field');
         expect((err as ColumnNotFoundException).tableName).toBe('users');
@@ -135,14 +151,22 @@ describe('Query and Stored Procedure Error Handling Edge Cases', () => {
           code: 'ER_BAD_FIELD_ERROR',
           message: "Unknown column 'deleted_flag' in 'field list'",
         };
-        const err = DatabaseErrorTranslator.translate(myErr, 'SELECT deleted_flag FROM users', 'mysql');
+        const err = DatabaseErrorTranslator.translate(
+          myErr,
+          'SELECT deleted_flag FROM users',
+          'mysql',
+        );
         expect(err).toBeInstanceOf(ColumnNotFoundException);
         expect((err as ColumnNotFoundException).columnName).toBe('deleted_flag');
       });
 
       it('translates SQLite no such column error', () => {
         const sqliteErr = new Error('no such column: user_score');
-        const err = DatabaseErrorTranslator.translate(sqliteErr, 'SELECT user_score FROM users', 'sqlite');
+        const err = DatabaseErrorTranslator.translate(
+          sqliteErr,
+          'SELECT user_score FROM users',
+          'sqlite',
+        );
         expect(err).toBeInstanceOf(ColumnNotFoundException);
         expect((err as ColumnNotFoundException).columnName).toBe('user_score');
       });
@@ -152,7 +176,11 @@ describe('Query and Stored Procedure Error Handling Edge Cases', () => {
           number: 207,
           message: "Invalid column name 'avatar_url'.",
         };
-        const err = DatabaseErrorTranslator.translate(msErr, 'SELECT avatar_url FROM users', 'mssql');
+        const err = DatabaseErrorTranslator.translate(
+          msErr,
+          'SELECT avatar_url FROM users',
+          'mssql',
+        );
         expect(err).toBeInstanceOf(ColumnNotFoundException);
         expect((err as ColumnNotFoundException).columnName).toBe('avatar_url');
       });
@@ -164,7 +192,11 @@ describe('Query and Stored Procedure Error Handling Edge Cases', () => {
           code: '42883',
           message: 'procedure usp_calculate_rebates(integer) does not exist',
         };
-        const err = DatabaseErrorTranslator.translateProcedure(pgErr, 'usp_calculate_rebates', 'postgres');
+        const err = DatabaseErrorTranslator.translateProcedure(
+          pgErr,
+          'usp_calculate_rebates',
+          'postgres',
+        );
         expect(err).toBeInstanceOf(ProcedureNotFoundException);
         expect(err).toBeInstanceOf(ProcedureException);
         expect((err as ProcedureNotFoundException).procedureName).toBe('usp_calculate_rebates');
@@ -176,7 +208,11 @@ describe('Query and Stored Procedure Error Handling Edge Cases', () => {
           code: 'ER_SP_DOES_NOT_EXIST',
           message: 'PROCEDURE my_db.usp_sync_customers does not exist',
         };
-        const err = DatabaseErrorTranslator.translateProcedure(myErr, 'usp_sync_customers', 'mysql');
+        const err = DatabaseErrorTranslator.translateProcedure(
+          myErr,
+          'usp_sync_customers',
+          'mysql',
+        );
         expect(err).toBeInstanceOf(ProcedureNotFoundException);
         expect((err as ProcedureNotFoundException).procedureName).toBe('usp_sync_customers');
       });
@@ -186,13 +222,19 @@ describe('Query and Stored Procedure Error Handling Edge Cases', () => {
           number: 2812,
           message: "Could not find stored procedure 'usp_archive_orders'.",
         };
-        const err = DatabaseErrorTranslator.translateProcedure(msErr, 'usp_archive_orders', 'mssql');
+        const err = DatabaseErrorTranslator.translateProcedure(
+          msErr,
+          'usp_archive_orders',
+          'mssql',
+        );
         expect(err).toBeInstanceOf(ProcedureNotFoundException);
         expect((err as ProcedureNotFoundException).procedureName).toBe('usp_archive_orders');
       });
 
       it('translates SQLite unsupported / missing procedure error', () => {
-        const sqliteErr = new Error("SQLite does not natively support stored procedures ('usp_test')");
+        const sqliteErr = new Error(
+          "SQLite does not natively support stored procedures ('usp_test')",
+        );
         const err = DatabaseErrorTranslator.translateProcedure(sqliteErr, 'usp_test', 'sqlite');
         expect(err).toBeInstanceOf(ProcedureNotFoundException);
       });
@@ -212,13 +254,13 @@ describe('Query and Stored Procedure Error Handling Edge Cases', () => {
     });
 
     it('throws SqlSyntaxErrorException when raw query has invalid SQL syntax', async () => {
-      await expect(
-        ctx.queryRaw('SELECT FROM WHERE invalid syntax')
-      ).rejects.toThrow(SqlSyntaxErrorException);
+      await expect(ctx.queryRaw('SELECT FROM WHERE invalid syntax')).rejects.toThrow(
+        SqlSyntaxErrorException,
+      );
 
-      await expect(
-        ctx.sql`SELECT FROM ${'some_val'} WHERE`
-      ).rejects.toThrow(SqlSyntaxErrorException);
+      await expect(ctx.sql`SELECT FROM ${'some_val'} WHERE`).rejects.toThrow(
+        SqlSyntaxErrorException,
+      );
     });
 
     it('throws TableNotFoundException when querying non-existent table', async () => {
@@ -242,16 +284,16 @@ describe('Query and Stored Procedure Error Handling Edge Cases', () => {
     });
 
     it('throws ProcedureNotFoundException when calling non-existent procedure via procedure() builder', async () => {
-      await expect(
-        ctx.procedure('usp_NonExistentProcedure').execute()
-      ).rejects.toThrow(ProcedureNotFoundException);
+      await expect(ctx.procedure('usp_NonExistentProcedure').execute()).rejects.toThrow(
+        ProcedureNotFoundException,
+      );
     });
 
     it('throws ProcedureNotFoundException in MockDbAdapter when executing unregistered procedure', async () => {
       const mock = new MockDbAdapter();
-      await expect(
-        mock.executeProcedure('usp_UnregisteredMockProc', [])
-      ).rejects.toThrow(ProcedureNotFoundException);
+      await expect(mock.executeProcedure('usp_UnregisteredMockProc', [])).rejects.toThrow(
+        ProcedureNotFoundException,
+      );
     });
   });
 });

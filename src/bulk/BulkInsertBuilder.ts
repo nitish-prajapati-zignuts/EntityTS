@@ -13,7 +13,7 @@ export class BulkInsertBuilder<T extends object> {
     private readonly tableName: string,
     private readonly metadata?: EntityMetadata,
     private readonly transaction?: DbTransaction,
-    private readonly context?: any
+    private readonly context?: any,
   ) {}
 
   public async execute(entities: Partial<T>[], options?: BulkInsertOptions): Promise<number> {
@@ -55,7 +55,8 @@ export class BulkInsertBuilder<T extends object> {
               rowData[this.metadata.versionProperty.propertyName] === undefined
             ) {
               const vp = this.metadata.versionProperty;
-              rowData[vp.propertyName] = vp.strategy === 'number' ? 1 : vp.strategy === 'timestamp' ? now : '1';
+              rowData[vp.propertyName] =
+                vp.strategy === 'number' ? 1 : vp.strategy === 'timestamp' ? now : '1';
             }
             for (const [propName, colMeta] of this.metadata.columns.entries()) {
               if (rowData[propName] === undefined && colMeta.defaultValue !== undefined) {
@@ -93,7 +94,7 @@ export class BulkInsertBuilder<T extends object> {
   private async insertBatch(
     rows: Record<string, unknown>[],
     tx: DbTransaction,
-    ignoreDuplicates?: boolean
+    ignoreDuplicates?: boolean,
   ): Promise<number> {
     if (rows.length === 0) return 0;
 
@@ -129,15 +130,14 @@ export class BulkInsertBuilder<T extends object> {
     }
 
     const res = await this.adapter.executeNonQuery(sql, params, tx);
-    return res.rowsAffected !== undefined && res.rowsAffected > 0
-      ? res.rowsAffected
-      : rows.length;
+    return res.rowsAffected !== undefined && res.rowsAffected > 0 ? res.rowsAffected : rows.length;
   }
 
   private mapEntityToRow(entity: Partial<T>): Record<string, unknown> {
     const row: Record<string, unknown> = {};
     for (const [key, val] of Object.entries(entity)) {
-      if (this.metadata?.ignoredProperties.has(key) || this.metadata?.columns.get(key)?.isComputed) continue;
+      if (this.metadata?.ignoredProperties.has(key) || this.metadata?.columns.get(key)?.isComputed)
+        continue;
       const col = this.metadata?.columns.get(key);
       const colName = col?.columnName || key;
       row[colName] = val;

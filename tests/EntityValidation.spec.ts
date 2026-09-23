@@ -169,7 +169,7 @@ describe('Declarative Entity Validation Engine', () => {
           email: 'invalid-email',
           age: 12,
           code: 'bad',
-        })
+        }),
       ).rejects.toThrow(EntityValidationException);
     });
 
@@ -195,9 +195,9 @@ describe('Declarative Entity Validation Engine', () => {
       });
 
       // Invalid partial update: age < 18
-      await expect(
-        ctx.users.update(created.id, { age: 10 })
-      ).rejects.toThrow(EntityValidationException);
+      await expect(ctx.users.update(created.id, { age: 10 })).rejects.toThrow(
+        EntityValidationException,
+      );
 
       // Valid partial update
       const updated = await ctx.users.update(created.id, { age: 31 });

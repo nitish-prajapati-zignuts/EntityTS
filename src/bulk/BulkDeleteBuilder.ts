@@ -13,7 +13,7 @@ export class BulkDeleteBuilder<T extends object> {
     private readonly adapter: IDbAdapter,
     private readonly tableName: string,
     private readonly metadata?: EntityMetadata,
-    private readonly transaction?: DbTransaction
+    private readonly transaction?: DbTransaction,
   ) {}
 
   public async execute(predicate: Partial<T>, options?: BulkDeleteOptions): Promise<number> {

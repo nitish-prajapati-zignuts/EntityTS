@@ -59,13 +59,11 @@ describe('Keyset (Cursor-Based) & Offset Pagination', () => {
 
   describe('.toCursorPage() Keyset Pagination', () => {
     it('fetches first page with limit and generates nextCursor', async () => {
-      const page1 = await postSet
-        .where({ status: 'published' })
-        .toCursorPage({
-          limit: 2,
-          orderBy: p => p.createdAt,
-          direction: 'asc',
-        });
+      const page1 = await postSet.where({ status: 'published' }).toCursorPage({
+        limit: 2,
+        orderBy: p => p.createdAt,
+        direction: 'asc',
+      });
 
       expect(page1.items).toHaveLength(2);
       expect(page1.items[0].title).toBe('Post A');
@@ -77,23 +75,19 @@ describe('Keyset (Cursor-Based) & Offset Pagination', () => {
 
     it('fetches second page using nextCursor token', async () => {
       // First page
-      const page1 = await postSet
-        .where({ status: 'published' })
-        .toCursorPage({
-          limit: 2,
-          orderBy: p => p.createdAt,
-          direction: 'asc',
-        });
+      const page1 = await postSet.where({ status: 'published' }).toCursorPage({
+        limit: 2,
+        orderBy: p => p.createdAt,
+        direction: 'asc',
+      });
 
       // Second page
-      const page2 = await postSet
-        .where({ status: 'published' })
-        .toCursorPage({
-          cursor: page1.nextCursor!,
-          limit: 2,
-          orderBy: p => p.createdAt,
-          direction: 'asc',
-        });
+      const page2 = await postSet.where({ status: 'published' }).toCursorPage({
+        cursor: page1.nextCursor!,
+        limit: 2,
+        orderBy: p => p.createdAt,
+        direction: 'asc',
+      });
 
       expect(page2.items).toHaveLength(2);
       expect(page2.items[0].title).toBe('Post C');
@@ -104,13 +98,11 @@ describe('Keyset (Cursor-Based) & Offset Pagination', () => {
     });
 
     it('navigates in descending order (newest first)', async () => {
-      const page = await postSet
-        .where({ status: 'published' })
-        .toCursorPage({
-          limit: 3,
-          orderBy: p => p.createdAt,
-          direction: 'desc',
-        });
+      const page = await postSet.where({ status: 'published' }).toCursorPage({
+        limit: 3,
+        orderBy: p => p.createdAt,
+        direction: 'desc',
+      });
 
       expect(page.items).toHaveLength(3);
       expect(page.items[0].title).toBe('Post F');
@@ -120,13 +112,11 @@ describe('Keyset (Cursor-Based) & Offset Pagination', () => {
     });
 
     it('sets hasNextPage to false when reaching the last page', async () => {
-      const page = await postSet
-        .where({ status: 'published' })
-        .toCursorPage({
-          limit: 10,
-          orderBy: 'createdAt',
-          direction: 'asc',
-        });
+      const page = await postSet.where({ status: 'published' }).toCursorPage({
+        limit: 10,
+        orderBy: 'createdAt',
+        direction: 'asc',
+      });
 
       expect(page.items).toHaveLength(6);
       expect(page.hasNextPage).toBe(false);

@@ -19,7 +19,7 @@ export interface DbContextModuleAsyncOptions<TContext extends DbContext> {
 
 export class DbContextModule {
   public static forRoot<TContext extends DbContext>(
-    options: DbContextModuleOptions<TContext>
+    options: DbContextModuleOptions<TContext>,
   ): any {
     const token = getDbContextToken(options.context);
 
@@ -44,7 +44,7 @@ export class DbContextModule {
   }
 
   public static forRootAsync<TContext extends DbContext>(
-    asyncOptions: DbContextModuleAsyncOptions<TContext>
+    asyncOptions: DbContextModuleAsyncOptions<TContext>,
   ): any {
     const token = getDbContextToken(asyncOptions.context);
 

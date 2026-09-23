@@ -58,9 +58,7 @@ class BankDbContext extends DbContext {
           { id: 1, owner: 'Alice', balance: 1000, version: 1 },
           { id: 2, owner: 'Bob', balance: 500, version: 1 },
         ],
-        products: [
-          { id: 1, name: 'Laptop', price: 999, rowVersion: 1 },
-        ],
+        products: [{ id: 1, name: 'Laptop', price: 999, rowVersion: 1 }],
       },
     });
   }
@@ -102,7 +100,7 @@ describe('Optimistic Concurrency Control (@Version / @RowVersion / @ConcurrencyC
         ctx.accounts.update(1, {
           balance: 1500,
           version: 99,
-        })
+        }),
       ).rejects.toThrow(DbUpdateConcurrencyException);
     });
 
@@ -126,9 +124,7 @@ describe('Optimistic Concurrency Control (@Version / @RowVersion / @ConcurrencyC
     });
 
     it('throws DbUpdateConcurrencyException when removing with stale version', async () => {
-      await expect(ctx.accounts.remove(2, 99)).rejects.toThrow(
-        DbUpdateConcurrencyException
-      );
+      await expect(ctx.accounts.remove(2, 99)).rejects.toThrow(DbUpdateConcurrencyException);
     });
   });
 
@@ -170,9 +166,7 @@ describe('Optimistic Concurrency Control (@Version / @RowVersion / @ConcurrencyC
 
       // Client A attempts to save changes with stale original version 1
       accountA.balance = 2000;
-      await expect(clientAContext.saveChanges()).rejects.toThrow(
-        DbUpdateConcurrencyException
-      );
+      await expect(clientAContext.saveChanges()).rejects.toThrow(DbUpdateConcurrencyException);
     });
 
     it('supports @ConcurrencyCheck on specific properties', async () => {
@@ -187,7 +181,7 @@ describe('Optimistic Concurrency Control (@Version / @RowVersion / @ConcurrencyC
 
       // Fail concurrent price check if price changed in db
       await expect(
-        ctx.products.update(1, { name: 'Super Laptop' }, 2, { price: 500 })
+        ctx.products.update(1, { name: 'Super Laptop' }, 2, { price: 500 }),
       ).rejects.toThrow(DbUpdateConcurrencyException);
     });
   });

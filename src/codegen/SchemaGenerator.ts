@@ -36,7 +36,7 @@ export class SchemaGenerator {
   constructor(
     private readonly adapter: IDbAdapter,
     entityClasses: Function[],
-    private readonly options: SchemaGeneratorOptions = {}
+    private readonly options: SchemaGeneratorOptions = {},
   ) {
     this.entityClasses = entityClasses;
   }
@@ -61,10 +61,7 @@ export class SchemaGenerator {
 
       // Rewrite CREATE TABLE -> CREATE TABLE IF NOT EXISTS
       for (const sql of statements) {
-        const rewritten = sql.replace(
-          /^CREATE TABLE\s+/i,
-          'CREATE TABLE IF NOT EXISTS '
-        );
+        const rewritten = sql.replace(/^CREATE TABLE\s+/i, 'CREATE TABLE IF NOT EXISTS ');
         try {
           await this.adapter.executeNonQuery(rewritten);
         } catch (err: any) {
@@ -129,7 +126,9 @@ export class SchemaGenerator {
 
     // 1. Missing tables
     for (const tableName of diffResult.missingTables) {
-      const meta = this.getMetadata().find(m => m.tableName.toLowerCase() === tableName.toLowerCase());
+      const meta = this.getMetadata().find(
+        m => m.tableName.toLowerCase() === tableName.toLowerCase(),
+      );
       if (!meta || meta.isView) continue;
       const migBuilder = entityToMigrationBuilder(meta, this.adapter);
       if (!migBuilder) continue;
@@ -147,22 +146,24 @@ export class SchemaGenerator {
 
       for (const colName of missingColumns) {
         const col = Array.from(meta.columns.values()).find(
-          c => c.columnName.toLowerCase() === colName.toLowerCase()
+          c => c.columnName.toLowerCase() === colName.toLowerCase(),
         );
         if (!col) continue;
 
         const colType = sqlTypeToColumnType(col.sqlType, this.adapter, col.maxLength);
         upStatements.push(
-          `  schema.addColumn(${JSON.stringify(meta.tableName)}, ${JSON.stringify(col.columnName)}, ${JSON.stringify(colType)});`
+          `  schema.addColumn(${JSON.stringify(meta.tableName)}, ${JSON.stringify(col.columnName)}, ${JSON.stringify(colType)});`,
         );
         downStatements.push(
-          `  schema.dropColumn(${JSON.stringify(meta.tableName)}, ${JSON.stringify(col.columnName)});`
+          `  schema.dropColumn(${JSON.stringify(meta.tableName)}, ${JSON.stringify(col.columnName)});`,
         );
       }
     }
 
-    const upBody = upStatements.length > 0 ? upStatements.join('\n') : '  // No schema additions detected';
-    const downBody = downStatements.length > 0 ? downStatements.join('\n') : '  // No schema rollbacks required';
+    const upBody =
+      upStatements.length > 0 ? upStatements.join('\n') : '  // No schema additions detected';
+    const downBody =
+      downStatements.length > 0 ? downStatements.join('\n') : '  // No schema rollbacks required';
 
     return [
       `import { MigrationBuilder } from '@nsp/dbcontext';`,
@@ -226,7 +227,6 @@ export class SchemaGenerator {
       .filter(m => !m.isView && !liveTableSet.has(m.tableName.toLowerCase()))
       .map(m => m.tableName);
 
-
     const extraTables = liveTables.filter(t => !entityTableNames.has(t.toLowerCase()));
 
     const columnDiffs: SchemaDiff['columnDiffs'] = [];
@@ -276,7 +276,7 @@ export class SchemaGenerator {
       if (!meta) continue;
       for (const colName of missingColumns) {
         const col = Array.from(meta.columns.values()).find(
-          c => c.columnName.toLowerCase() === colName.toLowerCase()
+          c => c.columnName.toLowerCase() === colName.toLowerCase(),
         );
         if (!col) continue;
         const migBuilder = new MigrationBuilder();
@@ -298,19 +298,23 @@ export class SchemaGenerator {
     const p = this.adapter.provider;
     if (p === 'sqlite' || p === 'turso' || p === 'd1') {
       const rows = await this.adapter.executeQuery<{ name: string }>(
-        `SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%';`
+        `SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%';`,
       );
       return rows.map(r => r.name);
     }
     if (p === 'mssql') {
       const rows = await this.adapter.executeQuery<{ TABLE_NAME: string }>(
-        `SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE = 'BASE TABLE';`
+        `SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE = 'BASE TABLE';`,
       );
       return rows.map(r => r.TABLE_NAME);
     }
     // postgres / mysql / neon / planetscale / cockroachdb / supabase
-    const rows = await this.adapter.executeQuery<{ table_name?: string; TABLE_NAME?: string; name?: string }>(
-      `SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' OR table_schema = DATABASE();`
+    const rows = await this.adapter.executeQuery<{
+      table_name?: string;
+      TABLE_NAME?: string;
+      name?: string;
+    }>(
+      `SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' OR table_schema = DATABASE();`,
     );
     return rows.map(r => r.table_name || r.TABLE_NAME || r.name || '');
   }
@@ -319,19 +323,21 @@ export class SchemaGenerator {
     const p = this.adapter.provider;
     if (p === 'sqlite' || p === 'turso' || p === 'd1') {
       const rows = await this.adapter.executeQuery<{ name: string }>(
-        `PRAGMA table_info(${this.adapter.escapeIdentifier(tableName)});`
+        `PRAGMA table_info(${this.adapter.escapeIdentifier(tableName)});`,
       );
       return rows.map(r => r.name);
     }
     if (p === 'mssql') {
       const rows = await this.adapter.executeQuery<{ COLUMN_NAME?: string; name?: string }>(
-        `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = '${tableName}';`
+        `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = '${tableName}';`,
       );
       return rows.map(r => r.COLUMN_NAME || r.name || '');
     }
-    const rows = await this.adapter.executeQuery<{ column_name?: string; COLUMN_NAME?: string; name?: string }>(
-      `SELECT column_name FROM information_schema.columns WHERE table_name = '${tableName}';`
-    );
+    const rows = await this.adapter.executeQuery<{
+      column_name?: string;
+      COLUMN_NAME?: string;
+      name?: string;
+    }>(`SELECT column_name FROM information_schema.columns WHERE table_name = '${tableName}';`);
     return rows.map(r => r.column_name || r.COLUMN_NAME || r.name || '');
   }
 }

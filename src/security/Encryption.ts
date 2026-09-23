@@ -29,7 +29,10 @@ export class EncryptionEngine {
     const raw = key || process.env.NSP_ENCRYPTION_KEY || this.defaultKey;
     if (!raw) {
       // Fallback 256-bit key derived for testing if none supplied
-      return crypto.createHash('sha256').update('NSP_DEFAULT_ENTERPRISE_KEY_CHANGE_IN_PRODUCTION').digest();
+      return crypto
+        .createHash('sha256')
+        .update('NSP_DEFAULT_ENTERPRISE_KEY_CHANGE_IN_PRODUCTION')
+        .digest();
     }
 
     if (Buffer.isBuffer(raw)) {
@@ -50,7 +53,10 @@ export class EncryptionEngine {
    * Encrypts plaintext string using AES-256-GCM with a random 12-byte IV and 16-byte auth tag.
    * Result format: `enc:v1:<iv_hex>:<tag_hex>:<ciphertext_base64>`
    */
-  public static encrypt(text: string | null | undefined, options?: EncryptionOptions): string | null {
+  public static encrypt(
+    text: string | null | undefined,
+    options?: EncryptionOptions,
+  ): string | null {
     if (text === null || text === undefined) {
       return null;
     }
@@ -76,7 +82,10 @@ export class EncryptionEngine {
    * If the input is not encrypted or is plaintext, returns it unmodified.
    * Throws Error if authentication tag validation fails (tamper detection).
    */
-  public static decrypt(payload: string | null | undefined, options?: EncryptionOptions): string | null {
+  public static decrypt(
+    payload: string | null | undefined,
+    options?: EncryptionOptions,
+  ): string | null {
     if (payload === null || payload === undefined) {
       return null;
     }
@@ -92,7 +101,9 @@ export class EncryptionEngine {
 
     const parts = payload.split(':');
     if (parts.length !== 5) {
-      throw new Error('Malformed encrypted payload format. Expected enc:v1:<iv>:<tag>:<ciphertext>');
+      throw new Error(
+        'Malformed encrypted payload format. Expected enc:v1:<iv>:<tag>:<ciphertext>',
+      );
     }
 
     const [, , ivHex, tagHex, cipherBase64] = parts;
@@ -108,7 +119,9 @@ export class EncryptionEngine {
       const decrypted = Buffer.concat([decipher.update(encrypted), decipher.final()]);
       return decrypted.toString('utf8');
     } catch (err) {
-      throw new Error(`Decryption failed: Ciphertext or authentication tag was corrupted or tampered with. ${(err as Error).message}`);
+      throw new Error(
+        `Decryption failed: Ciphertext or authentication tag was corrupted or tampered with. ${(err as Error).message}`,
+      );
     }
   }
 

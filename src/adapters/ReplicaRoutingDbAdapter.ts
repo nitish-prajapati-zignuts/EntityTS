@@ -20,7 +20,7 @@ export class ReplicaRoutingDbAdapter implements IDbAdapter {
   constructor(
     private readonly primary: IDbAdapter,
     private readonly replicas: IDbAdapter[] = [],
-    options?: ReplicaRoutingOptions
+    options?: ReplicaRoutingOptions,
   ) {
     this.strategy = options?.strategy || 'round-robin';
   }
@@ -46,7 +46,7 @@ export class ReplicaRoutingDbAdapter implements IDbAdapter {
       return this.replicas[idx];
     }
     // round-robin
-    const idx = (this.roundRobinCounter++) % this.replicas.length;
+    const idx = this.roundRobinCounter++ % this.replicas.length;
     return this.replicas[idx];
   }
 
@@ -77,7 +77,7 @@ export class ReplicaRoutingDbAdapter implements IDbAdapter {
   public async executeQuery<T = unknown>(
     sql: string,
     params?: AdapterParam[],
-    transaction?: DbTransaction
+    transaction?: DbTransaction,
   ): Promise<T[]> {
     // 1. Transaction active -> lock to Primary
     if (transaction) {
@@ -86,7 +86,11 @@ export class ReplicaRoutingDbAdapter implements IDbAdapter {
 
     // 2. Non-SELECT statements (e.g. INSERT ... RETURNING or CTE writes) -> Primary
     const trimmed = sql.trim().toUpperCase();
-    if (!trimmed.startsWith('SELECT') && !trimmed.startsWith('WITH') && !trimmed.startsWith('EXPLAIN')) {
+    if (
+      !trimmed.startsWith('SELECT') &&
+      !trimmed.startsWith('WITH') &&
+      !trimmed.startsWith('EXPLAIN')
+    ) {
       return this.primary.executeQuery<T>(sql, params, transaction);
     }
 
@@ -98,7 +102,7 @@ export class ReplicaRoutingDbAdapter implements IDbAdapter {
   public async executeNonQuery(
     sql: string,
     params?: AdapterParam[],
-    transaction?: DbTransaction
+    transaction?: DbTransaction,
   ): Promise<{ rowsAffected: number; insertId?: unknown }> {
     // All writes must go to Primary
     return this.primary.executeNonQuery(sql, params, transaction);
@@ -107,7 +111,7 @@ export class ReplicaRoutingDbAdapter implements IDbAdapter {
   public async executeScalar<T = unknown>(
     sql: string,
     params?: AdapterParam[],
-    transaction?: DbTransaction
+    transaction?: DbTransaction,
   ): Promise<T> {
     if (transaction) {
       return this.primary.executeScalar<T>(sql, params, transaction);
@@ -124,7 +128,7 @@ export class ReplicaRoutingDbAdapter implements IDbAdapter {
     name: string,
     params: AdapterParam[],
     timeoutMs?: number,
-    transaction?: DbTransaction
+    transaction?: DbTransaction,
   ): Promise<StoredProcedureResult<T[]>> {
     // Stored procedures may mutate state; execute on Primary
     return this.primary.executeProcedure<T>(name, params, timeoutMs, transaction);
@@ -134,7 +138,7 @@ export class ReplicaRoutingDbAdapter implements IDbAdapter {
     name: string,
     params: AdapterParam[],
     timeoutMs?: number,
-    transaction?: DbTransaction
+    transaction?: DbTransaction,
   ): Promise<StoredProcedureResult<T>> {
     return this.primary.executeProcedureMultiple<T>(name, params, timeoutMs, transaction);
   }

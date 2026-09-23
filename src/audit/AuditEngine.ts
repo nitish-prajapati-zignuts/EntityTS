@@ -16,7 +16,7 @@ export class AuditEngine {
    */
   public static shouldLog(target: Function): boolean {
     const opts = AuditMetadataRegistry.getInstance().get(target);
-    return !!(opts?.changelog);
+    return !!opts?.changelog;
   }
 
   /**
@@ -37,7 +37,7 @@ export class AuditEngine {
     newSnapshot: Record<string, unknown> | undefined,
     oldSnapshot: Record<string, unknown> | undefined,
     currentUser?: string,
-    includeOld = true
+    includeOld = true,
   ): AuditLogEntry {
     const entry: AuditLogEntry = {
       entity_name: entityName,
@@ -71,7 +71,7 @@ export class AuditEngine {
     entry: AuditLogEntry,
     adapter: IDbAdapter,
     auditTable = '_audit_log',
-    transaction?: DbTransaction
+    transaction?: DbTransaction,
   ): Promise<void> {
     try {
       const cols = [
@@ -95,9 +95,7 @@ export class AuditEngine {
       ];
 
       // Build parameterized INSERT using the adapter's placeholder style
-      const placeholders = params.map((_, i) =>
-        adapter.formatParameterPlaceholder(`p${i}`, i + 1)
-      );
+      const placeholders = params.map((_, i) => adapter.formatParameterPlaceholder(`p${i}`, i + 1));
 
       const escapedTable = adapter.escapeIdentifier(auditTable);
       const escapedCols = cols.map(c => adapter.escapeIdentifier(c)).join(', ');

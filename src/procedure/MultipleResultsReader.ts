@@ -21,7 +21,7 @@ export class MultipleResultsReader<TOut = Record<string, unknown>> {
     private readonly resultSets: unknown[][],
     public readonly outputParams: TOut = {} as TOut,
     public readonly returnValue: number = 0,
-    public readonly rowsAffected: number = 0
+    public readonly rowsAffected: number = 0,
   ) {}
 
   /**

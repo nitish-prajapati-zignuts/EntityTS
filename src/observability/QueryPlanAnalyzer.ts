@@ -159,7 +159,7 @@ function parsePgNode(raw: any): PlanNode {
 
 function walkPlanTree(
   node: PlanNode,
-  state: { hasSeqScan: boolean; indexes: Set<string>; hasNestedLoop: boolean }
+  state: { hasSeqScan: boolean; indexes: Set<string>; hasNestedLoop: boolean },
 ): void {
   if (node.type === 'Seq Scan') state.hasSeqScan = true;
   if (node.type === 'Nested Loop' && (node.actualRows ?? 0) > 10_000) state.hasNestedLoop = true;
@@ -169,21 +169,21 @@ function walkPlanTree(
 
 function makeColors(colorize: boolean) {
   return {
-    cCyan:   colorize ? '\x1b[36m' : '',
-    cGreen:  colorize ? '\x1b[32m' : '',
+    cCyan: colorize ? '\x1b[36m' : '',
+    cGreen: colorize ? '\x1b[32m' : '',
     cYellow: colorize ? '\x1b[33m' : '',
-    cRed:    colorize ? '\x1b[31m' : '',
-    cGray:   colorize ? '\x1b[90m' : '',
-    cWhite:  colorize ? '\x1b[37m' : '',
-    cBold:   colorize ? '\x1b[1m'  : '',
-    cReset:  colorize ? '\x1b[0m'  : '',
+    cRed: colorize ? '\x1b[31m' : '',
+    cGray: colorize ? '\x1b[90m' : '',
+    cWhite: colorize ? '\x1b[37m' : '',
+    cBold: colorize ? '\x1b[1m' : '',
+    cReset: colorize ? '\x1b[0m' : '',
   };
 }
 
 function formatPlanTree(
   node: PlanNode,
   indent: number,
-  colors: ReturnType<typeof makeColors>
+  colors: ReturnType<typeof makeColors>,
 ): string {
   const { cCyan, cYellow, cRed, cGreen, cGray, cWhite, cReset } = colors;
   const pad = '  '.repeat(indent);
@@ -271,7 +271,7 @@ export function createQueryPlanLogger(opts: QueryPlanLoggerOptions): QueryHooks 
     onPlan,
   } = opts;
 
-  const colorize = opts.colorize ?? (process.stdout?.isTTY !== false);
+  const colorize = opts.colorize ?? process.stdout?.isTTY !== false;
   const logFn = opts.logger ?? ((msg: string) => console.log(msg));
   const colors = makeColors(colorize);
   const { cCyan, cYellow, cRed, cGreen, cGray, cBold, cReset } = colors;
@@ -305,7 +305,16 @@ export function createQueryPlanLogger(opts: QueryPlanLoggerOptions): QueryHooks 
 
           if (!rootRaw) {
             const raw = rows.map((r: any) => Object.values(r).join(' ')).join('\n');
-            planResult = { sql, provider, totalCost: 0, planRows: 0, hasSeqScan: false, indexesUsed: [], hasNestedLoopWarning: false, rawPlan: raw };
+            planResult = {
+              sql,
+              provider,
+              totalCost: 0,
+              planRows: 0,
+              hasSeqScan: false,
+              indexesUsed: [],
+              hasNestedLoopWarning: false,
+              rawPlan: raw,
+            };
           } else {
             const planTree = parsePgNode(rootRaw);
             const state = { hasSeqScan: false, indexes: new Set<string>(), hasNestedLoop: false };
@@ -314,9 +323,10 @@ export function createQueryPlanLogger(opts: QueryPlanLoggerOptions): QueryHooks 
             planResult = {
               sql,
               provider,
-              executionTimeMs: planJson?.['Execution Time'] !== undefined
-                ? parseFloat(planJson['Execution Time'].toFixed(3))
-                : undefined,
+              executionTimeMs:
+                planJson?.['Execution Time'] !== undefined
+                  ? parseFloat(planJson['Execution Time'].toFixed(3))
+                  : undefined,
               totalCost: planTree.totalCost,
               planRows: planTree.planRows,
               actualRows: planTree.actualRows,
@@ -334,7 +344,8 @@ export function createQueryPlanLogger(opts: QueryPlanLoggerOptions): QueryHooks 
             provider,
             totalCost: 0,
             planRows: 0,
-            hasSeqScan: rawPlan.toUpperCase().includes('SCAN') && !rawPlan.toUpperCase().includes('INDEX'),
+            hasSeqScan:
+              rawPlan.toUpperCase().includes('SCAN') && !rawPlan.toUpperCase().includes('INDEX'),
             indexesUsed: [],
             hasNestedLoopWarning: false,
             rawPlan,
@@ -348,7 +359,9 @@ export function createQueryPlanLogger(opts: QueryPlanLoggerOptions): QueryHooks 
       const sep = `${cGray}──────────────────────────────────────────────────────${cReset}`;
       const trimmed = sql.trimStart().replace(/\s+/g, ' ');
       const preview = trimmed.length > 72 ? trimmed.substring(0, 72) + '…' : trimmed;
-      const mode = analyze ? `${cGray}(EXPLAIN ANALYZE)${cReset}` : `${cGray}(EXPLAIN only)${cReset}`;
+      const mode = analyze
+        ? `${cGray}(EXPLAIN ANALYZE)${cReset}`
+        : `${cGray}(EXPLAIN only)${cReset}`;
 
       const lines: string[] = [
         sep,
@@ -358,29 +371,39 @@ export function createQueryPlanLogger(opts: QueryPlanLoggerOptions): QueryHooks 
 
       if (planResult.totalCost > 0) {
         const costColor = planResult.totalCost > 500 ? cYellow : cGreen;
-        lines.push(`  ${cGray}Est. Cost:${cReset} ${costColor}${planResult.totalCost.toFixed(2)}${cReset}`);
+        lines.push(
+          `  ${cGray}Est. Cost:${cReset} ${costColor}${planResult.totalCost.toFixed(2)}${cReset}`,
+        );
         lines.push(`  ${cGray}Est. Rows:${cReset} ${planResult.planRows}`);
       }
       if (planResult.actualRows !== undefined) {
         lines.push(`  ${cGray}Act. Rows:${cReset} ${cGreen}${planResult.actualRows}${cReset}`);
       }
       if (planResult.executionTimeMs !== undefined) {
-        lines.push(`  ${cGray}Plan  ms: ${cReset} ${cGreen}${planResult.executionTimeMs}ms${cReset}`);
+        lines.push(
+          `  ${cGray}Plan  ms: ${cReset} ${cGreen}${planResult.executionTimeMs}ms${cReset}`,
+        );
       }
       if (durationMs !== undefined) {
         lines.push(`  ${cGray}Query ms: ${cReset} ${cGreen}${durationMs}ms${cReset}`);
       }
       if (planResult.indexesUsed.length > 0) {
-        lines.push(`  ${cGray}Indexes:  ${cReset} ${cGreen}${planResult.indexesUsed.join(', ')}${cReset}`);
+        lines.push(
+          `  ${cGray}Indexes:  ${cReset} ${cGreen}${planResult.indexesUsed.join(', ')}${cReset}`,
+        );
       } else if (planResult.planTree) {
         lines.push(`  ${cGray}Indexes:  ${cReset} ${cGray}none${cReset}`);
       }
 
       if (planResult.hasSeqScan && warnOnSeqScan) {
-        lines.push(`  ${cRed}⚠  Seq Scan detected — consider adding an index on filtered column(s)${cReset}`);
+        lines.push(
+          `  ${cRed}⚠  Seq Scan detected — consider adding an index on filtered column(s)${cReset}`,
+        );
       }
       if (planResult.hasNestedLoopWarning) {
-        lines.push(`  ${cYellow}⚠  Nested Loop join with >10k actual rows — check join strategy${cReset}`);
+        lines.push(
+          `  ${cYellow}⚠  Nested Loop join with >10k actual rows — check join strategy${cReset}`,
+        );
       }
 
       if (planResult.planTree) {

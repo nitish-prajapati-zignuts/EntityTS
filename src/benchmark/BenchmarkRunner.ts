@@ -108,7 +108,7 @@ export class BenchmarkRunner {
 
       if (!options.silent) {
         process.stdout.write(
-          `  ✓ [${scenario.category}] ${scenario.name.padEnd(38)}: ${result.opsPerSec.toLocaleString()} ops/s (p50: ${result.p50Ms}ms)\n`
+          `  ✓ [${scenario.category}] ${scenario.name.padEnd(38)}: ${result.opsPerSec.toLocaleString()} ops/s (p50: ${result.p50Ms}ms)\n`,
         );
       }
     }

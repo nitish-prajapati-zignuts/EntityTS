@@ -147,9 +147,11 @@ describe('Enterprise Features', () => {
     });
 
     it('executes @BeforeUpdate and @AfterUpdate during DbSet.update()', async () => {
-      mockAdapter.executeQuery = jest.fn().mockResolvedValue([
-        { id: 777, orgId: 'tenant-alpha', name: 'John Smith', email: 'john@example.com' },
-      ]);
+      mockAdapter.executeQuery = jest
+        .fn()
+        .mockResolvedValue([
+          { id: 777, orgId: 'tenant-alpha', name: 'John Smith', email: 'john@example.com' },
+        ]);
       mockAdapter.executeNonQuery = jest.fn().mockResolvedValue({ rowsAffected: 1 });
 
       const updated = await context.customers.update(777, { name: 'John Smith' });
@@ -159,9 +161,11 @@ describe('Enterprise Features', () => {
     });
 
     it('executes @BeforeRemove and @AfterRemove during DbSet.remove()', async () => {
-      mockAdapter.executeQuery = jest.fn().mockResolvedValue([
-        { id: 777, orgId: 'tenant-alpha', name: 'John Doe', email: 'john@example.com' },
-      ]);
+      mockAdapter.executeQuery = jest
+        .fn()
+        .mockResolvedValue([
+          { id: 777, orgId: 'tenant-alpha', name: 'John Doe', email: 'john@example.com' },
+        ]);
       mockAdapter.executeNonQuery = jest.fn().mockResolvedValue({ rowsAffected: 1 });
 
       await context.customers.remove(777);
@@ -234,7 +238,10 @@ describe('Enterprise Features', () => {
       mockAdapter.executeNonQuery = jest.fn().mockImplementation((sql, params) => {
         insertCount++;
         insertedRows.push({ sql, params });
-        return Promise.resolve({ rowsAffected: 1, insertId: insertCount === 1 ? 501 : 900 + insertCount });
+        return Promise.resolve({
+          rowsAffected: 1,
+          insertId: insertCount === 1 ? 501 : 900 + insertCount,
+        });
       });
 
       const order = await context.orders.add({
@@ -257,7 +264,7 @@ describe('Enterprise Features', () => {
   describe('4. Database Streaming (DbSet.stream)', () => {
     it('streams records row by row via AsyncIterable', async () => {
       let fetchOffset = 0;
-      mockAdapter.executeQuery = jest.fn().mockImplementation((sql) => {
+      mockAdapter.executeQuery = jest.fn().mockImplementation(sql => {
         if (sql.includes('OFFSET 0') || !sql.includes('OFFSET')) {
           fetchOffset += 2;
           return Promise.resolve([
@@ -313,7 +320,10 @@ describe('Enterprise Features', () => {
         return Promise.resolve([]);
       });
 
-      await context.customers.whereLike('email', '%@corp.com').whereNotLike('email', '%spam%').toList();
+      await context.customers
+        .whereLike('email', '%@corp.com')
+        .whereNotLike('email', '%spam%')
+        .toList();
       expect(capturedSql.toUpperCase()).toContain('LIKE');
       expect(capturedSql.toUpperCase()).toContain('NOT LIKE');
     });

@@ -182,11 +182,7 @@ productRouter.put('/:id/concurrency', async (req: Request, res: Response, next: 
     if (price !== undefined) patch.price = Number(price);
     if (stock !== undefined) patch.stock = Number(stock);
 
-    const updated = await db.products.update(
-      id,
-      patch,
-      Number(expectedVersion)
-    );
+    const updated = await db.products.update(id, patch, Number(expectedVersion));
 
     res.json({
       message: 'Product updated successfully under optimistic concurrency.',

@@ -19,7 +19,8 @@ export const DRIVER_REGISTRY: Record<string, DriverPackageInfo> = {
     importSpecifier: 'mssql',
     displayName: 'Microsoft SQL Server',
     typesPackage: '@types/mssql',
-    exclusiveNotes: "Do NOT install 'pg' or other database packages; only 'mssql' is required for SQL Server.",
+    exclusiveNotes:
+      "Do NOT install 'pg' or other database packages; only 'mssql' is required for SQL Server.",
   },
   postgres: {
     provider: 'postgres',
@@ -27,7 +28,8 @@ export const DRIVER_REGISTRY: Record<string, DriverPackageInfo> = {
     importSpecifier: 'pg',
     displayName: 'PostgreSQL',
     typesPackage: '@types/pg',
-    exclusiveNotes: "Do NOT install 'mssql' or other database packages; only 'pg' is required for PostgreSQL.",
+    exclusiveNotes:
+      "Do NOT install 'mssql' or other database packages; only 'pg' is required for PostgreSQL.",
   },
   mysql: {
     provider: 'mysql',
@@ -49,21 +51,24 @@ export const DRIVER_REGISTRY: Record<string, DriverPackageInfo> = {
     packageName: '@libsql/client',
     importSpecifier: '@libsql/client',
     displayName: 'Turso (libSQL)',
-    exclusiveNotes: "Do NOT install other database packages; only '@libsql/client' is required for Turso.",
+    exclusiveNotes:
+      "Do NOT install other database packages; only '@libsql/client' is required for Turso.",
   },
   neon: {
     provider: 'neon',
     packageName: '@neondatabase/serverless',
     importSpecifier: '@neondatabase/serverless',
     displayName: 'Neon Serverless Postgres',
-    exclusiveNotes: "Do NOT install 'mssql' or standard 'pg'; only '@neondatabase/serverless' is required for Neon.",
+    exclusiveNotes:
+      "Do NOT install 'mssql' or standard 'pg'; only '@neondatabase/serverless' is required for Neon.",
   },
   planetscale: {
     provider: 'planetscale',
     packageName: '@planetscale/database',
     importSpecifier: '@planetscale/database',
     displayName: 'PlanetScale Serverless MySQL',
-    exclusiveNotes: "Do NOT install 'pg' or 'mssql'; only '@planetscale/database' is required for PlanetScale.",
+    exclusiveNotes:
+      "Do NOT install 'pg' or 'mssql'; only '@planetscale/database' is required for PlanetScale.",
   },
   cockroachdb: {
     provider: 'cockroachdb',
@@ -89,14 +94,18 @@ export const DRIVER_REGISTRY: Record<string, DriverPackageInfo> = {
 export function detectPackageManager(cwd: string = process.cwd()): 'npm' | 'pnpm' | 'yarn' | 'bun' {
   if (fs.existsSync(path.join(cwd, 'pnpm-lock.yaml'))) return 'pnpm';
   if (fs.existsSync(path.join(cwd, 'yarn.lock'))) return 'yarn';
-  if (fs.existsSync(path.join(cwd, 'bun.lockb')) || fs.existsSync(path.join(cwd, 'bun.lock'))) return 'bun';
+  if (fs.existsSync(path.join(cwd, 'bun.lockb')) || fs.existsSync(path.join(cwd, 'bun.lock')))
+    return 'bun';
   return 'npm';
 }
 
 /**
  * Get install command line for a given package and package manager.
  */
-export function getInstallCommand(pkgName: string, pm: 'npm' | 'pnpm' | 'yarn' | 'bun' = 'npm'): string {
+export function getInstallCommand(
+  pkgName: string,
+  pm: 'npm' | 'pnpm' | 'yarn' | 'bun' = 'npm',
+): string {
   switch (pm) {
     case 'pnpm':
       return `pnpm add ${pkgName}`;
@@ -149,13 +158,16 @@ export function normalizeProvider(name: string): DbProvider | undefined {
  * Loads a database driver dynamically and throws a targeted ConnectionException
  * if the package is not installed in the consuming application.
  */
-export async function loadDriver<T = any>(provider: DbProvider, importSpecifier?: string): Promise<T> {
+export async function loadDriver<T = any>(
+  provider: DbProvider,
+  importSpecifier?: string,
+): Promise<T> {
   const info = DRIVER_REGISTRY[provider];
   const specifier = importSpecifier || (info ? info.importSpecifier : provider);
 
   try {
     const mod = await import(specifier);
-    return (mod.default && (mod.default.ConnectionPool || mod.default.Pool)) ? mod.default : mod;
+    return mod.default && (mod.default.ConnectionPool || mod.default.Pool) ? mod.default : mod;
   } catch (err: any) {
     const pm = detectPackageManager();
     const pkg = info ? info.packageName : specifier;
@@ -166,11 +178,11 @@ export async function loadDriver<T = any>(provider: DbProvider, importSpecifier?
 
     throw new ConnectionException(
       `Database driver '${pkg}' is not installed.\n` +
-      `To use ${displayName} with @nsp/dbcontext, install only the required driver:\n\n` +
-      `  ${cmd}\n` +
-      `  (or run: ${nspCmd})` +
-      notes,
-      err
+        `To use ${displayName} with @nsp/dbcontext, install only the required driver:\n\n` +
+        `  ${cmd}\n` +
+        `  (or run: ${nspCmd})` +
+        notes,
+      err,
     );
   }
 }

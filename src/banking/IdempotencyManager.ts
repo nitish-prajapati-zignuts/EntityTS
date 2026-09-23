@@ -62,7 +62,12 @@ export class IdempotencyManager {
           \`expires_at\` BIGINT NOT NULL
         )
       `;
-    } else if (provider === 'postgres' || provider === 'neon' || provider === 'supabase' || provider === 'cockroachdb') {
+    } else if (
+      provider === 'postgres' ||
+      provider === 'neon' ||
+      provider === 'supabase' ||
+      provider === 'cockroachdb'
+    ) {
       sql = `
         CREATE TABLE IF NOT EXISTS "__nsp_idempotency" (
           "idempotency_key" VARCHAR(255) PRIMARY KEY,
@@ -103,7 +108,7 @@ export class IdempotencyManager {
   public async execute<T>(
     key: string,
     handler: () => Promise<T>,
-    options?: IdempotencyOptions
+    options?: IdempotencyOptions,
   ): Promise<T> {
     if (!key || typeof key !== 'string') {
       throw new Error('Valid idempotency key is required');
@@ -131,12 +136,16 @@ export class IdempotencyManager {
 
     // 1. Check existing record
     const selectSql = `SELECT ${colStatus}, ${colResp}, ${colLocked}, ${colExpires} FROM ${tableName} WHERE ${colKey} = ${ph('key', 1)}`;
-    const existing = await this.adapter.executeQuery<IdempotencyRecord>(selectSql, [{ name: 'key', value: key }]);
+    const existing = await this.adapter.executeQuery<IdempotencyRecord>(selectSql, [
+      { name: 'key', value: key },
+    ]);
 
     if (existing.length > 0) {
       const record = existing[0];
       if (record.status === 'COMPLETED') {
-        return record.response_body ? JSON.parse(record.response_body) : (undefined as unknown as T);
+        return record.response_body
+          ? JSON.parse(record.response_body)
+          : (undefined as unknown as T);
       }
 
       if (record.status === 'IN_PROGRESS' && Number(record.locked_until) > now) {
@@ -171,7 +180,10 @@ export class IdempotencyManager {
         ]);
       } catch (insertErr) {
         // Concurrency race condition during initial insert
-        throw new IdempotencyConflictException(key, `Concurrent request conflict on idempotency key '${key}'`);
+        throw new IdempotencyConflictException(
+          key,
+          `Concurrent request conflict on idempotency key '${key}'`,
+        );
       }
     }
 

@@ -14,7 +14,7 @@ export class BulkUpdateBuilder<T extends object> {
     private readonly adapter: IDbAdapter,
     private readonly tableName: string,
     private readonly metadata?: EntityMetadata,
-    private readonly transaction?: DbTransaction
+    private readonly transaction?: DbTransaction,
   ) {}
 
   public async execute(entities: Partial<T>[], options: BulkUpdateOptions<T>): Promise<number> {

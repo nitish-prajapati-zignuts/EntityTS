@@ -48,7 +48,7 @@ describe('Native Upsert Support (INSERT ... ON CONFLICT / ON DUPLICATE KEY UPDAT
 
       const { sql, params } = qb.toUpsertSql(
         { email: 'user@corp.com' },
-        { balance: 5000, name: 'Updated' }
+        { balance: 5000, name: 'Updated' },
       );
 
       expect(sql).toContain('INSERT INTO "accounts"');
@@ -65,7 +65,7 @@ describe('Native Upsert Support (INSERT ... ON CONFLICT / ON DUPLICATE KEY UPDAT
 
       const { sql, params } = qb.toUpsertSql(
         { email: 'user@corp.com' },
-        { balance: 5000, name: 'Updated' }
+        { balance: 5000, name: 'Updated' },
       );
 
       expect(sql).toContain('INSERT INTO `accounts`');
@@ -82,14 +82,20 @@ describe('Native Upsert Support (INSERT ... ON CONFLICT / ON DUPLICATE KEY UPDAT
 
       const { sql, params } = qb.toUpsertSql(
         { email: 'user@corp.com' },
-        { balance: 5000, name: 'Updated' }
+        { balance: 5000, name: 'Updated' },
       );
 
       expect(sql).toContain('MERGE INTO [accounts] AS target');
-      expect(sql).toContain('USING (VALUES (@p0, @p1, @p2)) AS source ([email], [balance], [name])');
+      expect(sql).toContain(
+        'USING (VALUES (@p0, @p1, @p2)) AS source ([email], [balance], [name])',
+      );
       expect(sql).toContain('ON target.[email] = source.[email]');
-      expect(sql).toContain('WHEN MATCHED THEN UPDATE SET target.[balance] = source.[balance], target.[name] = source.[name]');
-      expect(sql).toContain('WHEN NOT MATCHED THEN INSERT ([email], [balance], [name]) VALUES (source.[email], source.[balance], source.[name])');
+      expect(sql).toContain(
+        'WHEN MATCHED THEN UPDATE SET target.[balance] = source.[balance], target.[name] = source.[name]',
+      );
+      expect(sql).toContain(
+        'WHEN NOT MATCHED THEN INSERT ([email], [balance], [name]) VALUES (source.[email], source.[balance], source.[name])',
+      );
       expect(sql).toContain('OUTPUT INSERTED.*;');
       expect(params).toHaveLength(3);
     });
@@ -101,7 +107,7 @@ describe('Native Upsert Support (INSERT ... ON CONFLICT / ON DUPLICATE KEY UPDAT
 
       const { sql, params } = qb.toUpsertSql(
         { email: 'user@corp.com' },
-        { balance: 5000, name: 'Updated' }
+        { balance: 5000, name: 'Updated' },
       );
 
       expect(sql).toContain('INSERT INTO "accounts"');
@@ -124,7 +130,7 @@ describe('Native Upsert Support (INSERT ... ON CONFLICT / ON DUPLICATE KEY UPDAT
     it('inserts a new entity when conflict target does not exist', async () => {
       const created = await db.accounts.upsert(
         { email: 'user@corp.com' },
-        { balance: 5000, name: 'Created' }
+        { balance: 5000, name: 'Created' },
       );
 
       expect(created).toBeDefined();
@@ -148,7 +154,7 @@ describe('Native Upsert Support (INSERT ... ON CONFLICT / ON DUPLICATE KEY UPDAT
       // Now perform native upsert on existing email
       const updated = await db.accounts.upsert(
         { email: 'user@corp.com' },
-        { balance: 5000, name: 'Updated Name' }
+        { balance: 5000, name: 'Updated Name' },
       );
 
       expect(updated).toBeDefined();
@@ -184,7 +190,7 @@ describe('Native Upsert Support (INSERT ... ON CONFLICT / ON DUPLICATE KEY UPDAT
     it('maintains backwards compatibility with entity-and-keys upsert(entity, [keys])', async () => {
       const res = await db.accounts.upsert(
         { email: 'legacy@corp.com', name: 'Legacy', balance: 123 },
-        ['email']
+        ['email'],
       );
       expect(res.email).toBe('legacy@corp.com');
       expect(res.balance).toBe(123);

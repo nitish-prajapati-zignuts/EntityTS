@@ -92,7 +92,8 @@ export function createStructuredQueryLogger(options?: StructuredQueryLoggerOptio
       }
 
       if (format === 'compact') {
-        const paramsStr = params && params.length ? ` ${cGray}-- params: ${formatParams(params)}${cReset}` : '';
+        const paramsStr =
+          params && params.length ? ` ${cGray}-- params: ${formatParams(params)}${cReset}` : '';
         const durStr = ` ${durationColor}(${ms}ms)${cReset}`;
         logFn(`${cCyan}${prefix}${cReset} ${cWhite}${sql}${cReset}${paramsStr}${durStr}`);
         return;
@@ -118,7 +119,7 @@ export function createStructuredQueryLogger(options?: StructuredQueryLoggerOptio
             query: sql,
             params: params ?? [],
             error: err.message,
-          })
+          }),
         );
         return;
       }

@@ -22,7 +22,7 @@ export class EntityCreated<T = unknown> implements IDomainEvent<T> {
     public readonly entity: T,
     public readonly entityName: string,
     public readonly tableName: string,
-    timestamp?: Date
+    timestamp?: Date,
   ) {
     this.timestamp = timestamp || new Date();
   }
@@ -39,7 +39,7 @@ export class EntityUpdated<T = unknown> implements IDomainEvent<T> {
     public readonly entityName: string,
     public readonly tableName: string,
     public readonly previous?: Partial<T>,
-    timestamp?: Date
+    timestamp?: Date,
   ) {
     this.timestamp = timestamp || new Date();
   }
@@ -55,11 +55,15 @@ export class EntityDeleted<T = unknown> implements IDomainEvent<T> {
     public readonly entity: T,
     public readonly entityName: string,
     public readonly tableName: string,
-    timestamp?: Date
+    timestamp?: Date,
   ) {
     this.timestamp = timestamp || new Date();
   }
 }
 
 // Aliases for user flexibility
-export { EntityCreated as EntityCreatedEvent, EntityUpdated as EntityUpdatedEvent, EntityDeleted as EntityDeletedEvent };
+export {
+  EntityCreated as EntityCreatedEvent,
+  EntityUpdated as EntityUpdatedEvent,
+  EntityDeleted as EntityDeletedEvent,
+};

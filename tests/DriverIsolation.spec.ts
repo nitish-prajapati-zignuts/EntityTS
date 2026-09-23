@@ -100,9 +100,9 @@ describe('Database Driver Isolation', () => {
   describe('loadDriver error formatting', () => {
     it('throws ConnectionException with isolated install instructions when a driver cannot be found', async () => {
       // Simulate loading an uninstalled mock driver specifier
-      await expect(
-        loadDriver('mssql', 'non_existent_mssql_driver_package_12345')
-      ).rejects.toThrow(ConnectionException);
+      await expect(loadDriver('mssql', 'non_existent_mssql_driver_package_12345')).rejects.toThrow(
+        ConnectionException,
+      );
 
       try {
         await loadDriver('mssql', 'non_existent_mssql_driver_package_12345');

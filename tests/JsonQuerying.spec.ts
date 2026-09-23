@@ -69,13 +69,13 @@ class UserDbContext extends DbContext {
 
 describe('Native JSON Column Querying & Path Navigation', () => {
   describe('Dialect-Specific SQL Translation', () => {
-    it('translates to PostgreSQL arrow operators (metadata->\'address\'->>\'city\')', () => {
+    it("translates to PostgreSQL arrow operators (metadata->'address'->>'city')", () => {
       const pgAdapter = new PostgresAdapter('postgresql://localhost/test');
       const qb = new QueryBuilder(pgAdapter, 'users');
       qb.getWhereClause().whereJson('metadata', 'address.city', '=', 'New York');
 
       const { sql, params } = qb.toSelectSql();
-      expect(sql).toContain('"metadata"->\'address\'->>\'city\' = $1');
+      expect(sql).toContain("\"metadata\"->'address'->>'city' = $1");
       expect(params[0].value).toBe('New York');
     });
 
@@ -88,7 +88,7 @@ describe('Native JSON Column Querying & Path Navigation', () => {
       expect(sql).toContain('"metadata"->>\'theme\' = $1');
     });
 
-    it('translates to MySQL JSON_UNQUOTE(JSON_EXTRACT(metadata, \'$.address.city\'))', () => {
+    it("translates to MySQL JSON_UNQUOTE(JSON_EXTRACT(metadata, '$.address.city'))", () => {
       const mysqlAdapter = new MysqlAdapter('mysql://localhost/test');
       const qb = new QueryBuilder(mysqlAdapter, 'users');
       qb.getWhereClause().whereJson('metadata', 'address.city', '=', 'New York');
@@ -98,17 +98,17 @@ describe('Native JSON Column Querying & Path Navigation', () => {
       expect(params[0].value).toBe('New York');
     });
 
-    it('translates to SQLite json_extract(metadata, \'$.address.city\')', () => {
+    it("translates to SQLite json_extract(metadata, '$.address.city')", () => {
       const sqliteAdapter = new SqliteAdapter(':memory:');
       const qb = new QueryBuilder(sqliteAdapter, 'users');
       qb.getWhereClause().whereJson('metadata', 'address.city', '=', 'New York');
 
       const { sql, params } = qb.toSelectSql();
-      expect(sql).toContain("json_extract(\"metadata\", '$.address.city') = ?");
+      expect(sql).toContain('json_extract("metadata", \'$.address.city\') = ?');
       expect(params[0].value).toBe('New York');
     });
 
-    it('translates to MSSQL JSON_VALUE(metadata, \'$.address.city\')', () => {
+    it("translates to MSSQL JSON_VALUE(metadata, '$.address.city')", () => {
       const mssqlAdapter = new MssqlAdapter('Server=localhost;Database=test;');
       const qb = new QueryBuilder(mssqlAdapter, 'users');
       qb.getWhereClause().whereJson('metadata', 'address.city', '=', 'New York');

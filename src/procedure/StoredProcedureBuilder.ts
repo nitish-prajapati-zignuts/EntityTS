@@ -69,7 +69,7 @@ function inferSqlType(value: unknown): SqlType | undefined {
 export class SprocOutputBuilder<TOut extends object> {
   constructor(
     private readonly builder: StoredProcedureBuilder,
-    private readonly outputNames: (keyof TOut)[]
+    private readonly outputNames: (keyof TOut)[],
   ) {}
 
   /**
@@ -127,7 +127,7 @@ export class SprocOutputBuilder<TOut extends object> {
       (raw.records || []) as unknown[][],
       raw.outputParams as TOut,
       raw.returnValue,
-      raw.rowsAffected
+      raw.rowsAffected,
     );
   }
 
@@ -179,7 +179,7 @@ export class StoredProcedureBuilder {
    */
   constructor(
     private readonly adapter: IDbAdapter,
-    private readonly procedureName: string
+    private readonly procedureName: string,
   ) {
     if (!procedureName || !procedureName.trim()) {
       throw new ProcedureException('Stored procedure name cannot be empty.');
@@ -254,7 +254,7 @@ export class StoredProcedureBuilder {
    * ```
    */
   public output<TOut extends object = Record<string, unknown>>(
-    paramNames?: (keyof TOut)[]
+    paramNames?: (keyof TOut)[],
   ): SprocOutputBuilder<TOut> {
     if (paramNames) {
       for (const name of paramNames) {
@@ -336,7 +336,7 @@ export class StoredProcedureBuilder {
       (result.records || []) as unknown[][],
       result.outputParams as TOut,
       result.returnValue,
-      result.rowsAffected
+      result.rowsAffected,
     );
   }
 
@@ -392,12 +392,7 @@ export class StoredProcedureBuilder {
    *   .withParam('Code', 'ABC', SqlType.VarChar, { maxLength: 10 });
    * ```
    */
-  public withParam(
-    name: string,
-    value: unknown,
-    type?: SqlType,
-    options?: ParamOptions
-  ): this {
+  public withParam(name: string, value: unknown, type?: SqlType, options?: ParamOptions): this {
     const cleanName = this.normalizeParamName(name);
     this.params.set(cleanName, {
       name: cleanName,
@@ -430,7 +425,7 @@ export class StoredProcedureBuilder {
   public withOutputParam(
     name: string,
     type: SqlType = SqlType.VarChar,
-    options?: ParamOptions
+    options?: ParamOptions,
   ): this {
     const cleanName = this.normalizeParamName(name);
     this.params.set(cleanName, {
@@ -456,7 +451,7 @@ export class StoredProcedureBuilder {
     name: string,
     value: unknown,
     type: SqlType = SqlType.VarChar,
-    options?: ParamOptions
+    options?: ParamOptions,
   ): this {
     const cleanName = this.normalizeParamName(name);
     this.params.set(cleanName, {
@@ -525,7 +520,7 @@ export class StoredProcedureBuilder {
         this.procedureName,
         this.getParams(),
         this.timeoutMs,
-        this.transaction
+        this.transaction,
       );
       return {
         records: undefined as unknown as void,
@@ -534,7 +529,11 @@ export class StoredProcedureBuilder {
         rowsAffected: result.rowsAffected,
       };
     } catch (err) {
-      throw DatabaseErrorTranslator.translateProcedure(err, this.procedureName, this.adapter.provider);
+      throw DatabaseErrorTranslator.translateProcedure(
+        err,
+        this.procedureName,
+        this.adapter.provider,
+      );
     }
   }
 
@@ -550,10 +549,14 @@ export class StoredProcedureBuilder {
         this.procedureName,
         this.getParams(),
         this.timeoutMs,
-        this.transaction
+        this.transaction,
       );
     } catch (err) {
-      throw DatabaseErrorTranslator.translateProcedure(err, this.procedureName, this.adapter.provider);
+      throw DatabaseErrorTranslator.translateProcedure(
+        err,
+        this.procedureName,
+        this.adapter.provider,
+      );
     }
   }
 
@@ -582,16 +585,22 @@ export class StoredProcedureBuilder {
    * @usecase Core execution method for procedures returning multiple tables in a single call.
    * @returns A Promise resolving to `StoredProcedureResult<T>`.
    */
-  public async executeMultiple<T extends unknown[] = unknown[]>(): Promise<StoredProcedureResult<T>> {
+  public async executeMultiple<T extends unknown[] = unknown[]>(): Promise<
+    StoredProcedureResult<T>
+  > {
     try {
       return await this.adapter.executeProcedureMultiple<T>(
         this.procedureName,
         this.getParams(),
         this.timeoutMs,
-        this.transaction
+        this.transaction,
       );
     } catch (err) {
-      throw DatabaseErrorTranslator.translateProcedure(err, this.procedureName, this.adapter.provider);
+      throw DatabaseErrorTranslator.translateProcedure(
+        err,
+        this.procedureName,
+        this.adapter.provider,
+      );
     }
   }
 

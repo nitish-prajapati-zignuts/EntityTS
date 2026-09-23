@@ -6,7 +6,8 @@ import { DbSet } from '../src/set/DbSet';
 function createMockAdapter(provider: string): IDbAdapter {
   return {
     provider,
-    escapeIdentifier: (id: string) => (provider === 'mssql' ? `[${id}]` : provider === 'mysql' ? `\`${id}\`` : `"${id}"`),
+    escapeIdentifier: (id: string) =>
+      provider === 'mssql' ? `[${id}]` : provider === 'mysql' ? `\`${id}\`` : `"${id}"`,
     formatParameterPlaceholder: (name: string, index: number) => {
       if (provider === 'postgres') return `$${index}`;
       if (provider === 'mssql') return `@${name}`;
@@ -44,7 +45,10 @@ describe('Pessimistic Row Locking Across Dialects', () => {
     it('generates FOR UPDATE SKIP LOCKED for worker queues', () => {
       const adapter = createMockAdapter('postgres');
       const qb = new QueryBuilder(adapter, 'tasks');
-      const { sql } = qb.where(new WhereClause().eq('status', 'PENDING')).forUpdateSkipLocked().toSelectSql();
+      const { sql } = qb
+        .where(new WhereClause().eq('status', 'PENDING'))
+        .forUpdateSkipLocked()
+        .toSelectSql();
 
       expect(sql).toContain('SELECT * FROM "tasks" WHERE "status" = $1 FOR UPDATE SKIP LOCKED');
     });
@@ -64,7 +68,9 @@ describe('Pessimistic Row Locking Across Dialects', () => {
       const qb = new QueryBuilder(adapter, 'accounts');
       const { sql } = qb.where(new WhereClause().eq('id', 101)).forUpdate().toSelectSql();
 
-      expect(sql).toContain('SELECT * FROM [accounts] WITH (UPDLOCK, ROWLOCK, HOLDLOCK) WHERE [id] = @p0');
+      expect(sql).toContain(
+        'SELECT * FROM [accounts] WITH (UPDLOCK, ROWLOCK, HOLDLOCK) WHERE [id] = @p0',
+      );
     });
 
     it('generates WITH (UPDLOCK, ROWLOCK, NOWAIT) for no-wait exclusive locks', () => {
@@ -72,7 +78,9 @@ describe('Pessimistic Row Locking Across Dialects', () => {
       const qb = new QueryBuilder(adapter, 'accounts');
       const { sql } = qb.where(new WhereClause().eq('id', 101)).forUpdateNoWait().toSelectSql();
 
-      expect(sql).toContain('SELECT * FROM [accounts] WITH (UPDLOCK, ROWLOCK, NOWAIT) WHERE [id] = @p0');
+      expect(sql).toContain(
+        'SELECT * FROM [accounts] WITH (UPDLOCK, ROWLOCK, NOWAIT) WHERE [id] = @p0',
+      );
     });
 
     it('generates WITH (UPDLOCK, ROWLOCK, READPAST) for skip locked rows', () => {
@@ -167,7 +175,9 @@ describe('Pessimistic Row Locking Across Dialects', () => {
     it('.lock() chains correctly after .where()', () => {
       const adapter = createMockAdapter('postgres');
       const accounts = new DbSet(adapter, 'accounts');
-      const { sql } = (accounts.where({ id: 1 }).lock('pessimistic') as any).queryBuilder.toSelectSql();
+      const { sql } = (
+        accounts.where({ id: 1 }).lock('pessimistic') as any
+      ).queryBuilder.toSelectSql();
       expect(sql).toContain('WHERE');
       expect(sql).toContain('FOR UPDATE');
     });

@@ -95,24 +95,47 @@ async function main() {
     });
 
     // 4. Bulk Insert (.bulkInsert)
-    await runTest('POST /api/products/bulk-insert - High-performance Bulk Insert (.bulkInsert)', async () => {
-      const res = await fetch(`${baseUrl}/api/products/bulk-insert`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify([
-          { sku: 'BULK-001', name: 'USB-C Cable 1m', category: 'Accessories', price: 9.99, stock: 200 },
-          { sku: 'BULK-002', name: 'USB-C Cable 2m', category: 'Accessories', price: 14.99, stock: 150 },
-          { sku: 'BULK-003', name: 'Laptop Stand', category: 'Accessories', price: 34.99, stock: 75 },
-        ]),
-      });
-      assert(res.status === 201, `Expected 201, got ${res.status}`);
-      const body: any = await res.json();
-      assert(body.count === 3, `Expected 3 products, got ${body.count}`);
-    });
+    await runTest(
+      'POST /api/products/bulk-insert - High-performance Bulk Insert (.bulkInsert)',
+      async () => {
+        const res = await fetch(`${baseUrl}/api/products/bulk-insert`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify([
+            {
+              sku: 'BULK-001',
+              name: 'USB-C Cable 1m',
+              category: 'Accessories',
+              price: 9.99,
+              stock: 200,
+            },
+            {
+              sku: 'BULK-002',
+              name: 'USB-C Cable 2m',
+              category: 'Accessories',
+              price: 14.99,
+              stock: 150,
+            },
+            {
+              sku: 'BULK-003',
+              name: 'Laptop Stand',
+              category: 'Accessories',
+              price: 34.99,
+              stock: 75,
+            },
+          ]),
+        });
+        assert(res.status === 201, `Expected 201, got ${res.status}`);
+        const body: any = await res.json();
+        assert(body.count === 3, `Expected 3 products, got ${body.count}`);
+      },
+    );
 
     // 5. Fluent Filter & Sort (.where, .orderBy)
     await runTest('GET /api/users - Fluent LINQ-style filter & order', async () => {
-      const res = await fetch(`${baseUrl}/api/users?role=admin&minScore=90&orderBy=score&order=desc`);
+      const res = await fetch(
+        `${baseUrl}/api/users?role=admin&minScore=90&orderBy=score&order=desc`,
+      );
       assert(res.status === 200, `Expected 200, got ${res.status}`);
       const body: any = await res.json();
       assert(body.items.length >= 2, 'Expected at least 2 admin users with score >= 90');
@@ -120,43 +143,55 @@ async function main() {
     });
 
     // 6. Offset Pagination (.toPagedList)
-    await runTest('GET /api/users/paged - Offset Pagination with Metadata (.toPagedList)', async () => {
-      const res = await fetch(`${baseUrl}/api/users/paged?page=1&pageSize=3`);
-      assert(res.status === 200, `Expected 200, got ${res.status}`);
-      const body: any = await res.json();
-      assert(body.items.length === 3, `Expected 3 items, got ${body.items.length}`);
-      assert(body.total > 3, `Expected total > 3, got ${body.total}`);
-      assert(body.totalPages >= 2, `Expected totalPages >= 2`);
-      assert(body.hasNext === true, 'Expected hasNext true');
-    });
+    await runTest(
+      'GET /api/users/paged - Offset Pagination with Metadata (.toPagedList)',
+      async () => {
+        const res = await fetch(`${baseUrl}/api/users/paged?page=1&pageSize=3`);
+        assert(res.status === 200, `Expected 200, got ${res.status}`);
+        const body: any = await res.json();
+        assert(body.items.length === 3, `Expected 3 items, got ${body.items.length}`);
+        assert(body.total > 3, `Expected total > 3, got ${body.total}`);
+        assert(body.totalPages >= 2, `Expected totalPages >= 2`);
+        assert(body.hasNext === true, 'Expected hasNext true');
+      },
+    );
 
     // 7. Cursor Pagination (.toCursorPage)
-    await runTest('GET /api/users/cursor - Keyset / Cursor Pagination (.toCursorPage)', async () => {
-      const res = await fetch(`${baseUrl}/api/users/cursor?limit=2`);
-      assert(res.status === 200, `Expected 200, got ${res.status}`);
-      const body: any = await res.json();
-      assert(body.items.length === 2, `Expected 2 items, got ${body.items.length}`);
-      assert(body.nextCursor !== null, 'Expected nextCursor for next page');
-    });
+    await runTest(
+      'GET /api/users/cursor - Keyset / Cursor Pagination (.toCursorPage)',
+      async () => {
+        const res = await fetch(`${baseUrl}/api/users/cursor?limit=2`);
+        assert(res.status === 200, `Expected 200, got ${res.status}`);
+        const body: any = await res.json();
+        assert(body.items.length === 2, `Expected 2 items, got ${body.items.length}`);
+        assert(body.nextCursor !== null, 'Expected nextCursor for next page');
+      },
+    );
 
     // 8. Multi-column Search (.whereSearch)
-    await runTest('GET /api/users/search - Full-Text Multi-Column Search (.whereSearch)', async () => {
-      const res = await fetch(`${baseUrl}/api/users/search?q=Alice`);
-      assert(res.status === 200, `Expected 200, got ${res.status}`);
-      const body: any = await res.json();
-      assert(body.count >= 1, `Expected at least 1 match for Alice, got ${body.count}`);
-      assert(body.results[0].name.includes('Alice'), 'Expected result to contain Alice');
-    });
+    await runTest(
+      'GET /api/users/search - Full-Text Multi-Column Search (.whereSearch)',
+      async () => {
+        const res = await fetch(`${baseUrl}/api/users/search?q=Alice`);
+        assert(res.status === 200, `Expected 200, got ${res.status}`);
+        const body: any = await res.json();
+        assert(body.count >= 1, `Expected at least 1 match for Alice, got ${body.count}`);
+        assert(body.results[0].name.includes('Alice'), 'Expected result to contain Alice');
+      },
+    );
 
     // 9. Aggregations (count, avg, min, max, sum)
-    await runTest('GET /api/users/stats - Aggregate Calculations (.count, .avg, .min, .max, .sum)', async () => {
-      const res = await fetch(`${baseUrl}/api/users/stats`);
-      assert(res.status === 200, `Expected 200, got ${res.status}`);
-      const body: any = await res.json();
-      assert(body.totalUsers > 0, 'Expected positive totalUsers');
-      assert(body.averageScore > 0, 'Expected positive averageScore');
-      assert(body.maxScore >= body.minScore, 'Expected maxScore >= minScore');
-    });
+    await runTest(
+      'GET /api/users/stats - Aggregate Calculations (.count, .avg, .min, .max, .sum)',
+      async () => {
+        const res = await fetch(`${baseUrl}/api/users/stats`);
+        assert(res.status === 200, `Expected 200, got ${res.status}`);
+        const body: any = await res.json();
+        assert(body.totalUsers > 0, 'Expected positive totalUsers');
+        assert(body.averageScore > 0, 'Expected positive averageScore');
+        assert(body.maxScore >= body.minScore, 'Expected maxScore >= minScore');
+      },
+    );
 
     // 10. Eager Loading Relations (.include)
     await runTest('GET /api/users/1/relations - Eager loading relations (.include)', async () => {
@@ -168,19 +203,22 @@ async function main() {
     });
 
     // 11. Query Caching (.cache & .invalidateCache)
-    await runTest('GET /api/users/cache/demo & POST /cache/invalidate - Query Cache & Invalidation', async () => {
-      // 1st request caches it
-      const res1 = await fetch(`${baseUrl}/api/users/cache/demo`);
-      assert(res1.status === 200, 'Expected 200 on first cache call');
+    await runTest(
+      'GET /api/users/cache/demo & POST /cache/invalidate - Query Cache & Invalidation',
+      async () => {
+        // 1st request caches it
+        const res1 = await fetch(`${baseUrl}/api/users/cache/demo`);
+        assert(res1.status === 200, 'Expected 200 on first cache call');
 
-      // 2nd request should hit cache
-      const res2 = await fetch(`${baseUrl}/api/users/cache/demo`);
-      assert(res2.status === 200, 'Expected 200 on second cache call');
+        // 2nd request should hit cache
+        const res2 = await fetch(`${baseUrl}/api/users/cache/demo`);
+        assert(res2.status === 200, 'Expected 200 on second cache call');
 
-      // Invalidate
-      const res3 = await fetch(`${baseUrl}/api/users/cache/invalidate`, { method: 'POST' });
-      assert(res3.status === 200, 'Expected 200 on cache invalidate');
-    });
+        // Invalidate
+        const res3 = await fetch(`${baseUrl}/api/users/cache/invalidate`, { method: 'POST' });
+        assert(res3.status === 200, 'Expected 200 on cache invalidate');
+      },
+    );
 
     // 12. Direct Update by ID (.update)
     await runTest('PUT /api/users/:id - Direct Update by ID (.update)', async () => {
@@ -221,21 +259,27 @@ async function main() {
       });
       assert(res.status === 200, `Expected 200, got ${res.status}`);
       const body: any = await res.json();
-      assert(body.result.name === 'Ada Lovelace Updated Via Upsert', 'Upsert did not update existing row');
+      assert(
+        body.result.name === 'Ada Lovelace Updated Via Upsert',
+        'Upsert did not update existing row',
+      );
     });
 
     // 15. Change Tracker Proxy Mutation (track -> mutate -> saveChanges)
-    await runTest('PATCH /api/users/:id/track - Proxy Change Tracking & saveChanges()', async () => {
-      const res = await fetch(`${baseUrl}/api/users/${createdUserId}/track`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ score: 120 }),
-      });
-      assert(res.status === 200, `Expected 200, got ${res.status}`);
-      const body: any = await res.json();
-      assert(body.savedCount === 1, `Expected 1 flushed change, got ${body.savedCount}`);
-      assert(body.user.score === 120, 'Tracked score mismatch');
-    });
+    await runTest(
+      'PATCH /api/users/:id/track - Proxy Change Tracking & saveChanges()',
+      async () => {
+        const res = await fetch(`${baseUrl}/api/users/${createdUserId}/track`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ score: 120 }),
+        });
+        assert(res.status === 200, `Expected 200, got ${res.status}`);
+        const body: any = await res.json();
+        assert(body.savedCount === 1, `Expected 1 flushed change, got ${body.savedCount}`);
+        assert(body.user.score === 120, 'Tracked score mismatch');
+      },
+    );
 
     // 16. Soft Delete (.remove)
     await runTest('DELETE /api/users/:id - Soft Delete (.remove sets deleted_at)', async () => {
@@ -273,122 +317,163 @@ async function main() {
     });
 
     // 19. Permanent Hard Delete (.hardRemove)
-    await runTest('DELETE /api/users/:id/permanent - Permanent Hard Delete (.hardRemove)', async () => {
-      const res = await fetch(`${baseUrl}/api/users/${createdUserId}/permanent`, { method: 'DELETE' });
-      assert(res.status === 200, `Expected 200, got ${res.status}`);
+    await runTest(
+      'DELETE /api/users/:id/permanent - Permanent Hard Delete (.hardRemove)',
+      async () => {
+        const res = await fetch(`${baseUrl}/api/users/${createdUserId}/permanent`, {
+          method: 'DELETE',
+        });
+        assert(res.status === 200, `Expected 200, got ${res.status}`);
 
-      // Even withDeleted will NOT find it
-      const allRes = await fetch(`${baseUrl}/api/users/with-deleted`);
-      const all: any = await allRes.json();
-      const found = all.items.some((u: any) => u.id === createdUserId);
-      assert(!found, 'User should be permanently deleted from database table');
-    });
+        // Even withDeleted will NOT find it
+        const allRes = await fetch(`${baseUrl}/api/users/with-deleted`);
+        const all: any = await allRes.json();
+        const found = all.items.some((u: any) => u.id === createdUserId);
+        assert(!found, 'User should be permanently deleted from database table');
+      },
+    );
 
     // 20. Bulk Update (.bulkUpdate)
-    await runTest('PUT /api/products/bulk-update - High-performance Bulk Update (.bulkUpdate)', async () => {
-      const res = await fetch(`${baseUrl}/api/products/bulk-update`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify([
-          { id: 1, price: 139.99, stock: 40 },
-          { id: 2, price: 74.99, stock: 110 },
-        ]),
-      });
-      assert(res.status === 200, `Expected 200, got ${res.status}`);
-      const body: any = await res.json();
-      assert(body.affectedRows >= 1, 'Expected affected rows from bulkUpdate');
-    });
+    await runTest(
+      'PUT /api/products/bulk-update - High-performance Bulk Update (.bulkUpdate)',
+      async () => {
+        const res = await fetch(`${baseUrl}/api/products/bulk-update`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify([
+            { id: 1, price: 139.99, stock: 40 },
+            { id: 2, price: 74.99, stock: 110 },
+          ]),
+        });
+        assert(res.status === 200, `Expected 200, got ${res.status}`);
+        const body: any = await res.json();
+        assert(body.affectedRows >= 1, 'Expected affected rows from bulkUpdate');
+      },
+    );
 
     // 21. Bulk Upsert (.bulkUpsert)
-    await runTest('POST /api/products/bulk-upsert - High-performance Bulk Upsert (.bulkUpsert)', async () => {
-      const res = await fetch(`${baseUrl}/api/products/bulk-upsert`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify([
-          { sku: 'PROD-001', name: 'Ergonomic Mechanical Keyboard v2', category: 'Electronics', price: 159.99, stock: 50 },
-          { sku: 'PROD-NEW-01', name: 'Desk LED Lamp', category: 'Office', price: 39.99, stock: 80 },
-        ]),
-      });
-      assert(res.status === 200, `Expected 200, got ${res.status}`);
-      const body: any = await res.json();
-      assert(body.affectedRows >= 1, 'Expected affected rows from bulkUpsert');
-    });
+    await runTest(
+      'POST /api/products/bulk-upsert - High-performance Bulk Upsert (.bulkUpsert)',
+      async () => {
+        const res = await fetch(`${baseUrl}/api/products/bulk-upsert`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify([
+            {
+              sku: 'PROD-001',
+              name: 'Ergonomic Mechanical Keyboard v2',
+              category: 'Electronics',
+              price: 159.99,
+              stock: 50,
+            },
+            {
+              sku: 'PROD-NEW-01',
+              name: 'Desk LED Lamp',
+              category: 'Office',
+              price: 39.99,
+              stock: 80,
+            },
+          ]),
+        });
+        assert(res.status === 200, `Expected 200, got ${res.status}`);
+        const body: any = await res.json();
+        assert(body.affectedRows >= 1, 'Expected affected rows from bulkUpsert');
+      },
+    );
 
     // 22. Optimistic Concurrency Control (@Version)
-    await runTest('PUT /api/products/:id/concurrency - Optimistic Concurrency Control (@Version)', async () => {
-      // 1. Fetch current product version
-      const prodRes = await fetch(`${baseUrl}/api/products/1`);
-      const product: any = await prodRes.json();
-      const currentVersion = product.version;
+    await runTest(
+      'PUT /api/products/:id/concurrency - Optimistic Concurrency Control (@Version)',
+      async () => {
+        // 1. Fetch current product version
+        const prodRes = await fetch(`${baseUrl}/api/products/1`);
+        const product: any = await prodRes.json();
+        const currentVersion = product.version;
 
-      // 2. Update with correct expectedVersion -> succeeds
-      const updateRes = await fetch(`${baseUrl}/api/products/1/concurrency`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ price: 169.99, expectedVersion: currentVersion }),
-      });
-      assert(updateRes.status === 200, `Expected 200 on matching version, got ${updateRes.status}`);
+        // 2. Update with correct expectedVersion -> succeeds
+        const updateRes = await fetch(`${baseUrl}/api/products/1/concurrency`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ price: 169.99, expectedVersion: currentVersion }),
+        });
+        assert(
+          updateRes.status === 200,
+          `Expected 200 on matching version, got ${updateRes.status}`,
+        );
 
-      // 3. Update again with old stale expectedVersion -> throws 409 Conflict!
-      const staleRes = await fetch(`${baseUrl}/api/products/1/concurrency`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ price: 179.99, expectedVersion: currentVersion }),
-      });
-      assert(staleRes.status === 409, `Expected 409 Conflict on stale version, got ${staleRes.status}`);
-      const conflictBody: any = await staleRes.json();
-      assert(conflictBody.error === 'Concurrency conflict detected', 'Expected concurrency conflict error');
-    });
+        // 3. Update again with old stale expectedVersion -> throws 409 Conflict!
+        const staleRes = await fetch(`${baseUrl}/api/products/1/concurrency`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ price: 179.99, expectedVersion: currentVersion }),
+        });
+        assert(
+          staleRes.status === 409,
+          `Expected 409 Conflict on stale version, got ${staleRes.status}`,
+        );
+        const conflictBody: any = await staleRes.json();
+        assert(
+          conflictBody.error === 'Concurrency conflict detected',
+          'Expected concurrency conflict error',
+        );
+      },
+    );
 
     // 23. Atomic Multi-Entity Transaction (useTransaction)
-    await runTest('POST /api/transactions/atomic-multi-entity - Multi-Entity Atomic Transaction', async () => {
-      // Success test
-      const successRes = await fetch(`${baseUrl}/api/transactions/atomic-multi-entity`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: 'Tx Success User',
-          email: 'tx-success@example.com',
-          bio: 'Atomic Bio',
-          postTitle: 'Atomic Post Title',
-          simulateError: false,
-        }),
-      });
-      assert(successRes.status === 201, `Expected 201, got ${successRes.status}`);
-      const body: any = await successRes.json();
-      assert(body.result.user.id > 0, 'Expected committed user');
-      assert(body.result.profile.id > 0, 'Expected committed profile');
-      assert(body.result.post.id > 0, 'Expected committed post');
-      assert(body.result.audit.id > 0, 'Expected committed audit log');
+    await runTest(
+      'POST /api/transactions/atomic-multi-entity - Multi-Entity Atomic Transaction',
+      async () => {
+        // Success test
+        const successRes = await fetch(`${baseUrl}/api/transactions/atomic-multi-entity`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: 'Tx Success User',
+            email: 'tx-success@example.com',
+            bio: 'Atomic Bio',
+            postTitle: 'Atomic Post Title',
+            simulateError: false,
+          }),
+        });
+        assert(successRes.status === 201, `Expected 201, got ${successRes.status}`);
+        const body: any = await successRes.json();
+        assert(body.result.user.id > 0, 'Expected committed user');
+        assert(body.result.profile.id > 0, 'Expected committed profile');
+        assert(body.result.post.id > 0, 'Expected committed post');
+        assert(body.result.audit.id > 0, 'Expected committed audit log');
 
-      // Rollback test
-      const rollbackRes = await fetch(`${baseUrl}/api/transactions/atomic-multi-entity`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: 'Tx Revert User',
-          email: 'tx-revert@example.com',
-          simulateError: true,
-        }),
-      });
-      assert(rollbackRes.status === 400, `Expected 400 on rollback, got ${rollbackRes.status}`);
-      const rollbackBody: any = await rollbackRes.json();
-      assert(rollbackBody.status === 'Rolled back', 'Expected transaction rollback status');
-    });
+        // Rollback test
+        const rollbackRes = await fetch(`${baseUrl}/api/transactions/atomic-multi-entity`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: 'Tx Revert User',
+            email: 'tx-revert@example.com',
+            simulateError: true,
+          }),
+        });
+        assert(rollbackRes.status === 400, `Expected 400 on rollback, got ${rollbackRes.status}`);
+        const rollbackBody: any = await rollbackRes.json();
+        assert(rollbackBody.status === 'Rolled back', 'Expected transaction rollback status');
+      },
+    );
 
     // 24. Credit Transfer Transaction
-    await runTest('POST /api/transactions/credit-transfer - Score/Credit Transfer in Transaction', async () => {
-      const res = await fetch(`${baseUrl}/api/transactions/credit-transfer`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          fromUserId: 1,
-          toUserId: 2,
-          amount: 10,
-        }),
-      });
-      assert(res.status === 200, `Expected 200, got ${res.status}`);
-    });
+    await runTest(
+      'POST /api/transactions/credit-transfer - Score/Credit Transfer in Transaction',
+      async () => {
+        const res = await fetch(`${baseUrl}/api/transactions/credit-transfer`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            fromUserId: 1,
+            toUserId: 2,
+            amount: 10,
+          }),
+        });
+        assert(res.status === 200, `Expected 200, got ${res.status}`);
+      },
+    );
 
     // 25. Resilient Transaction Execution Strategy
     await runTest('POST /api/transactions/resilient - Resilient Retry Transaction', async () => {
@@ -397,12 +482,15 @@ async function main() {
     });
 
     // 26. Savepoints
-    await runTest('POST /api/transactions/savepoints - Manual Transaction with Savepoints', async () => {
-      const res = await fetch(`${baseUrl}/api/transactions/savepoints`, { method: 'POST' });
-      assert(res.status === 200, `Expected 200, got ${res.status}`);
-      const body: any = await res.json();
-      assert(body.committedUser !== undefined, 'Expected committed primary user');
-    });
+    await runTest(
+      'POST /api/transactions/savepoints - Manual Transaction with Savepoints',
+      async () => {
+        const res = await fetch(`${baseUrl}/api/transactions/savepoints`, { method: 'POST' });
+        assert(res.status === 200, `Expected 200, got ${res.status}`);
+        const body: any = await res.json();
+        assert(body.committedUser !== undefined, 'Expected committed primary user');
+      },
+    );
 
     // 27. Raw Parameterized SQL (.fromSql)
     await runTest('GET /api/sql/raw-query - Raw Parameterized Query (.fromSql)', async () => {
@@ -413,24 +501,30 @@ async function main() {
     });
 
     // 28. Raw Parameterized Command (.executeSql)
-    await runTest('POST /api/sql/raw-execute - Raw Parameterized Command (.executeSql)', async () => {
-      const res = await fetch(`${baseUrl}/api/sql/raw-execute`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ bonus: 2, role: 'admin' }),
-      });
-      assert(res.status === 200, `Expected 200, got ${res.status}`);
-      const body: any = await res.json();
-      assert(body.rowsAffected >= 0, 'Expected rowsAffected');
-    });
+    await runTest(
+      'POST /api/sql/raw-execute - Raw Parameterized Command (.executeSql)',
+      async () => {
+        const res = await fetch(`${baseUrl}/api/sql/raw-execute`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ bonus: 2, role: 'admin' }),
+        });
+        assert(res.status === 200, `Expected 200, got ${res.status}`);
+        const body: any = await res.json();
+        assert(body.rowsAffected >= 0, 'Expected rowsAffected');
+      },
+    );
 
     // 29. Tagged Template SQL (ctx.sql`...`)
-    await runTest('GET /api/sql/tagged-query - Tagged Template Literal Query (ctx.sql)', async () => {
-      const res = await fetch(`${baseUrl}/api/sql/tagged-query?role=admin&minScore=50`);
-      assert(res.status === 200, `Expected 200, got ${res.status}`);
-      const body: any = await res.json();
-      assert(body.rows.length > 0, 'Expected results from tagged template query');
-    });
+    await runTest(
+      'GET /api/sql/tagged-query - Tagged Template Literal Query (ctx.sql)',
+      async () => {
+        const res = await fetch(`${baseUrl}/api/sql/tagged-query?role=admin&minScore=50`);
+        assert(res.status === 200, `Expected 200, got ${res.status}`);
+        const body: any = await res.json();
+        assert(body.rows.length > 0, 'Expected results from tagged template query');
+      },
+    );
 
     // 30. Stored Procedure Builder Inspection
     await runTest('GET /api/sql/procedure-demo - Fluent Stored Procedure Builder', async () => {
@@ -439,7 +533,6 @@ async function main() {
       const body: any = await res.json();
       assert(body.procedureName === 'usp_GetTopUsers', 'Expected procedure name');
     });
-
   } finally {
     server.close();
   }

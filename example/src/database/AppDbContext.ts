@@ -69,7 +69,7 @@ export class AppDbContext extends DbContext {
         logger: (msg, duration, sql) => {
           console.warn(`\x1b[33m[SLOW QUERY WARNING]\x1b[0m ${duration}ms: ${sql}`);
         },
-      })
+      }),
     );
 
     // Query plan analyzer — runs EXPLAIN [ANALYZE] alongside SELECT queries
@@ -89,7 +89,7 @@ export class AppDbContext extends DbContext {
       new MemoryQueryCache({
         maxSize: 500,
         defaultTtlMs: config.cacheTtlMs,
-      })
+      }),
     );
 
     // Resilient connection strategy with auto-retry on transient errors

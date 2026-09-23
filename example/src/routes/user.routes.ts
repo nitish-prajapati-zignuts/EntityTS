@@ -83,12 +83,15 @@ userRouter.get('/', async (req: Request, res: Response, next: NextFunction) => {
         builder = builder.eq('role', String(role));
       }
       if (minScore !== undefined) {
-        builder = role ? builder.and().gte('score', Number(minScore)) : builder.gte('score', Number(minScore));
+        builder = role
+          ? builder.and().gte('score', Number(minScore))
+          : builder.gte('score', Number(minScore));
       }
       if (maxScore !== undefined) {
-        builder = (role || minScore !== undefined)
-          ? builder.and().lte('score', Number(maxScore))
-          : builder.lte('score', Number(maxScore));
+        builder =
+          role || minScore !== undefined
+            ? builder.and().lte('score', Number(maxScore))
+            : builder.lte('score', Number(maxScore));
       }
       return builder;
     });
@@ -297,11 +300,7 @@ userRouter.get('/:id/relations', async (req: Request, res: Response, next: NextF
     const db = getDb(req);
     const id = Number(req.params.id);
 
-    const users = await db.users
-      .include('profile')
-      .include('posts')
-      .where({ id })
-      .toList();
+    const users = await db.users.include('profile').include('posts').where({ id }).toList();
 
     const userWithRelations = users[0];
 
@@ -363,7 +362,7 @@ userRouter.patch('/bulk-promote', async (req: Request, res: Response, next: Next
     const usersToPromote = await db.users.where({ role: 'user' }).toList();
     const affected = await db.users.bulkUpdate(
       usersToPromote.map(u => ({ id: u.id, role: newRole })),
-      { keys: ['id'], update: ['role'] }
+      { keys: ['id'], update: ['role'] },
     );
 
     res.json({
@@ -396,7 +395,7 @@ userRouter.post('/upsert', async (req: Request, res: Response, next: NextFunctio
         role: role || 'user',
         score: score !== undefined ? Number(score) : 50,
       },
-      ['email']
+      ['email'],
     );
 
     res.json({ message: 'User upserted successfully.', result });

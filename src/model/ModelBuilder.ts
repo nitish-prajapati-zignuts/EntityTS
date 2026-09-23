@@ -28,7 +28,7 @@ export class ModelBuilder {
    */
   public entity<T extends object>(
     entityType: EntityConstructor<T>,
-    configure?: (builder: EntityTypeBuilder<T>) => void
+    configure?: (builder: EntityTypeBuilder<T>) => void,
   ): EntityTypeBuilder<T> {
     const metadata = this.registry.getOrCreate(entityType);
     const builder = new EntityTypeBuilder<T>(metadata);

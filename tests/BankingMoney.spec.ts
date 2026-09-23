@@ -49,7 +49,7 @@ describe('Banking & Financial Precision: Money and Decorators', () => {
       expect(() => usd.greaterThan(eur)).toThrow(/Currency mismatch/);
     });
 
-    it('performs Banker\'s Rounding (HALF_EVEN) correctly', () => {
+    it("performs Banker's Rounding (HALF_EVEN) correctly", () => {
       // Banker's rounding rounds half to nearest even number
       // 2.5 -> 2, 3.5 -> 4
       const m1 = Money.usd('5.0000'); // 5 / 2 = 2.5000 units

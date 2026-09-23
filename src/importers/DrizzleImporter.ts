@@ -26,7 +26,8 @@ export class DrizzleImporter {
     const tables: DrizzleTable[] = [];
 
     // Match tables: export const <varName> = (pgTable|mysqlTable|sqliteTable)('<tableName>', {
-    const tableStartRegex = /export\s+const\s+(\w+)\s*=\s*(?:pgTable|mysqlTable|sqliteTable)\(\s*['"]([^'"]+)['"]\s*,\s*\{/g;
+    const tableStartRegex =
+      /export\s+const\s+(\w+)\s*=\s*(?:pgTable|mysqlTable|sqliteTable)\(\s*['"]([^'"]+)['"]\s*,\s*\{/g;
     let match: RegExpExecArray | null;
 
     while ((match = tableStartRegex.exec(drizzleCode)) !== null) {
@@ -65,7 +66,8 @@ export class DrizzleImporter {
         const drizzleType = typeMatch[1];
         const isPrimary = colDef.includes('.primaryKey()') || drizzleType === 'serial';
         const isUnique = colDef.includes('.unique()');
-        const isCreatedAt = colDef.includes('.defaultNow()') || propName.toLowerCase().includes('created');
+        const isCreatedAt =
+          colDef.includes('.defaultNow()') || propName.toLowerCase().includes('created');
         const isUpdatedAt = propName.toLowerCase().includes('updated');
         const isNotNull = colDef.includes('.notNull()') || isPrimary || isCreatedAt;
 
@@ -142,8 +144,12 @@ export class DrizzleImporter {
       contextLines.push(`  public readonly ${t.varName}!: DbSet<${t.className}>;`);
     }
     contextLines.push('');
-    contextLines.push('  protected override onConfiguring(options: DbContextOptionsBuilder): void {');
-    contextLines.push("    options.usePostgres(process.env.DATABASE_URL || 'postgresql://localhost:5432/mydb');");
+    contextLines.push(
+      '  protected override onConfiguring(options: DbContextOptionsBuilder): void {',
+    );
+    contextLines.push(
+      "    options.usePostgres(process.env.DATABASE_URL || 'postgresql://localhost:5432/mydb');",
+    );
     contextLines.push('  }');
     contextLines.push('}');
 

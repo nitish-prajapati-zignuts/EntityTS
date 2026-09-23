@@ -14,7 +14,7 @@ export class ValidationEngine {
   public static validate(
     entity: unknown,
     targetConstructor?: Function,
-    options?: { partial?: boolean }
+    options?: { partial?: boolean },
   ): ValidationResult {
     if (!entity || typeof entity !== 'object') {
       return { isValid: true, errors: {} };
@@ -70,7 +70,7 @@ export class ValidationEngine {
     entity: unknown,
     targetConstructor?: Function,
     entityName?: string,
-    options?: { partial?: boolean }
+    options?: { partial?: boolean },
   ): void {
     const result = this.validate(entity, targetConstructor, options);
     if (!result.isValid) {

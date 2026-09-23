@@ -158,10 +158,12 @@ describe('Relations and Eager Loading (.include)', () => {
   });
 
   it('supports Prisma-style boolean object mapping in .include({ profile: true, orders: false })', async () => {
-    const users = await ctx.users.include({
-      profile: true,
-      orders: false,
-    }).toList();
+    const users = await ctx.users
+      .include({
+        profile: true,
+        orders: false,
+      })
+      .toList();
 
     const alice = users.find(u => u.name === 'Alice')!;
     expect(alice.profile).toBeDefined();

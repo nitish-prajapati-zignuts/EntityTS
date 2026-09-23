@@ -242,7 +242,7 @@ describe('Prisma APIs & Multi-Table Stored Procedures', () => {
     it('$queryRaw: supports parameterized string query', async () => {
       const rows = await db.$queryRaw<Member>(
         'SELECT * FROM test_members WHERE role = @p0 ORDER BY name ASC',
-        'user'
+        'user',
       );
       expect(rows).toHaveLength(2);
       expect(rows[0].name).toBe('Bob Jones');
@@ -261,8 +261,12 @@ describe('Prisma APIs & Multi-Table Stored Procedures', () => {
 
     it('$transaction: executes sequential operations in atomic transaction', async () => {
       const results = await db.$transaction([
-        db.members.create({ data: { name: 'TxUser1', email: 'tx1@test.com', role: 'user', age: 20 } }),
-        db.members.create({ data: { name: 'TxUser2', email: 'tx2@test.com', role: 'user', age: 21 } }),
+        db.members.create({
+          data: { name: 'TxUser1', email: 'tx1@test.com', role: 'user', age: 20 },
+        }),
+        db.members.create({
+          data: { name: 'TxUser2', email: 'tx2@test.com', role: 'user', age: 21 },
+        }),
       ]);
       expect(results).toHaveLength(2);
       expect((results[0] as Member).name).toBe('TxUser1');
@@ -273,7 +277,7 @@ describe('Prisma APIs & Multi-Table Stored Procedures', () => {
     });
 
     it('$transaction: executes interactive callback and auto-commits', async () => {
-      const created = await db.$transaction(async (tx) => {
+      const created = await db.$transaction(async tx => {
         const user = await tx.members.create({
           data: { name: 'InteractiveTx', email: 'itx@test.com', role: 'admin', age: 45 },
         });
@@ -291,12 +295,12 @@ describe('Prisma APIs & Multi-Table Stored Procedures', () => {
 
     it('$transaction: rolls back when interactive callback throws error', async () => {
       await expect(
-        db.$transaction(async (tx) => {
+        db.$transaction(async tx => {
           await tx.members.create({
             data: { name: 'RollbackUser', email: 'rb@test.com', role: 'user', age: 99 },
           });
           throw new Error('Forced rollback error');
-        })
+        }),
       ).rejects.toThrow('Forced rollback error');
 
       const found = await db.members.findUnique({ where: { email: 'rb@test.com' } });
@@ -363,9 +367,7 @@ describe('Prisma APIs & Multi-Table Stored Procedures', () => {
     });
 
     it('Option 2 (Sequential Reader): .reader() consumes tables one-by-one with .read<T>() and .readFirst<T>()', async () => {
-      const reader = await createSproc()
-        .input({ CustomerId: 101 })
-        .reader();
+      const reader = await createSproc().input({ CustomerId: 101 }).reader();
 
       expect(reader.tableCount).toBe(3);
       expect(reader.hasMore).toBe(true);
@@ -417,8 +419,7 @@ describe('Prisma APIs & Multi-Table Stored Procedures', () => {
     });
 
     it('Option 5: .readAll() returns all tables without sequential cursor incrementing', async () => {
-      const reader = await createSproc()
-        .reader();
+      const reader = await createSproc().reader();
 
       const allTables = reader.readAll<[CustomerRow[], OrderRow[], SummaryRow[]]>();
       expect(allTables).toHaveLength(3);

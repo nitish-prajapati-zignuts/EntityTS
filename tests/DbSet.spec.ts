@@ -97,9 +97,9 @@ describe('DbSet', () => {
 
   it('remove deletes a record by id', async () => {
     await userSet.remove(2);
-    expect(adapter.executedQueries.some(q => q.sql.includes('DELETE FROM "users" WHERE "id" = @p0'))).toBe(
-      true
-    );
+    expect(
+      adapter.executedQueries.some(q => q.sql.includes('DELETE FROM "users" WHERE "id" = @p0')),
+    ).toBe(true);
   });
 
   it('fromSql executes custom raw SQL and maps results', async () => {

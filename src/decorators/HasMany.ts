@@ -19,7 +19,10 @@ export interface HasManyOptions {
  * posts!: LazyRelation<Post[]>;
  * ```
  */
-export function HasMany(target: () => Function, options: HasManyOptions | string): PropertyDecorator {
+export function HasMany(
+  target: () => Function,
+  options: HasManyOptions | string,
+): PropertyDecorator {
   return (proto: Object, propertyKey: string | symbol) => {
     const propName = String(propertyKey);
     const foreignKey = typeof options === 'string' ? options : options.foreignKey;

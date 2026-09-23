@@ -68,7 +68,9 @@ describe('New Features in NSP', () => {
       const builder = entityToMigrationBuilder(meta, adapter);
       const statements = builder.getSqlStatements(adapter);
 
-      expect(statements.some(s => s.includes("ENUM('pending', 'shipped', 'delivered', 'cancelled')"))).toBe(true);
+      expect(
+        statements.some(s => s.includes("ENUM('pending', 'shipped', 'delivered', 'cancelled')")),
+      ).toBe(true);
     });
   });
 
@@ -102,7 +104,9 @@ describe('New Features in NSP', () => {
       const builder = entityToMigrationBuilder(meta, adapter);
       const statements = builder.getSqlStatements(adapter);
 
-      expect(statements.some(s => s.includes('CREATE UNIQUE INDEX') && s.includes('username'))).toBe(true);
+      expect(
+        statements.some(s => s.includes('CREATE UNIQUE INDEX') && s.includes('username')),
+      ).toBe(true);
     });
   });
 
@@ -138,15 +142,15 @@ describe('New Features in NSP', () => {
       const set = new DbSet<MonthlySalesView>(adapter, MonthlySalesView);
 
       await expect(set.add({ month: '2025-01', totalRevenue: 1000 })).rejects.toThrow(
-        /View entities decorated with @ViewEntity are read-only/
+        /View entities decorated with @ViewEntity are read-only/,
       );
 
       await expect(set.update(1, { totalRevenue: 2000 })).rejects.toThrow(
-        /View entities decorated with @ViewEntity are read-only/
+        /View entities decorated with @ViewEntity are read-only/,
       );
 
       await expect(set.remove(1)).rejects.toThrow(
-        /View entities decorated with @ViewEntity are read-only/
+        /View entities decorated with @ViewEntity are read-only/,
       );
     });
   });
@@ -179,7 +183,9 @@ describe('New Features in NSP', () => {
       const builder = entityToMigrationBuilder(meta, adapter);
       const statements = builder.getSqlStatements(adapter);
 
-      expect(statements.some(s => s.includes('ADD PRIMARY KEY ("orderId", "productId")'))).toBe(true);
+      expect(statements.some(s => s.includes('ADD PRIMARY KEY ("orderId", "productId")'))).toBe(
+        true,
+      );
     });
   });
 
@@ -202,11 +208,10 @@ describe('New Features in NSP', () => {
         { id: 1, action: 'LOGIN' },
         { id: 2, action: 'LOGOUT' },
       ];
-      const batch2 = [
-        { id: 3, action: 'PURCHASE' },
-      ];
+      const batch2 = [{ id: 3, action: 'PURCHASE' }];
 
-      adapter.executeQuery = jest.fn()
+      adapter.executeQuery = jest
+        .fn()
         .mockResolvedValueOnce(batch1)
         .mockResolvedValueOnce(batch2)
         .mockResolvedValueOnce([]) as any;
@@ -277,9 +282,7 @@ describe('New Features in NSP', () => {
       ]) as any;
 
       const seedRun3 = jest.fn();
-      const res2 = await runner.run([
-        { id: '001_roles', name: 'Seed Roles', run: seedRun3 },
-      ]);
+      const res2 = await runner.run([{ id: '001_roles', name: 'Seed Roles', run: seedRun3 }]);
 
       expect(res2.applied).toEqual([]);
       expect(seedRun3).not.toHaveBeenCalled();
@@ -289,9 +292,11 @@ describe('New Features in NSP', () => {
       const adapter = makeMock('sqlite');
       const runner = new SeedRunner(adapter);
 
-      adapter.executeQuery = jest.fn().mockResolvedValueOnce([
-        { id: '001_roles', name: 'Seed Roles', appliedAt: new Date('2025-01-01') },
-      ]) as any;
+      adapter.executeQuery = jest
+        .fn()
+        .mockResolvedValueOnce([
+          { id: '001_roles', name: 'Seed Roles', appliedAt: new Date('2025-01-01') },
+        ]) as any;
 
       const seeds: SeedModule[] = [
         { id: '001_roles', name: 'Seed Roles', run: async () => {} },
@@ -311,7 +316,7 @@ describe('New Features in NSP', () => {
 
       await runner.reset();
       expect(adapter.executeNonQuery).toHaveBeenCalledWith(
-        expect.stringContaining('DELETE FROM "__nsp_seeds"')
+        expect.stringContaining('DELETE FROM "__nsp_seeds"'),
       );
     });
   });

@@ -108,7 +108,7 @@ export class SeedRunner {
             { name: 'p1', value: seed.id },
             { name: 'p2', value: seed.name },
           ],
-          tx
+          tx,
         );
 
         await tx.commit();

@@ -27,13 +27,13 @@ export class PlanetScaleAdapter implements IDbAdapter {
     if (this.connection) return;
     try {
       this.psModule = await this.resolvePlanetScale();
-      const connConfig =
-        typeof this.config === 'string'
-          ? { url: this.config }
-          : this.config;
+      const connConfig = typeof this.config === 'string' ? { url: this.config } : this.config;
       this.connection = this.psModule.connect(connConfig);
     } catch (err) {
-      throw new ConnectionException(`Failed to connect to PlanetScale: ${(err as Error).message}`, err);
+      throw new ConnectionException(
+        `Failed to connect to PlanetScale: ${(err as Error).message}`,
+        err,
+      );
     }
   }
 
@@ -55,7 +55,7 @@ export class PlanetScaleAdapter implements IDbAdapter {
   public async executeQuery<T = unknown>(
     sql: string,
     params?: AdapterParam[],
-    transaction?: DbTransaction
+    transaction?: DbTransaction,
   ): Promise<T[]> {
     await this.connect();
     const client = transaction ? transaction.getDriver<any>().client : this.connection;
@@ -65,14 +65,18 @@ export class PlanetScaleAdapter implements IDbAdapter {
       const res = await client.execute(sql, values);
       return (res.rows ?? []) as T[];
     } catch (err) {
-      throw new QueryException(`Failed to execute PlanetScale query: ${(err as Error).message}`, sql, err);
+      throw new QueryException(
+        `Failed to execute PlanetScale query: ${(err as Error).message}`,
+        sql,
+        err,
+      );
     }
   }
 
   public async executeNonQuery(
     sql: string,
     params?: AdapterParam[],
-    transaction?: DbTransaction
+    transaction?: DbTransaction,
   ): Promise<{ rowsAffected: number; insertId?: unknown }> {
     await this.connect();
     const client = transaction ? transaction.getDriver<any>().client : this.connection;
@@ -85,14 +89,18 @@ export class PlanetScaleAdapter implements IDbAdapter {
         insertId: res.insertId,
       };
     } catch (err) {
-      throw new QueryException(`Failed to execute PlanetScale non-query: ${(err as Error).message}`, sql, err);
+      throw new QueryException(
+        `Failed to execute PlanetScale non-query: ${(err as Error).message}`,
+        sql,
+        err,
+      );
     }
   }
 
   public async executeScalar<T = unknown>(
     sql: string,
     params?: AdapterParam[],
-    transaction?: DbTransaction
+    transaction?: DbTransaction,
   ): Promise<T> {
     const rows = await this.executeQuery<Record<string, unknown>>(sql, params, transaction);
     if (!rows || rows.length === 0) return null as unknown as T;
@@ -105,7 +113,7 @@ export class PlanetScaleAdapter implements IDbAdapter {
     name: string,
     params: AdapterParam[],
     _timeoutMs?: number,
-    transaction?: DbTransaction
+    transaction?: DbTransaction,
   ): Promise<StoredProcedureResult<T[]>> {
     // PlanetScale does not support stored procedures directly over HTTP
     try {
@@ -120,7 +128,7 @@ export class PlanetScaleAdapter implements IDbAdapter {
       throw new ProcedureException(
         `PlanetScale does not natively support stored procedures ('${name}'): ${(err as Error).message}`,
         name,
-        err
+        err,
       );
     }
   }
@@ -129,7 +137,7 @@ export class PlanetScaleAdapter implements IDbAdapter {
     name: string,
     params: AdapterParam[],
     timeoutMs?: number,
-    transaction?: DbTransaction
+    transaction?: DbTransaction,
   ): Promise<StoredProcedureResult<T>> {
     const single = await this.executeProcedure<any>(name, params, timeoutMs, transaction);
     return {
@@ -140,23 +148,27 @@ export class PlanetScaleAdapter implements IDbAdapter {
     };
   }
 
-  public async beginTransaction(isolationLevel = IsolationLevel.ReadCommitted): Promise<DbTransaction> {
+  public async beginTransaction(
+    isolationLevel = IsolationLevel.ReadCommitted,
+  ): Promise<DbTransaction> {
     await this.connect();
     let txClient: any;
     let txEndResolve: (value?: unknown) => void;
     let txEndReject: (reason?: any) => void;
 
     const txReady = new Promise<void>((resolveReady, rejectReady) => {
-      this.connection.transaction(async (tx: any) => {
-        txClient = tx;
-        resolveReady();
-        await new Promise((resolve, reject) => {
-          txEndResolve = resolve;
-          txEndReject = reject;
+      this.connection
+        .transaction(async (tx: any) => {
+          txClient = tx;
+          resolveReady();
+          await new Promise((resolve, reject) => {
+            txEndResolve = resolve;
+            txEndReject = reject;
+          });
+        })
+        .catch((err: any) => {
+          rejectReady(err);
         });
-      }).catch((err: any) => {
-        rejectReady(err);
-      });
     });
 
     await txReady;

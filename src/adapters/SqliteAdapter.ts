@@ -2,7 +2,12 @@ import { IDbAdapter, DbProvider } from './IDbAdapter';
 import { AdapterParam } from './AdapterParam';
 import { StoredProcedureResult } from '../procedure/StoredProcedureResult';
 import { IsolationLevel, DbTransaction, IDbTransactionDriver } from '../transaction';
-import { ConnectionException, QueryException, ProcedureException, DatabaseErrorTranslator } from '../errors';
+import {
+  ConnectionException,
+  QueryException,
+  ProcedureException,
+  DatabaseErrorTranslator,
+} from '../errors';
 
 export interface SqliteAdapterConfig {
   filename: string;
@@ -27,7 +32,10 @@ export class SqliteAdapter implements IDbAdapter {
       const options = typeof this.config === 'string' ? {} : this.config;
       this.db = new this.sqliteModule(filename, options);
     } catch (err) {
-      throw new ConnectionException(`Failed to open SQLite database: ${(err as Error).message}`, err);
+      throw new ConnectionException(
+        `Failed to open SQLite database: ${(err as Error).message}`,
+        err,
+      );
     }
   }
 
@@ -62,7 +70,7 @@ export class SqliteAdapter implements IDbAdapter {
   public async executeQuery<T = unknown>(
     sql: string,
     params?: AdapterParam[],
-    _transaction?: DbTransaction
+    _transaction?: DbTransaction,
   ): Promise<T[]> {
     await this.connect();
     try {
@@ -77,7 +85,7 @@ export class SqliteAdapter implements IDbAdapter {
   public async executeNonQuery(
     sql: string,
     params?: AdapterParam[],
-    _transaction?: DbTransaction
+    _transaction?: DbTransaction,
   ): Promise<{ rowsAffected: number; insertId?: unknown }> {
     await this.connect();
     try {
@@ -96,7 +104,7 @@ export class SqliteAdapter implements IDbAdapter {
   public async executeScalar<T = unknown>(
     sql: string,
     params?: AdapterParam[],
-    _transaction?: DbTransaction
+    _transaction?: DbTransaction,
   ): Promise<T> {
     await this.connect();
     try {
@@ -115,7 +123,7 @@ export class SqliteAdapter implements IDbAdapter {
     name: string,
     params: AdapterParam[],
     _timeoutMs?: number,
-    transaction?: DbTransaction
+    transaction?: DbTransaction,
   ): Promise<StoredProcedureResult<T[]>> {
     // SQLite does not support native stored procedures.
     // If user passed a query string as procedure name or a registered statement, execute it
@@ -136,7 +144,7 @@ export class SqliteAdapter implements IDbAdapter {
     name: string,
     params: AdapterParam[],
     timeoutMs?: number,
-    transaction?: DbTransaction
+    transaction?: DbTransaction,
   ): Promise<StoredProcedureResult<T>> {
     const single = await this.executeProcedure<any>(name, params, timeoutMs, transaction);
     return {
@@ -147,7 +155,9 @@ export class SqliteAdapter implements IDbAdapter {
     };
   }
 
-  public async beginTransaction(isolationLevel = IsolationLevel.ReadCommitted): Promise<DbTransaction> {
+  public async beginTransaction(
+    isolationLevel = IsolationLevel.ReadCommitted,
+  ): Promise<DbTransaction> {
     await this.connect();
     this.db.exec('BEGIN TRANSACTION');
 

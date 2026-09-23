@@ -1,5 +1,10 @@
 import express, { Request, Response, NextFunction } from 'express';
-import { dbContextMiddleware, EntityNotFoundException, DbUpdateConcurrencyException, DbException } from '@nsp/dbcontext';
+import {
+  dbContextMiddleware,
+  EntityNotFoundException,
+  DbUpdateConcurrencyException,
+  DbException,
+} from '@nsp/dbcontext';
 import { AppDbContext } from './database/AppDbContext';
 import { userRouter, productRouter, transactionRouter, sqlRouter } from './routes';
 import { config } from './config';
@@ -18,7 +23,7 @@ app.use((req: Request, res: Response, next: NextFunction) => {
     const statusColor =
       res.statusCode >= 500 ? '\x1b[31m' : res.statusCode >= 400 ? '\x1b[33m' : '\x1b[32m';
     console.log(
-      `[HTTP] ${req.method} ${req.originalUrl} -> ${statusColor}${res.statusCode}\x1b[0m (${duration}ms)`
+      `[HTTP] ${req.method} ${req.originalUrl} -> ${statusColor}${res.statusCode}\x1b[0m (${duration}ms)`,
     );
   });
   next();
@@ -26,7 +31,6 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 
 // 3. Scoped DbContext middleware (EF Core Unit of Work per request)
 app.use(dbContextMiddleware(AppDbContext));
-
 
 // 4. API Routes
 app.use('/api/users', userRouter);

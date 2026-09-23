@@ -46,10 +46,7 @@ describe('Type Safety & Autocompletion Suggestions', () => {
 
     it('accepts keyof property names with value type checking', () => {
       const clause = new WhereClause<IOrder>();
-      clause
-        .eq('status', 'completed')
-        .gt('total', 100)
-        .in('customerId', ['c1']);
+      clause.eq('status', 'completed').gt('total', 100).in('customerId', ['c1']);
 
       expect(clause.conditions[0].column).toBe('status');
       expect(clause.conditions[1].column).toBe('total');
@@ -102,10 +99,7 @@ describe('Type Safety & Autocompletion Suggestions', () => {
       const stats = await orderSet
         .where({ status: 'completed' })
         .groupBy(o => o.customerId)
-        .having(g => [
-          g.sum(o => o.total).greaterThan(100),
-          g.key.equals('c1'),
-        ])
+        .having(g => [g.sum(o => o.total).greaterThan(100), g.key.equals('c1')])
         .select(g => ({
           customerId: g.key,
           orderCount: g.count(),
@@ -130,9 +124,7 @@ describe('Type Safety & Autocompletion Suggestions', () => {
     });
 
     it('supports string property names in group proxy aggregations with autocomplete', async () => {
-      adapter.executeQuery = jest.fn().mockResolvedValue([
-        { customerId: 'c1', totalSpent: '300' },
-      ]);
+      adapter.executeQuery = jest.fn().mockResolvedValue([{ customerId: 'c1', totalSpent: '300' }]);
 
       const result = await orderSet
         .groupBy(o => o.customerId)

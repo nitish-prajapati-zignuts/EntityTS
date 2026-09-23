@@ -26,13 +26,13 @@ export class TursoAdapter implements IDbAdapter {
     if (this.client) return;
     try {
       this.libsqlModule = await this.resolveLibsql();
-      const connConfig =
-        typeof this.config === 'string'
-          ? { url: this.config }
-          : this.config;
+      const connConfig = typeof this.config === 'string' ? { url: this.config } : this.config;
       this.client = this.libsqlModule.createClient(connConfig);
     } catch (err) {
-      throw new ConnectionException(`Failed to connect to Turso / libSQL: ${(err as Error).message}`, err);
+      throw new ConnectionException(
+        `Failed to connect to Turso / libSQL: ${(err as Error).message}`,
+        err,
+      );
     }
   }
 
@@ -58,7 +58,7 @@ export class TursoAdapter implements IDbAdapter {
   public async executeQuery<T = unknown>(
     sql: string,
     params?: AdapterParam[],
-    transaction?: DbTransaction
+    transaction?: DbTransaction,
   ): Promise<T[]> {
     await this.connect();
     const runner = transaction ? transaction.getDriver<any>().client : this.client;
@@ -68,14 +68,18 @@ export class TursoAdapter implements IDbAdapter {
       const res = await runner.execute({ sql, args: values });
       return (res.rows ?? []) as T[];
     } catch (err) {
-      throw new QueryException(`Failed to execute Turso / libSQL query: ${(err as Error).message}`, sql, err);
+      throw new QueryException(
+        `Failed to execute Turso / libSQL query: ${(err as Error).message}`,
+        sql,
+        err,
+      );
     }
   }
 
   public async executeNonQuery(
     sql: string,
     params?: AdapterParam[],
-    transaction?: DbTransaction
+    transaction?: DbTransaction,
   ): Promise<{ rowsAffected: number; insertId?: unknown }> {
     await this.connect();
     const runner = transaction ? transaction.getDriver<any>().client : this.client;
@@ -88,14 +92,18 @@ export class TursoAdapter implements IDbAdapter {
         insertId: res.lastInsertRowid !== undefined ? Number(res.lastInsertRowid) : undefined,
       };
     } catch (err) {
-      throw new QueryException(`Failed to execute Turso / libSQL non-query: ${(err as Error).message}`, sql, err);
+      throw new QueryException(
+        `Failed to execute Turso / libSQL non-query: ${(err as Error).message}`,
+        sql,
+        err,
+      );
     }
   }
 
   public async executeScalar<T = unknown>(
     sql: string,
     params?: AdapterParam[],
-    transaction?: DbTransaction
+    transaction?: DbTransaction,
   ): Promise<T> {
     const rows = await this.executeQuery<Record<string, unknown>>(sql, params, transaction);
     if (!rows || rows.length === 0) return null as unknown as T;
@@ -108,7 +116,7 @@ export class TursoAdapter implements IDbAdapter {
     name: string,
     params: AdapterParam[],
     _timeoutMs?: number,
-    transaction?: DbTransaction
+    transaction?: DbTransaction,
   ): Promise<StoredProcedureResult<T[]>> {
     try {
       const records = await this.executeQuery<T>(name, params, transaction);
@@ -122,7 +130,7 @@ export class TursoAdapter implements IDbAdapter {
       throw new ProcedureException(
         `Turso does not natively support stored procedures ('${name}'): ${(err as Error).message}`,
         name,
-        err
+        err,
       );
     }
   }
@@ -131,7 +139,7 @@ export class TursoAdapter implements IDbAdapter {
     name: string,
     params: AdapterParam[],
     timeoutMs?: number,
-    transaction?: DbTransaction
+    transaction?: DbTransaction,
   ): Promise<StoredProcedureResult<T>> {
     const single = await this.executeProcedure<any>(name, params, timeoutMs, transaction);
     return {
@@ -142,7 +150,9 @@ export class TursoAdapter implements IDbAdapter {
     };
   }
 
-  public async beginTransaction(isolationLevel = IsolationLevel.ReadCommitted): Promise<DbTransaction> {
+  public async beginTransaction(
+    isolationLevel = IsolationLevel.ReadCommitted,
+  ): Promise<DbTransaction> {
     await this.connect();
     const tx = await this.client.transaction();
 

@@ -94,21 +94,25 @@ function parseArgs(args: string[]): Record<string, string | boolean> {
 
 // ─── Context loader ───────────────────────────────────────────────────────
 
-async function loadAdapter(contextPath: string): Promise<import('../adapters/IDbAdapter').IDbAdapter> {
+async function loadAdapter(
+  contextPath: string,
+): Promise<import('../adapters/IDbAdapter').IDbAdapter> {
   const resolved = path.resolve(process.cwd(), contextPath);
   if (!fs.existsSync(resolved)) {
     throw new Error(`Context file not found: ${resolved}`);
   }
   // Dynamically import the module — supports ESM and CJS
   const mod = await import(resolved);
-  const ContextClass: any = mod.default || Object.values(mod).find((v: any) => {
-    return typeof v === 'function' && v.prototype && typeof v.prototype.set === 'function';
-  });
+  const ContextClass: any =
+    mod.default ||
+    Object.values(mod).find((v: any) => {
+      return typeof v === 'function' && v.prototype && typeof v.prototype.set === 'function';
+    });
 
   if (!ContextClass) {
     throw new Error(
       `Could not find a DbContext subclass export in: ${resolved}\n` +
-      `Ensure your context file has a default export or a named export of a DbContext subclass.`
+        `Ensure your context file has a default export or a named export of a DbContext subclass.`,
     );
   }
 
@@ -127,7 +131,9 @@ async function cmdDbPush(flags: Record<string, string | boolean>): Promise<void>
     process.exit(1);
   }
 
-  console.log(dryRun ? '🔍 Dry-run mode — no changes will be made.' : '🚀 Pushing schema changes...');
+  console.log(
+    dryRun ? '🔍 Dry-run mode — no changes will be made.' : '🚀 Pushing schema changes...',
+  );
 
   try {
     const { SchemaGenerator } = await import('../codegen/SchemaGenerator');
@@ -162,7 +168,10 @@ async function cmdDbPush(flags: Record<string, string | boolean>): Promise<void>
   }
 }
 
-async function cmdMigrateGenerate(name: string, flags: Record<string, string | boolean>): Promise<void> {
+async function cmdMigrateGenerate(
+  name: string,
+  flags: Record<string, string | boolean>,
+): Promise<void> {
   const contextPath = flags['context'] as string | undefined;
 
   if (!contextPath) {
@@ -229,8 +238,12 @@ async function cmdDbScaffold(flags: Record<string, string | boolean>): Promise<v
 
     const result = scaffolder.scaffold(tables);
     result.written.forEach(f => console.log(`  ✅ ${f}`));
-    result.skipped.forEach(f => console.log(`  ⏭  Skipped (exists): ${f}  (use --force to overwrite)`));
-    console.log(`\nDone! ${result.written.length} file(s) written, ${result.skipped.length} skipped.`);
+    result.skipped.forEach(f =>
+      console.log(`  ⏭  Skipped (exists): ${f}  (use --force to overwrite)`),
+    );
+    console.log(
+      `\nDone! ${result.written.length} file(s) written, ${result.skipped.length} skipped.`,
+    );
   } catch (err: any) {
     console.error('Error during db:scaffold:', err.message || err);
     process.exit(1);
@@ -302,7 +315,7 @@ async function cmdBenchmark(flags: Record<string, string | boolean>): Promise<vo
       filter,
       silent: json,
     },
-    customAdapter
+    customAdapter,
   );
 
   if (json) {
@@ -313,7 +326,10 @@ async function cmdBenchmark(flags: Record<string, string | boolean>): Promise<vo
 // ─── Seeding ──────────────────────────────────────────────────────────────
 
 async function loadSeedModules(seedPathsStr?: string): Promise<import('../seeding').SeedModule[]> {
-  const defaultDirs = [path.resolve(process.cwd(), 'src/seeds'), path.resolve(process.cwd(), 'seeds')];
+  const defaultDirs = [
+    path.resolve(process.cwd(), 'src/seeds'),
+    path.resolve(process.cwd(), 'seeds'),
+  ];
   if (!seedPathsStr) {
     const foundDir = defaultDirs.find(d => fs.existsSync(d) && fs.statSync(d).isDirectory());
     if (foundDir) {
@@ -499,10 +515,18 @@ async function main(): Promise<void> {
     return;
   }
 
-  if (command === 'db:migrate' || command === 'db:migrate:revert' || command === 'db:migrate:status') {
+  if (
+    command === 'db:migrate' ||
+    command === 'db:migrate:revert' ||
+    command === 'db:migrate:status'
+  ) {
     console.log(`Running '${command}'...`);
-    console.log(`To execute migrations, pass your MigrationRunner + MigrationModule[] from your application code.`);
-    console.log(`See: MigrationRunner.up(migrations) / MigrationRunner.down(migrations) / MigrationRunner.status(migrations)`);
+    console.log(
+      `To execute migrations, pass your MigrationRunner + MigrationModule[] from your application code.`,
+    );
+    console.log(
+      `See: MigrationRunner.up(migrations) / MigrationRunner.down(migrations) / MigrationRunner.status(migrations)`,
+    );
     return;
   }
 
@@ -564,16 +588,32 @@ function detectProjectConfiguredProvider(cwd: string = process.cwd()): string | 
     if (fs.existsSync(full)) {
       try {
         const content = fs.readFileSync(full, 'utf-8');
-        if (content.includes('useSqlServer') || content.includes("provider = 'mssql'") || content.includes('MssqlAdapter')) {
+        if (
+          content.includes('useSqlServer') ||
+          content.includes("provider = 'mssql'") ||
+          content.includes('MssqlAdapter')
+        ) {
           return 'mssql';
         }
-        if (content.includes('usePostgres') || content.includes("provider = 'postgres'") || content.includes('PostgresAdapter')) {
+        if (
+          content.includes('usePostgres') ||
+          content.includes("provider = 'postgres'") ||
+          content.includes('PostgresAdapter')
+        ) {
           return 'postgres';
         }
-        if (content.includes('useMysql') || content.includes("provider = 'mysql'") || content.includes('MysqlAdapter')) {
+        if (
+          content.includes('useMysql') ||
+          content.includes("provider = 'mysql'") ||
+          content.includes('MysqlAdapter')
+        ) {
           return 'mysql';
         }
-        if (content.includes('useSqlite') || content.includes("provider = 'sqlite'") || content.includes('SqliteAdapter')) {
+        if (
+          content.includes('useSqlite') ||
+          content.includes("provider = 'sqlite'") ||
+          content.includes('SqliteAdapter')
+        ) {
           return 'sqlite';
         }
       } catch {
@@ -584,14 +624,18 @@ function detectProjectConfiguredProvider(cwd: string = process.cwd()): string | 
   return null;
 }
 
-async function cmdAdd(providerArg: string | undefined, flags: Record<string, string | boolean>): Promise<void> {
+async function cmdAdd(
+  providerArg: string | undefined,
+  flags: Record<string, string | boolean>,
+): Promise<void> {
   if (!providerArg || providerArg.startsWith('--')) {
     console.error('Error: Database provider required. Example: nsp add mssql');
     console.log('Supported providers: mssql, postgres, mysql, sqlite, turso, neon, planetscale');
     process.exit(1);
   }
 
-  const { normalizeProvider, DRIVER_REGISTRY, detectPackageManager, getInstallCommand } = await import('../adapters/DriverLoader');
+  const { normalizeProvider, DRIVER_REGISTRY, detectPackageManager, getInstallCommand } =
+    await import('../adapters/DriverLoader');
   const provider = normalizeProvider(providerArg);
 
   if (!provider || !DRIVER_REGISTRY[provider]) {
@@ -607,9 +651,15 @@ async function cmdAdd(providerArg: string | undefined, flags: Record<string, str
   if (!force) {
     const configuredProvider = detectProjectConfiguredProvider();
     if (configuredProvider && configuredProvider !== provider) {
-      console.warn(`\n⚠️  WARNING: Project is configured for '${configuredProvider.toUpperCase()}'.`);
-      console.warn(`   Installing '${info.packageName}' (${info.displayName}) is NOT needed for ${configuredProvider}.`);
-      console.warn(`   To keep your dependencies minimal, only install the driver for your database:`);
+      console.warn(
+        `\n⚠️  WARNING: Project is configured for '${configuredProvider.toUpperCase()}'.`,
+      );
+      console.warn(
+        `   Installing '${info.packageName}' (${info.displayName}) is NOT needed for ${configuredProvider}.`,
+      );
+      console.warn(
+        `   To keep your dependencies minimal, only install the driver for your database:`,
+      );
       console.warn(`     nsp add ${configuredProvider}`);
       console.warn(`   (If you really want to install both, pass --force to proceed anyway).\n`);
       process.exit(1);
@@ -618,7 +668,9 @@ async function cmdAdd(providerArg: string | undefined, flags: Record<string, str
 
   const pm = detectPackageManager();
   console.log(`📦 Installing isolated driver for ${info.displayName}...`);
-  console.log(`   Package: ${info.packageName} (only this driver is installed; no unused packages)`);
+  console.log(
+    `   Package: ${info.packageName} (only this driver is installed; no unused packages)`,
+  );
 
   const { execSync } = await import('child_process');
   const installCmd = getInstallCommand(info.packageName, pm);
@@ -627,7 +679,8 @@ async function cmdAdd(providerArg: string | undefined, flags: Record<string, str
 
   const isTs = fs.existsSync(path.join(process.cwd(), 'tsconfig.json'));
   if (isTs && info.typesPackage) {
-    const devFlag = pm === 'yarn' ? '--dev' : pm === 'pnpm' ? '-D' : pm === 'bun' ? '-d' : '--save-dev';
+    const devFlag =
+      pm === 'yarn' ? '--dev' : pm === 'pnpm' ? '-D' : pm === 'bun' ? '-d' : '--save-dev';
     const typesCmd = `${pm === 'pnpm' ? 'pnpm add' : pm === 'yarn' ? 'yarn add' : pm === 'bun' ? 'bun add' : 'npm install'} ${devFlag} ${info.typesPackage}`;
     console.log(`> ${typesCmd}`);
     try {
@@ -658,7 +711,9 @@ async function cmdInit(flags: Record<string, string | boolean>): Promise<void> {
   const { normalizeProvider, DRIVER_REGISTRY } = await import('../adapters/DriverLoader');
   const provider = normalizeProvider(dbArg);
   if (!provider || !DRIVER_REGISTRY[provider]) {
-    console.error(`Error: Unknown provider '${dbArg}'. Supported: mssql, postgres, mysql, sqlite, turso, neon, planetscale`);
+    console.error(
+      `Error: Unknown provider '${dbArg}'. Supported: mssql, postgres, mysql, sqlite, turso, neon, planetscale`,
+    );
     process.exit(1);
   }
 
@@ -669,13 +724,23 @@ async function cmdInit(flags: Record<string, string | boolean>): Promise<void> {
 
   const contextPath = path.join(outDir, 'AppDbContext.ts');
   if (!fs.existsSync(contextPath)) {
-    let configMethod = "options.useSqlServer(process.env.DATABASE_URL || 'Server=localhost;Database=mydb;User Id=sa;Password=secret;');";
-    if (provider === 'postgres') configMethod = "options.usePostgres(process.env.DATABASE_URL || 'postgresql://localhost:5432/mydb');";
-    if (provider === 'mysql') configMethod = "options.useMysql(process.env.DATABASE_URL || 'mysql://root:secret@localhost:3306/mydb');";
-    if (provider === 'sqlite') configMethod = "options.useSqlite(process.env.DATABASE_URL || './dev.db');";
-    if (provider === 'turso') configMethod = "options.useTurso({ url: process.env.TURSO_DATABASE_URL || '', authToken: process.env.TURSO_AUTH_TOKEN });";
+    let configMethod =
+      "options.useSqlServer(process.env.DATABASE_URL || 'Server=localhost;Database=mydb;User Id=sa;Password=secret;');";
+    if (provider === 'postgres')
+      configMethod =
+        "options.usePostgres(process.env.DATABASE_URL || 'postgresql://localhost:5432/mydb');";
+    if (provider === 'mysql')
+      configMethod =
+        "options.useMysql(process.env.DATABASE_URL || 'mysql://root:secret@localhost:3306/mydb');";
+    if (provider === 'sqlite')
+      configMethod = "options.useSqlite(process.env.DATABASE_URL || './dev.db');";
+    if (provider === 'turso')
+      configMethod =
+        "options.useTurso({ url: process.env.TURSO_DATABASE_URL || '', authToken: process.env.TURSO_AUTH_TOKEN });";
     if (provider === 'neon') configMethod = "options.useNeon(process.env.DATABASE_URL || '');";
-    if (provider === 'planetscale') configMethod = "options.usePlanetScale({ host: process.env.DATABASE_HOST, username: process.env.DATABASE_USERNAME, password: process.env.DATABASE_PASSWORD });";
+    if (provider === 'planetscale')
+      configMethod =
+        'options.usePlanetScale({ host: process.env.DATABASE_HOST, username: process.env.DATABASE_USERNAME, password: process.env.DATABASE_PASSWORD });';
 
     const content = `import { DbContext, DbContextOptionsBuilder } from '@nsp/dbcontext';
 
@@ -735,7 +800,10 @@ async function cmdImport(flags: Record<string, string | boolean>): Promise<void>
       result = TypeormImporter.importEntities(entities, contextName);
     } else {
       const content = fs.readFileSync(resolvedInput, 'utf-8');
-      result = TypeormImporter.importEntities([{ name: path.basename(resolvedInput), content }], contextName);
+      result = TypeormImporter.importEntities(
+        [{ name: path.basename(resolvedInput), content }],
+        contextName,
+      );
     }
   } else {
     const content = fs.readFileSync(resolvedInput, 'utf-8');
@@ -757,7 +825,9 @@ async function cmdImport(flags: Record<string, string | boolean>): Promise<void>
   fs.writeFileSync(contextPath, result.context.content, 'utf-8');
   console.log(`📝 Generated DbContext: ${contextPath}`);
 
-  console.log(`\n✅ Successfully imported ${result.entities.length} entities from ${normalizedFrom} into @nsp/dbcontext!`);
+  console.log(
+    `\n✅ Successfully imported ${result.entities.length} entities from ${normalizedFrom} into @nsp/dbcontext!`,
+  );
 }
 
 main().catch(err => {

@@ -4,7 +4,7 @@
 
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-blue.svg)](https://www.typescriptlang.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Tests](https://img.shields.io/badge/Tests-311%20passing-brightgreen.svg)]()
+[![Tests](https://img.shields.io/badge/Tests-311%20passing-brightgreen.svg)](<>)
 
 ---
 
@@ -154,7 +154,9 @@ export class AppDbContext extends DbContext {
 
   protected override onConfiguring(options: DbContextOptionsBuilder): void {
     // Connect to SQL Server:
-    options.useSqlServer(process.env.DATABASE_URL || 'Server=localhost;Database=mydb;User Id=sa;Password=secret;');
+    options.useSqlServer(
+      process.env.DATABASE_URL || 'Server=localhost;Database=mydb;User Id=sa;Password=secret;',
+    );
 
     // Or PostgreSQL:
     // options.usePostgres(process.env.DATABASE_URL || 'postgresql://localhost:5432/mydb');
@@ -218,7 +220,7 @@ options.useSqlServer({
   password: 'Password123!',
   database: 'AppDb',
   options: { encrypt: true, trustServerCertificate: true },
-  pool: { max: 20, min: 2 }
+  pool: { max: 20, min: 2 },
 });
 
 // PostgreSQL (pg)
@@ -233,7 +235,7 @@ options.useSqlite('./data/app.db');
 // Turso / libSQL (edge serverless)
 options.useTurso({
   url: 'libsql://my-db.turso.io',
-  authToken: process.env.TURSO_AUTH_TOKEN
+  authToken: process.env.TURSO_AUTH_TOKEN,
 });
 
 // Neon (serverless postgres)
@@ -243,7 +245,7 @@ options.useNeon(process.env.NEON_DATABASE_URL!);
 options.usePlanetScale({
   host: process.env.DATABASE_HOST,
   username: process.env.DATABASE_USERNAME,
-  password: process.env.DATABASE_PASSWORD
+  password: process.env.DATABASE_PASSWORD,
 });
 ```
 
@@ -257,17 +259,17 @@ Stored procedures are first-class citizens in `@nsp/dbcontext`.
 
 ```typescript
 // Returns typed records directly
-const topUsers = await db.procedure('usp_GetTopUsers')
+const topUsers = await db
+  .procedure('usp_GetTopUsers')
   .input({ MinScore: 100, DepartmentId: 4 })
   .query<User>();
 
 // Returns single scalar value
-const totalSales = await db.procedure('usp_GetTotalSales')
-  .input({ Year: 2026 })
-  .scalar<number>();
+const totalSales = await db.procedure('usp_GetTotalSales').input({ Year: 2026 }).scalar<number>();
 
 // Executes non-query procedure and returns rowsAffected and return code
-const { rowsAffected, returnValue } = await db.procedure('usp_ArchiveInactive')
+const { rowsAffected, returnValue } = await db
+  .procedure('usp_ArchiveInactive')
   .input({ DaysThreshold: 90 })
   .run();
 ```
@@ -284,7 +286,8 @@ When a stored procedure executes multiple `SELECT` statements, `@nsp/dbcontext` 
 // 2. SELECT * FROM Orders WHERE CustomerId = @Id;
 // 3. SELECT * FROM Rewards WHERE CustomerId = @Id;
 
-const [customers, orders, rewards] = await db.procedure('usp_GetCustomerDashboard')
+const [customers, orders, rewards] = await db
+  .procedure('usp_GetCustomerDashboard')
   .input({ Id: 101 })
   .queryMultiple<[Customer[], Order[], Reward[]]>();
 
@@ -296,14 +299,18 @@ console.log(`Reward Tier: ${rewards[0].tier}`);
 #### Multi-Table Query with Output Parameters:
 
 ```typescript
-const { records: [customers, orders], out } = await db.procedure('usp_GetCustomerDashboard')
+const {
+  records: [customers, orders],
+  out,
+} = await db
+  .procedure('usp_GetCustomerDashboard')
   .input({ Id: 101 })
   .output<{ Status: string; ExecutionMs: number }>()
   .queryMultiple<[Customer[], Order[]]>();
 
-console.log(out.Status);     // Strongly-typed output parameter
-console.log(customers);      // Table 1 records
-console.log(orders);         // Table 2 records
+console.log(out.Status); // Strongly-typed output parameter
+console.log(customers); // Table 1 records
+console.log(orders); // Table 2 records
 ```
 
 ---
@@ -313,7 +320,8 @@ console.log(orders);         // Table 2 records
 For large result sets, read tables sequentially using `.reader()`:
 
 ```typescript
-const reader = await db.procedure('usp_GetQuarterlyReport')
+const reader = await db
+  .procedure('usp_GetQuarterlyReport')
   .input({ Quarter: 'Q1', Year: 2026 })
   .reader();
 
@@ -355,12 +363,10 @@ Cursor-based pagination avoids the performance penalty of high `OFFSET` values:
 
 ```typescript
 // Page 1
-const page1 = await db.users
-  .orderBy('id', 'asc')
-  .toCursorPage({ limit: 10, cursorColumn: 'id' });
+const page1 = await db.users.orderBy('id', 'asc').toCursorPage({ limit: 10, cursorColumn: 'id' });
 
-console.log(page1.items);       // 10 items
-console.log(page1.nextCursor);  // Opaque URL-safe token (e.g. 'eyJpZCI6MTB9')
+console.log(page1.items); // 10 items
+console.log(page1.nextCursor); // Opaque URL-safe token (e.g. 'eyJpZCI6MTB9')
 console.log(page1.hasNextPage); // true
 
 // Page 2 (pass cursor from client)
@@ -381,9 +387,7 @@ Query JSON columns natively across SQL Server, PostgreSQL, MySQL, and SQLite:
 // - PostgreSQL:  metadata->'address'->>'city' = 'New York'
 // - MySQL:       JSON_UNQUOTE(JSON_EXTRACT(metadata, '$.address.city')) = 'New York'
 // - SQLite:      json_extract(metadata, '$.address.city') = 'New York'
-const results = await db.users
-  .whereJson('metadata', 'address.city', '=', 'New York')
-  .toList();
+const results = await db.users.whereJson('metadata', 'address.city', '=', 'New York').toList();
 ```
 
 ---
@@ -445,14 +449,10 @@ export class Order {
 
 ```typescript
 // Eager load related orders and order items
-const usersWithOrders = await db.users
-  .include('orders.items')
-  .toList();
+const usersWithOrders = await db.users.include('orders.items').toList();
 
 // Prisma-style boolean inclusion object
-const users = await db.users
-  .include({ orders: true, profile: false })
-  .toList();
+const users = await db.users.include({ orders: true, profile: false }).toList();
 ```
 
 ---
@@ -526,19 +526,22 @@ Execute batch operations that bypass row-by-row overhead:
 // Bulk Insert with automatic batching
 await db.products.bulkInsert(newProducts, {
   batchSize: 1000,
-  ignoreDuplicates: true
+  ignoreDuplicates: true,
 });
 
 // Bulk Update matching primary keys
 await db.products.bulkUpdate(
-  [{ id: 1, price: 19.99 }, { id: 2, price: 29.99 }],
-  { keys: ['id'], update: ['price'] }
+  [
+    { id: 1, price: 19.99 },
+    { id: 2, price: 29.99 },
+  ],
+  { keys: ['id'], update: ['price'] },
 );
 
 // Bulk Upsert (Insert or Update on conflict)
 await db.products.bulkUpsert(records, {
   conflictKeys: ['sku'],
-  update: ['price', 'name']
+  update: ['price', 'name'],
 });
 
 // Bulk Delete by predicate
@@ -552,13 +555,14 @@ await db.products.bulkDelete({ discontinued: true });
 ### Managed Transactions
 
 ```typescript
-await db.useTransaction(async (tx) => {
+await db.useTransaction(async tx => {
   // Execute DbSet operations in transaction:
   await db.accounts.inTransaction(tx).update(fromId, { balance: fromBalance - 100 });
   await db.accounts.inTransaction(tx).update(toId, { balance: toBalance + 100 });
 
   // Execute Stored Procedure in the same transaction:
-  await db.procedure('usp_LogTransfer')
+  await db
+    .procedure('usp_LogTransfer')
     .input({ FromId: fromId, ToId: toId, Amount: 100 })
     .inTransaction(tx)
     .run();
@@ -574,7 +578,7 @@ Handle transient network blips and deadlocks automatically:
 options.withExecutionStrategy({
   maxRetryCount: 3,
   maxDelayMs: 5000,
-  retryableErrorCodes: ['ETIMEOUT', 'ECONNRESET', '1205'] // SQL Server deadlock 1205
+  retryableErrorCodes: ['ETIMEOUT', 'ECONNRESET', '1205'], // SQL Server deadlock 1205
 });
 ```
 
@@ -626,9 +630,7 @@ import { AppDbContext } from './AppDbContext';
 
 @Injectable()
 export class UsersService {
-  constructor(
-    @InjectDbContext(AppDbContext) private readonly db: AppDbContext
-  ) {}
+  constructor(@InjectDbContext(AppDbContext) private readonly db: AppDbContext) {}
 
   async findAll() {
     return this.db.users.toList();
@@ -647,6 +649,7 @@ entityts <command> [options]
 ```
 
 ### 1. Driver Management
+
 ```bash
 # Install ONLY the package required for your database
 npx entityts add mssql
@@ -659,6 +662,7 @@ npx entityts init --db mssql
 ```
 
 ### 2. Execution Benchmarks
+
 Run the built-in execution benchmark suite to measure query compilation, hydration throughput (ops/sec), and latency:
 
 ```bash
@@ -674,7 +678,9 @@ npx entityts benchmark --filter "Raw SQL|DbSet Query"
 # Output in JSON format
 npx entityts benchmark --json
 ```
+
 Includes:
+
 - **Raw SQL execution**: `queryRaw`, `queryScalar`, and tagged template literal timing.
 - **DbSet queries**: `toList()`, `first()`, `.where()`, `.orderBy()`, `.take()`, and `.cache()`.
 - **Mutations & Bulk**: `add()`, `addRange()`, `bulkInsert()`, `update()`, and `bulkUpdate()`.
@@ -683,6 +689,7 @@ Includes:
 - **Resilience**: `DefaultExecutionStrategy` retry overhead profiling.
 
 ### 3. Code-First Schema Management
+
 ```bash
 # Push entity metadata directly to database (ideal for development)
 npx nsp db:push --context src/database/AppDbContext.ts
@@ -698,6 +705,7 @@ npx nsp db:migrate:create CustomDataMigration
 ```
 
 ### 4. Database-First Scaffolding
+
 Reverse-engineer an existing database into TypeScript entity classes and a `DbContext`:
 
 ```bash
@@ -720,14 +728,14 @@ describe('UserService', () => {
       tables: {
         users: [
           { id: 1, full_name: 'Alice', email: 'alice@test.com', score: 95 },
-          { id: 2, full_name: 'Bob',   email: 'bob@test.com',   score: 40 },
+          { id: 2, full_name: 'Bob', email: 'bob@test.com', score: 40 },
         ],
       },
       procedures: {
         usp_GetCustomerDashboard: {
           records: [
-            [{ id: 1, name: 'Alice' }],     // Table 1 (Customer)
-            [{ id: 101, total: 450.00 }],    // Table 2 (Orders)
+            [{ id: 1, name: 'Alice' }], // Table 1 (Customer)
+            [{ id: 101, total: 450.0 }], // Table 2 (Orders)
           ],
           returnValue: 0,
         },

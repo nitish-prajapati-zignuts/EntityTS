@@ -20,9 +20,7 @@ describe('QueryBuilder', () => {
   });
 
   it('generates SELECT with specific columns and DISTINCT', () => {
-    const qb = new QueryBuilder(mockAdapter, 'users')
-      .select('id', 'username', 'email')
-      .distinct();
+    const qb = new QueryBuilder(mockAdapter, 'users').select('id', 'username', 'email').distinct();
 
     const { sql } = qb.toSelectSql();
     expect(sql).toBe('SELECT DISTINCT "id", "username", "email" FROM "users"');
@@ -39,7 +37,9 @@ describe('QueryBuilder', () => {
     const qb = new QueryBuilder(mockAdapter, 'users').where(where);
     const { sql, params } = qb.toSelectSql();
 
-    expect(sql).toBe('SELECT * FROM "users" WHERE "status" = @p0 AND "age" >= @p1 AND "score" < @p2');
+    expect(sql).toBe(
+      'SELECT * FROM "users" WHERE "status" = @p0 AND "age" >= @p1 AND "score" < @p2',
+    );
     expect(params).toEqual([
       { name: 'p0', value: 'active' },
       { name: 'p1', value: 18 },
@@ -75,7 +75,9 @@ describe('QueryBuilder', () => {
     const qb = new QueryBuilder(mockAdapter, 'users').where(where);
     const { sql, params } = qb.toSelectSql();
 
-    expect(sql).toBe('SELECT * FROM "users" WHERE "isDeleted" = @p0 AND ("role" = @p1 OR "points" > @p2)');
+    expect(sql).toBe(
+      'SELECT * FROM "users" WHERE "isDeleted" = @p0 AND ("role" = @p1 OR "points" > @p2)',
+    );
     expect(params).toHaveLength(3);
   });
 
@@ -86,7 +88,7 @@ describe('QueryBuilder', () => {
 
     const { sql } = qb.toSelectSql();
     expect(sql).toBe(
-      'SELECT * FROM "orders" AS "o" INNER JOIN "users" AS "u" ON "o"."userId" = "u"."id" LEFT JOIN "order_items" AS "i" ON "o"."id" = "i"."orderId"'
+      'SELECT * FROM "orders" AS "o" INNER JOIN "users" AS "u" ON "o"."userId" = "u"."id" LEFT JOIN "order_items" AS "i" ON "o"."id" = "i"."orderId"',
     );
   });
 
@@ -99,7 +101,7 @@ describe('QueryBuilder', () => {
 
     const { sql } = qb.toSelectSql();
     expect(sql).toBe(
-      'SELECT * FROM [products] ORDER BY [name] ASC OFFSET 20 ROWS FETCH NEXT 10 ROWS ONLY'
+      'SELECT * FROM [products] ORDER BY [name] ASC OFFSET 20 ROWS FETCH NEXT 10 ROWS ONLY',
     );
   });
 
@@ -115,7 +117,7 @@ describe('QueryBuilder', () => {
 
     const { sql, params } = qb.toSelectSql();
     expect(sql).toBe(
-      'SELECT * FROM "products" WHERE "category" = $1 ORDER BY "price" DESC LIMIT 5 OFFSET 15'
+      'SELECT * FROM "products" WHERE "category" = $1 ORDER BY "price" DESC LIMIT 5 OFFSET 15',
     );
     expect(params[0].value).toBe('books');
   });

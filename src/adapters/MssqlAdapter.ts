@@ -4,7 +4,12 @@ import { StoredProcedureResult } from '../procedure/StoredProcedureResult';
 import { ParameterDirection } from '../procedure/ParameterDirection';
 import { SqlType } from '../procedure/SqlType';
 import { IsolationLevel, DbTransaction, IDbTransactionDriver } from '../transaction';
-import { ConnectionException, ProcedureException, QueryException, DatabaseErrorTranslator } from '../errors';
+import {
+  ConnectionException,
+  ProcedureException,
+  QueryException,
+  DatabaseErrorTranslator,
+} from '../errors';
 
 export interface MssqlAdapterConfig {
   connectionString?: string;
@@ -62,7 +67,10 @@ export class MssqlAdapter implements IDbAdapter {
       this.pool = new this.mssqlModule.ConnectionPool(connConfig);
       await this.pool.connect();
     } catch (err) {
-      throw new ConnectionException(`Failed to connect to SQL Server: ${(err as Error).message}`, err);
+      throw new ConnectionException(
+        `Failed to connect to SQL Server: ${(err as Error).message}`,
+        err,
+      );
     }
   }
 
@@ -85,7 +93,7 @@ export class MssqlAdapter implements IDbAdapter {
   public async executeQuery<T = unknown>(
     sql: string,
     params?: AdapterParam[],
-    transaction?: DbTransaction
+    transaction?: DbTransaction,
   ): Promise<T[]> {
     await this.connect();
     try {
@@ -101,7 +109,7 @@ export class MssqlAdapter implements IDbAdapter {
   public async executeNonQuery(
     sql: string,
     params?: AdapterParam[],
-    transaction?: DbTransaction
+    transaction?: DbTransaction,
   ): Promise<{ rowsAffected: number; insertId?: unknown }> {
     await this.connect();
     try {
@@ -120,7 +128,7 @@ export class MssqlAdapter implements IDbAdapter {
   public async executeScalar<T = unknown>(
     sql: string,
     params?: AdapterParam[],
-    transaction?: DbTransaction
+    transaction?: DbTransaction,
   ): Promise<T> {
     const rows = await this.executeQuery<Record<string, unknown>>(sql, params, transaction);
     if (!rows || rows.length === 0) {
@@ -135,7 +143,7 @@ export class MssqlAdapter implements IDbAdapter {
     name: string,
     params: AdapterParam[],
     timeoutMs?: number,
-    transaction?: DbTransaction
+    transaction?: DbTransaction,
   ): Promise<StoredProcedureResult<T[]>> {
     await this.connect();
     try {
@@ -165,7 +173,7 @@ export class MssqlAdapter implements IDbAdapter {
     name: string,
     params: AdapterParam[],
     timeoutMs?: number,
-    transaction?: DbTransaction
+    transaction?: DbTransaction,
   ): Promise<StoredProcedureResult<T>> {
     await this.connect();
     try {
@@ -190,12 +198,14 @@ export class MssqlAdapter implements IDbAdapter {
       throw new ProcedureException(
         `Failed to execute procedure '${name}': ${(err as Error).message}`,
         name,
-        err
+        err,
       );
     }
   }
 
-  public async beginTransaction(isolationLevel = IsolationLevel.ReadCommitted): Promise<DbTransaction> {
+  public async beginTransaction(
+    isolationLevel = IsolationLevel.ReadCommitted,
+  ): Promise<DbTransaction> {
     await this.connect();
     const tx = new this.mssqlModule.Transaction(this.pool);
     const mssqlIso = this.mapIsolationLevel(isolationLevel);
@@ -264,12 +274,7 @@ export class MssqlAdapter implements IDbAdapter {
     }
   }
 
-  private mapSqlType(
-    type: SqlType,
-    maxLength?: number,
-    precision?: number,
-    scale?: number
-  ): any {
+  private mapSqlType(type: SqlType, maxLength?: number, precision?: number, scale?: number): any {
     const m = this.mssqlModule;
     switch (type) {
       case SqlType.VarChar:

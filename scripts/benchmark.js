@@ -32,7 +32,9 @@ const { runExecutionBenchmarks } = require('../dist/benchmark');
 
 async function main() {
   if (!json) {
-    console.log(`\n⚡ Running EntityTS Execution Benchmarks (${iterations} iterations per scenario)...\n`);
+    console.log(
+      `\n⚡ Running EntityTS Execution Benchmarks (${iterations} iterations per scenario)...\n`,
+    );
   }
 
   const results = await runExecutionBenchmarks({

@@ -66,7 +66,7 @@ export class D1Adapter implements IDbAdapter {
   public async executeQuery<T = unknown>(
     sql: string,
     params?: AdapterParam[],
-    _transaction?: DbTransaction
+    _transaction?: DbTransaction,
   ): Promise<T[]> {
     try {
       const values = params ? params.map(p => p.value) : [];
@@ -81,7 +81,7 @@ export class D1Adapter implements IDbAdapter {
   public async executeNonQuery(
     sql: string,
     params?: AdapterParam[],
-    _transaction?: DbTransaction
+    _transaction?: DbTransaction,
   ): Promise<{ rowsAffected: number; insertId?: unknown }> {
     try {
       const values = params ? params.map(p => p.value) : [];
@@ -92,14 +92,18 @@ export class D1Adapter implements IDbAdapter {
         insertId: res.meta?.last_row_id,
       };
     } catch (err) {
-      throw new QueryException(`Failed to execute D1 non-query: ${(err as Error).message}`, sql, err);
+      throw new QueryException(
+        `Failed to execute D1 non-query: ${(err as Error).message}`,
+        sql,
+        err,
+      );
     }
   }
 
   public async executeScalar<T = unknown>(
     sql: string,
     params?: AdapterParam[],
-    _transaction?: DbTransaction
+    _transaction?: DbTransaction,
   ): Promise<T> {
     const rows = await this.executeQuery<Record<string, unknown>>(sql, params, _transaction);
     if (!rows || rows.length === 0) return null as unknown as T;
@@ -112,7 +116,7 @@ export class D1Adapter implements IDbAdapter {
     name: string,
     params: AdapterParam[],
     _timeoutMs?: number,
-    transaction?: DbTransaction
+    transaction?: DbTransaction,
   ): Promise<StoredProcedureResult<T[]>> {
     try {
       const records = await this.executeQuery<T>(name, params, transaction);
@@ -126,7 +130,7 @@ export class D1Adapter implements IDbAdapter {
       throw new ProcedureException(
         `D1 does not natively support stored procedures ('${name}'): ${(err as Error).message}`,
         name,
-        err
+        err,
       );
     }
   }
@@ -135,7 +139,7 @@ export class D1Adapter implements IDbAdapter {
     name: string,
     params: AdapterParam[],
     timeoutMs?: number,
-    transaction?: DbTransaction
+    transaction?: DbTransaction,
   ): Promise<StoredProcedureResult<T>> {
     const single = await this.executeProcedure<any>(name, params, timeoutMs, transaction);
     return {
@@ -146,7 +150,9 @@ export class D1Adapter implements IDbAdapter {
     };
   }
 
-  public async beginTransaction(isolationLevel = IsolationLevel.ReadCommitted): Promise<DbTransaction> {
+  public async beginTransaction(
+    isolationLevel = IsolationLevel.ReadCommitted,
+  ): Promise<DbTransaction> {
     // D1 in Cloudflare executes statements in autocommit; batch executions are atomic.
     if (this.db.exec) {
       await this.db.exec('BEGIN TRANSACTION');

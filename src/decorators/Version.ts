@@ -29,8 +29,7 @@ export function Version(options?: VersionOptions | string): PropertyDecorator {
     const propName = String(propertyKey);
     const metadata = ModelMetadataRegistry.getInstance().getOrCreate(target.constructor);
 
-    const opts: VersionOptions =
-      typeof options === 'string' ? { name: options } : options || {};
+    const opts: VersionOptions = typeof options === 'string' ? { name: options } : options || {};
     const strategy = opts.strategy || 'number';
     const colName = opts.name || propName;
 
@@ -67,7 +66,7 @@ export function RowVersion(options?: { name?: string } | string): PropertyDecora
   return Version(
     typeof options === 'string'
       ? { strategy: 'number', name: options }
-      : { strategy: 'number', ...options }
+      : { strategy: 'number', ...options },
   );
 }
 

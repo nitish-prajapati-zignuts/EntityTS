@@ -13,8 +13,15 @@ import { TursoAdapter, TursoAdapterConfig } from '../adapters/TursoAdapter';
 import { CockroachDbAdapter, CockroachDbAdapterConfig } from '../adapters/CockroachDbAdapter';
 import { D1Adapter, D1AdapterConfig, D1DatabaseLike } from '../adapters/D1Adapter';
 import { SupabaseAdapter, SupabaseAdapterConfig } from '../adapters/SupabaseAdapter';
-import { ReplicaRoutingDbAdapter, ReplicaRoutingOptions } from '../adapters/ReplicaRoutingDbAdapter';
-import { IExecutionStrategy, ExecutionStrategyOptions, DefaultExecutionStrategy } from '../resilience';
+import {
+  ReplicaRoutingDbAdapter,
+  ReplicaRoutingOptions,
+} from '../adapters/ReplicaRoutingDbAdapter';
+import {
+  IExecutionStrategy,
+  ExecutionStrategyOptions,
+  DefaultExecutionStrategy,
+} from '../resilience';
 import { createQueryPlanLogger, QueryPlanLoggerOptions } from '../observability/QueryPlanAnalyzer';
 
 /**
@@ -186,7 +193,6 @@ export class DbContextOptionsBuilder {
     return this;
   }
 
-
   /**
    * Supplies a custom database adapter implementing the `IDbAdapter` interface.
    *
@@ -349,7 +355,7 @@ export class DbContextOptionsBuilder {
    */
   public withReadReplicas(
     replicas: (IDbAdapter | string | any)[],
-    options?: ReplicaRoutingOptions
+    options?: ReplicaRoutingOptions,
   ): this {
     this.options.readReplicas = replicas;
     this.options.replicaOptions = options;
@@ -364,7 +370,7 @@ export class DbContextOptionsBuilder {
    * @returns `this` builder instance for chaining.
    */
   public withExecutionStrategy(
-    strategyOrOptions?: IExecutionStrategy | ExecutionStrategyOptions
+    strategyOrOptions?: IExecutionStrategy | ExecutionStrategyOptions,
   ): this {
     if (!strategyOrOptions) {
       this.options.executionStrategy = new DefaultExecutionStrategy();
@@ -378,7 +384,7 @@ export class DbContextOptionsBuilder {
     } else {
       this.options.executionStrategyOptions = strategyOrOptions as ExecutionStrategyOptions;
       this.options.executionStrategy = new DefaultExecutionStrategy(
-        strategyOrOptions as ExecutionStrategyOptions
+        strategyOrOptions as ExecutionStrategyOptions,
       );
     }
     return this;
@@ -414,7 +420,12 @@ export class DbContextOptionsBuilder {
     const opts = { ...this.options };
     if (opts.readReplicas && opts.readReplicas.length > 0 && opts.adapter) {
       const replicaAdapters: IDbAdapter[] = opts.readReplicas.map(r => {
-        if (typeof r === 'object' && r !== null && 'executeQuery' in r && typeof r.executeQuery === 'function') {
+        if (
+          typeof r === 'object' &&
+          r !== null &&
+          'executeQuery' in r &&
+          typeof r.executeQuery === 'function'
+        ) {
           return r as IDbAdapter;
         }
         // Auto-create replica adapter based on primary provider
@@ -444,7 +455,11 @@ export class DbContextOptionsBuilder {
         }
       });
 
-      opts.adapter = new ReplicaRoutingDbAdapter(opts.adapter, replicaAdapters, opts.replicaOptions);
+      opts.adapter = new ReplicaRoutingDbAdapter(
+        opts.adapter,
+        replicaAdapters,
+        opts.replicaOptions,
+      );
     }
 
     // Wire deferred query planner hooks (adapter is now resolved)
@@ -457,7 +472,8 @@ export class DbContextOptionsBuilder {
         opts.hooks = {
           onBeforeQuery: existingHooks.onBeforeQuery,
           onAfterQuery: async (sql, params, durationMs) => {
-            if (existingHooks.onAfterQuery) await existingHooks.onAfterQuery(sql, params, durationMs);
+            if (existingHooks.onAfterQuery)
+              await existingHooks.onAfterQuery(sql, params, durationMs);
             if (plannerHooks.onAfterQuery) await plannerHooks.onAfterQuery(sql, params, durationMs);
           },
           onError: existingHooks.onError,

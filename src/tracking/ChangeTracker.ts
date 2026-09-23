@@ -45,7 +45,7 @@ export class ChangeTracker {
       e =>
         e.state === EntityState.Added ||
         e.state === EntityState.Modified ||
-        e.state === EntityState.Deleted
+        e.state === EntityState.Deleted,
     );
   }
 
@@ -110,7 +110,7 @@ export class ChangeTracker {
   public attach<T extends object>(
     entity: T,
     metadata?: EntityMetadata,
-    state: EntityState = EntityState.Unchanged
+    state: EntityState = EntityState.Unchanged,
   ): EntityEntry<T> {
     const raw = (entity as any)[PROXY_TARGET] || entity;
     let entry = this._entries.get(raw);
@@ -140,7 +140,7 @@ export class ChangeTracker {
   public track<T extends object>(
     entity: T,
     metadata?: EntityMetadata,
-    state: EntityState = EntityState.Unchanged
+    state: EntityState = EntityState.Unchanged,
   ): T {
     const raw = (entity as any)[PROXY_TARGET] || entity;
     let entry = this._entries.get(raw);

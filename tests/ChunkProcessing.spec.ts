@@ -63,11 +63,9 @@ describe('Batch / Chunk Processing (DbSet.chunk)', () => {
   it('respects chained .where() filters during chunk processing', async () => {
     const activeBatches: User[][] = [];
 
-    const processed = await db.users
-      .where('active', '=', true)
-      .chunk(500, async (batch) => {
-        activeBatches.push(batch);
-      });
+    const processed = await db.users.where('active', '=', true).chunk(500, async batch => {
+      activeBatches.push(batch);
+    });
 
     expect(processed).toBe(800);
     expect(activeBatches).toHaveLength(2);
@@ -79,7 +77,7 @@ describe('Batch / Chunk Processing (DbSet.chunk)', () => {
   it('stops processing early when callback returns false', async () => {
     let callCount = 0;
 
-    const processed = await db.users.chunk(500, async (batch) => {
+    const processed = await db.users.chunk(500, async batch => {
       callCount++;
       return false; // abort early
     });
@@ -91,11 +89,9 @@ describe('Batch / Chunk Processing (DbSet.chunk)', () => {
   it('handles empty datasets cleanly without executing callback', async () => {
     let called = false;
 
-    const processed = await db.users
-      .where('name', '=', 'NonExistent')
-      .chunk(500, async () => {
-        called = true;
-      });
+    const processed = await db.users.where('name', '=', 'NonExistent').chunk(500, async () => {
+      called = true;
+    });
 
     expect(called).toBe(false);
     expect(processed).toBe(0);
@@ -103,10 +99,10 @@ describe('Batch / Chunk Processing (DbSet.chunk)', () => {
 
   it('throws an error if chunk size is <= 0', async () => {
     await expect(db.users.chunk(0, async () => {})).rejects.toThrow(
-      'Chunk size must be greater than 0'
+      'Chunk size must be greater than 0',
     );
     await expect(db.users.chunk(-10, async () => {})).rejects.toThrow(
-      'Chunk size must be greater than 0'
+      'Chunk size must be greater than 0',
     );
   });
 
@@ -116,9 +112,9 @@ describe('Batch / Chunk Processing (DbSet.chunk)', () => {
     await db.users
       .where('active', '=', false)
       .take(15)
-      .chunk(5, async (batch) => {
+      .chunk(5, async batch => {
         // simulate async ETL delay
-        await new Promise((r) => setTimeout(r, 10));
+        await new Promise(r => setTimeout(r, 10));
         for (const user of batch) {
           processedIds.push(user.id);
         }

@@ -24,7 +24,12 @@ export class QueryBuilder<T = any> {
   private _orderByClauses: OrderByClause[] = [];
   private _joinClauses: JoinClause[] = [];
   private _groupByColumns: string[] = [];
-  private _havingConditions: { expression: string; operator: string; value?: unknown; value2?: unknown }[] = [];
+  private _havingConditions: {
+    expression: string;
+    operator: string;
+    value?: unknown;
+    value2?: unknown;
+  }[] = [];
   private _limit?: number;
   private _offset?: number;
   private _isDistinct = false;
@@ -43,7 +48,7 @@ export class QueryBuilder<T = any> {
   constructor(
     private readonly adapter: IDbAdapter,
     tableName: string,
-    alias?: string
+    alias?: string,
   ) {
     this._tableName = tableName;
     this._tableAlias = alias;
@@ -67,7 +72,7 @@ export class QueryBuilder<T = any> {
   public withCte(
     name: string,
     query: QueryBuilder<any> | Subquery<any> | string | ((qb: QueryBuilder<any>) => any),
-    recursive = false
+    recursive = false,
   ): this {
     this._ctes.push({ name, query, recursive });
     return this;
@@ -97,11 +102,7 @@ export class QueryBuilder<T = any> {
    * @param vector - Query embedding coordinates array.
    * @param options - Distance metric ('cosine', 'l2', 'inner_product') and limit.
    */
-  public nearest(
-    column: string,
-    vector: number[],
-    options?: NearestOptions
-  ): this {
+  public nearest(column: string, vector: number[], options?: NearestOptions): this {
     this._vectorSearch = { column, vector, options };
     if (options?.limit) {
       this._limit = options.limit;
@@ -269,7 +270,7 @@ export class QueryBuilder<T = any> {
     tableName: string,
     leftColumn: string,
     rightColumn: string,
-    alias?: string
+    alias?: string,
   ): this {
     this._joinClauses.push({
       type,
@@ -395,7 +396,7 @@ export class QueryBuilder<T = any> {
    */
   public toSelectSql(
     params: AdapterParam[] = [],
-    nextParamIdx?: () => number
+    nextParamIdx?: () => number,
   ): { sql: string; params: AdapterParam[] } {
     let localIndex = params.length;
     const getNextIdx = nextParamIdx || (() => localIndex++);
@@ -420,7 +421,11 @@ export class QueryBuilder<T = any> {
         } else if (cte.query && typeof cte.query.toSelectSql === 'function') {
           const res = cte.query.toSelectSql(params, getNextIdx);
           innerSql = res.sql;
-        } else if (cte.query && (cte.query as any).queryBuilder && typeof (cte.query as any).queryBuilder.toSelectSql === 'function') {
+        } else if (
+          cte.query &&
+          (cte.query as any).queryBuilder &&
+          typeof (cte.query as any).queryBuilder.toSelectSql === 'function'
+        ) {
           const res = (cte.query as any).queryBuilder.toSelectSql(params, getNextIdx);
           innerSql = res.sql;
         }
@@ -435,7 +440,13 @@ export class QueryBuilder<T = any> {
     if (this._selectColumns.length > 0) {
       colsStr = this._selectColumns
         .map(c => {
-          if (c.includes(' AS ') || c.includes(' as ') || c.includes('(') || c === '*' || !isNaN(Number(c))) {
+          if (
+            c.includes(' AS ') ||
+            c.includes(' as ') ||
+            c.includes('(') ||
+            c === '*' ||
+            !isNaN(Number(c))
+          ) {
             return c;
           }
           return escape(c);
@@ -473,11 +484,7 @@ export class QueryBuilder<T = any> {
     }
 
     // WHERE
-    const whereSql = this.compileWhereConditions(
-      this._whereClause.conditions,
-      params,
-      getNextIdx
-    );
+    const whereSql = this.compileWhereConditions(this._whereClause.conditions, params, getNextIdx);
     if (whereSql) {
       sql += ` WHERE ${whereSql}`;
     }
@@ -547,7 +554,8 @@ export class QueryBuilder<T = any> {
 
     if (effectiveOrderBys.length > 0) {
       const orderStrs = effectiveOrderBys.map(
-        o => `${o.column.includes('(') || o.column.includes('<') ? o.column : escape(o.column)} ${o.direction}`
+        o =>
+          `${o.column.includes('(') || o.column.includes('<') ? o.column : escape(o.column)} ${o.direction}`,
       );
       sql += ` ORDER BY ${orderStrs.join(', ')}`;
     }
@@ -573,9 +581,7 @@ export class QueryBuilder<T = any> {
       } else if (this._lockMode === 'FOR_UPDATE_SKIP_LOCKED') {
         sql += ' FOR UPDATE SKIP LOCKED';
       } else if (this._lockMode === 'FOR_SHARE') {
-        sql += (p === 'mysql' || p === 'planetscale')
-          ? ' LOCK IN SHARE MODE'
-          : ' FOR SHARE';
+        sql += p === 'mysql' || p === 'planetscale' ? ' LOCK IN SHARE MODE' : ' FOR SHARE';
       }
     }
 
@@ -614,7 +620,7 @@ export class QueryBuilder<T = any> {
     const whereSql = this.compileWhereConditions(
       this._whereClause.conditions,
       params,
-      () => paramIndex++
+      () => paramIndex++,
     );
     if (whereSql) {
       sql += ` WHERE ${whereSql}`;
@@ -633,7 +639,7 @@ export class QueryBuilder<T = any> {
    */
   public toAggregateSql(
     fn: 'SUM' | 'AVG' | 'MIN' | 'MAX',
-    column: string
+    column: string,
   ): { sql: string; params: AdapterParam[] } {
     const params: AdapterParam[] = [];
     let paramIndex = 0;
@@ -658,7 +664,7 @@ export class QueryBuilder<T = any> {
     const whereSql = this.compileWhereConditions(
       this._whereClause.conditions,
       params,
-      () => paramIndex++
+      () => paramIndex++,
     );
     if (whereSql) {
       sql += ` WHERE ${whereSql}`;
@@ -680,11 +686,13 @@ export class QueryBuilder<T = any> {
     const escape = (id: string) => this.formatIdentifier(id);
 
     const cols = keys.map(k => escape(k)).join(', ');
-    const placeholders = keys.map((k, idx) => {
-      const pName = `p${idx}`;
-      params.push({ name: pName, value: data[k] });
-      return this.adapter.formatParameterPlaceholder(pName, idx + 1);
-    }).join(', ');
+    const placeholders = keys
+      .map((k, idx) => {
+        const pName = `p${idx}`;
+        params.push({ name: pName, value: data[k] });
+        return this.adapter.formatParameterPlaceholder(pName, idx + 1);
+      })
+      .join(', ');
 
     let sql = `INSERT INTO ${escape(this._tableName)} (${cols}) VALUES (${placeholders})`;
     const provider = this.adapter.provider;
@@ -708,7 +716,7 @@ export class QueryBuilder<T = any> {
    */
   public toUpsertSql(
     conflictTarget: Record<string, unknown>,
-    updatePayload: Record<string, unknown>
+    updatePayload: Record<string, unknown>,
   ): { sql: string; params: AdapterParam[] } {
     const params: AdapterParam[] = [];
     const escape = (id: string) => this.formatIdentifier(id);
@@ -737,7 +745,8 @@ export class QueryBuilder<T = any> {
         .map(k => `target.${escape(k)} = source.${escape(k)}`)
         .join(', ');
 
-      const matchedClause = updateSet.length > 0 ? ` WHEN MATCHED THEN UPDATE SET ${updateSet}` : '';
+      const matchedClause =
+        updateSet.length > 0 ? ` WHEN MATCHED THEN UPDATE SET ${updateSet}` : '';
       const sql = `MERGE INTO ${escape(this._tableName)} AS target USING (VALUES (${placeholders.join(', ')})) AS source (${cols}) ON ${onClause}${matchedClause} WHEN NOT MATCHED THEN INSERT (${cols}) VALUES (${sourceCols}) OUTPUT INSERTED.*;`;
       return { sql, params };
     }
@@ -787,20 +796,22 @@ export class QueryBuilder<T = any> {
     let paramIndex = 0;
     const escape = (id: string) => this.formatIdentifier(id);
 
-    const setClauses = keys.map(k => {
-      const pName = `p${paramIndex}`;
-      params.push({ name: pName, value: data[k] });
-      const placeholder = this.adapter.formatParameterPlaceholder(pName, paramIndex + 1);
-      paramIndex++;
-      return `${escape(k)} = ${placeholder}`;
-    }).join(', ');
+    const setClauses = keys
+      .map(k => {
+        const pName = `p${paramIndex}`;
+        params.push({ name: pName, value: data[k] });
+        const placeholder = this.adapter.formatParameterPlaceholder(pName, paramIndex + 1);
+        paramIndex++;
+        return `${escape(k)} = ${placeholder}`;
+      })
+      .join(', ');
 
     let sql = `UPDATE ${escape(this._tableName)} SET ${setClauses}`;
 
     const whereSql = this.compileWhereConditions(
       this._whereClause.conditions,
       params,
-      () => paramIndex++
+      () => paramIndex++,
     );
     if (whereSql) {
       sql += ` WHERE ${whereSql}`;
@@ -824,7 +835,7 @@ export class QueryBuilder<T = any> {
     const whereSql = this.compileWhereConditions(
       this._whereClause.conditions,
       params,
-      () => paramIndex++
+      () => paramIndex++,
     );
     if (whereSql) {
       sql += ` WHERE ${whereSql}`;
@@ -836,7 +847,7 @@ export class QueryBuilder<T = any> {
   private compileWhereConditions(
     conditions: WhereCondition[],
     params: AdapterParam[],
-    nextParamIdx: () => number
+    nextParamIdx: () => number,
   ): string {
     if (!conditions || conditions.length === 0) {
       return '';
@@ -847,7 +858,6 @@ export class QueryBuilder<T = any> {
     for (let i = 0; i < conditions.length; i++) {
       const c = conditions[i];
       const logical = i === 0 ? '' : ` ${c.logical} `;
-
 
       if (c.rawSql) {
         let compiledRaw = c.rawSql;
@@ -865,11 +875,7 @@ export class QueryBuilder<T = any> {
       }
 
       if (c.nested) {
-        const nestedSql = this.compileWhereConditions(
-          c.nested.conditions,
-          params,
-          nextParamIdx
-        );
+        const nestedSql = this.compileWhereConditions(c.nested.conditions, params, nextParamIdx);
         if (nestedSql) {
           parts.push(`${logical}(${nestedSql})`);
         }
@@ -892,7 +898,12 @@ export class QueryBuilder<T = any> {
 
         if (typeof subquery === 'string') {
           rawSql = subquery;
-        } else if (subquery && typeof subquery.toSelectSql === 'function' && subquery.alias && subquery.queryBuilder) {
+        } else if (
+          subquery &&
+          typeof subquery.toSelectSql === 'function' &&
+          subquery.alias &&
+          subquery.queryBuilder
+        ) {
           subQb = subquery.queryBuilder.clone();
           alias = subquery.alias;
         } else if (subquery && typeof subquery.toSelectSql === 'function') {
@@ -908,8 +919,14 @@ export class QueryBuilder<T = any> {
           if (joinPredicate.length <= 1 && subQb) {
             (joinPredicate as any)(subQb.getWhereClause());
           } else {
-            const outerProxy = createJoinProxy(this._tableAlias || this._tableName, joinComparisons);
-            const innerProxy = createJoinProxy(alias || (subQb ? (subQb as any)._tableName : 'sub'), joinComparisons);
+            const outerProxy = createJoinProxy(
+              this._tableAlias || this._tableName,
+              joinComparisons,
+            );
+            const innerProxy = createJoinProxy(
+              alias || (subQb ? (subQb as any)._tableName : 'sub'),
+              joinComparisons,
+            );
             (joinPredicate as any)(outerProxy, innerProxy);
           }
         }
@@ -938,18 +955,22 @@ export class QueryBuilder<T = any> {
         } else if (rawSql) {
           let joinSql = '';
           if (joinComparisons.length > 0) {
-            joinSql = ' WHERE ' + joinComparisons.map(comp => {
-              const leftRef = `${this.formatIdentifier(comp.leftTable)}.${this.formatIdentifier(comp.leftColumn)}`;
-              if (comp.rightTable && comp.rightColumn) {
-                const rightRef = `${this.formatIdentifier(comp.rightTable)}.${this.formatIdentifier(comp.rightColumn)}`;
-                return `${leftRef} ${comp.operator} ${rightRef}`;
-              }
-              const pIdx = nextParamIdx();
-              const pName = `p${pIdx}`;
-              params.push({ name: pName, value: comp.rightValue });
-              const ph = this.adapter.formatParameterPlaceholder(pName, pIdx + 1);
-              return `${leftRef} ${comp.operator} ${ph}`;
-            }).join(' AND ');
+            joinSql =
+              ' WHERE ' +
+              joinComparisons
+                .map(comp => {
+                  const leftRef = `${this.formatIdentifier(comp.leftTable)}.${this.formatIdentifier(comp.leftColumn)}`;
+                  if (comp.rightTable && comp.rightColumn) {
+                    const rightRef = `${this.formatIdentifier(comp.rightTable)}.${this.formatIdentifier(comp.rightColumn)}`;
+                    return `${leftRef} ${comp.operator} ${rightRef}`;
+                  }
+                  const pIdx = nextParamIdx();
+                  const pName = `p${pIdx}`;
+                  params.push({ name: pName, value: comp.rightValue });
+                  const ph = this.adapter.formatParameterPlaceholder(pName, pIdx + 1);
+                  return `${leftRef} ${comp.operator} ${ph}`;
+                })
+                .join(' AND ');
           }
           const prefix = not ? 'NOT EXISTS' : 'EXISTS';
           const aliasStr = alias ? ` AS ${this.formatIdentifier(alias)}` : '';
@@ -977,12 +998,14 @@ export class QueryBuilder<T = any> {
           parts.push(c.operator === 'IN' ? `${logical}1 = 0` : `${logical}1 = 1`);
           continue;
         }
-        const placeholders = list.map(item => {
-          const pIdx = nextParamIdx();
-          const pName = `p${pIdx}`;
-          params.push({ name: pName, value: item });
-          return this.adapter.formatParameterPlaceholder(pName, pIdx + 1);
-        }).join(', ');
+        const placeholders = list
+          .map(item => {
+            const pIdx = nextParamIdx();
+            const pName = `p${pIdx}`;
+            params.push({ name: pName, value: item });
+            return this.adapter.formatParameterPlaceholder(pName, pIdx + 1);
+          })
+          .join(', ');
         parts.push(`${logical}${colName} ${c.operator} (${placeholders})`);
         continue;
       }
@@ -1017,7 +1040,7 @@ export class QueryBuilder<T = any> {
   private compileSearchCondition(
     search: { columns: string[]; query: string; options?: any },
     params: AdapterParam[],
-    nextParamIdx: () => number
+    nextParamIdx: () => number,
   ): string {
     if (!search.columns || search.columns.length === 0 || !search.query) {
       return '';
@@ -1038,10 +1061,10 @@ export class QueryBuilder<T = any> {
         mode === 'plain'
           ? 'plainto_tsquery'
           : mode === 'phrase'
-          ? 'phraseto_tsquery'
-          : mode === 'raw'
-          ? 'to_tsquery'
-          : 'websearch_to_tsquery';
+            ? 'phraseto_tsquery'
+            : mode === 'raw'
+              ? 'to_tsquery'
+              : 'websearch_to_tsquery';
 
       const vectorExpr = search.columns
         .map(col => `coalesce(${this.formatIdentifier(col)}, '')`)
@@ -1057,8 +1080,7 @@ export class QueryBuilder<T = any> {
 
     // 2. MySQL, PlanetScale
     if (provider === 'mysql' || provider === 'planetscale') {
-      const againstMode =
-        mode === 'natural' ? 'IN NATURAL LANGUAGE MODE' : 'IN BOOLEAN MODE';
+      const againstMode = mode === 'natural' ? 'IN NATURAL LANGUAGE MODE' : 'IN BOOLEAN MODE';
       const cols = search.columns.map(col => this.formatIdentifier(col)).join(', ');
 
       const pIdx = nextParamIdx();
@@ -1102,7 +1124,7 @@ export class QueryBuilder<T = any> {
     sql: string,
     limit?: number,
     offset?: number,
-    hasOrderBy = false
+    hasOrderBy = false,
   ): string {
     if (limit === undefined && offset === undefined) {
       return sql;
@@ -1183,7 +1205,10 @@ export class QueryBuilder<T = any> {
   private formatIdentifier(id: string): string {
     if (id === '*') return '*';
     if (id.includes('.')) {
-      return id.split('.').map(part => this.adapter.escapeIdentifier(part)).join('.');
+      return id
+        .split('.')
+        .map(part => this.adapter.escapeIdentifier(part))
+        .join('.');
     }
     return this.adapter.escapeIdentifier(id);
   }

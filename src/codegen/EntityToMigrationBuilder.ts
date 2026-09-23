@@ -9,54 +9,68 @@ import { SqlType } from '../procedure/SqlType';
 export function sqlTypeToColumnType(
   sqlType: SqlType | undefined,
   adapter: IDbAdapter,
-  maxLength?: number
+  maxLength?: number,
 ): string {
   const len = maxLength ?? 255;
   const p = adapter.provider;
-  const isPostgresFamily = p === 'postgres' || p === 'neon' || p === 'cockroachdb' || p === 'supabase';
+  const isPostgresFamily =
+    p === 'postgres' || p === 'neon' || p === 'cockroachdb' || p === 'supabase';
   const isSqliteFamily = p === 'sqlite' || p === 'turso' || p === 'd1';
   const isMysqlFamily = p === 'mysql' || p === 'planetscale';
   const isMssql = p === 'mssql';
 
   switch (sqlType) {
-    case SqlType.Int:        return 'INTEGER';
-    case SqlType.BigInt:     return 'BIGINT';
-    case SqlType.SmallInt:   return 'SMALLINT';
-    case SqlType.TinyInt:    return 'TINYINT';
+    case SqlType.Int:
+      return 'INTEGER';
+    case SqlType.BigInt:
+      return 'BIGINT';
+    case SqlType.SmallInt:
+      return 'SMALLINT';
+    case SqlType.TinyInt:
+      return 'TINYINT';
     case SqlType.Float:
-    case SqlType.Real:       return 'FLOAT';
+    case SqlType.Real:
+      return 'FLOAT';
     case SqlType.Decimal:
     case SqlType.Numeric:
-    case SqlType.Money:      return 'DECIMAL(18, 4)';
-    case SqlType.VarChar:    return `VARCHAR(${len})`;
+    case SqlType.Money:
+      return 'DECIMAL(18, 4)';
+    case SqlType.VarChar:
+      return `VARCHAR(${len})`;
     case SqlType.NVarChar:
-      return (isMysqlFamily || isSqliteFamily)
-        ? `VARCHAR(${len})` : `NVARCHAR(${len})`;
-    case SqlType.Char:       return `CHAR(${len})`;
+      return isMysqlFamily || isSqliteFamily ? `VARCHAR(${len})` : `NVARCHAR(${len})`;
+    case SqlType.Char:
+      return `CHAR(${len})`;
     case SqlType.NChar:
-      return (isMysqlFamily || isSqliteFamily)
-        ? `CHAR(${len})` : `NCHAR(${len})`;
+      return isMysqlFamily || isSqliteFamily ? `CHAR(${len})` : `NCHAR(${len})`;
     case SqlType.Text:
-    case SqlType.NText:      return 'TEXT';
-    case SqlType.Bit:        return isMssql ? 'BIT' : 'BOOLEAN';
+    case SqlType.NText:
+      return 'TEXT';
+    case SqlType.Bit:
+      return isMssql ? 'BIT' : 'BOOLEAN';
     case SqlType.DateTime:
     case SqlType.DateTime2:
     case SqlType.SmallDateTime:
       return isMssql ? 'DATETIME2' : 'TIMESTAMP';
-    case SqlType.Date:       return 'DATE';
-    case SqlType.Time:       return 'TIME';
+    case SqlType.Date:
+      return 'DATE';
+    case SqlType.Time:
+      return 'TIME';
     case SqlType.DateTimeOffset:
       return isMssql ? 'DATETIMEOFFSET' : 'TIMESTAMP WITH TIME ZONE';
     case SqlType.UniqueIdentifier:
     case SqlType.Uuid:
-      return isPostgresFamily ? 'UUID'
-        : isMssql ? 'UNIQUEIDENTIFIER' : 'VARCHAR(36)';
+      return isPostgresFamily ? 'UUID' : isMssql ? 'UNIQUEIDENTIFIER' : 'VARCHAR(36)';
     case SqlType.Binary:
     case SqlType.VarBinary:
-    case SqlType.Image:      return 'BLOB';
-    case SqlType.Json:       return 'JSON';
-    case SqlType.Xml:        return isMssql ? 'XML' : 'TEXT';
-    default:                 return `VARCHAR(${len})`;
+    case SqlType.Image:
+      return 'BLOB';
+    case SqlType.Json:
+      return 'JSON';
+    case SqlType.Xml:
+      return isMssql ? 'XML' : 'TEXT';
+    default:
+      return `VARCHAR(${len})`;
   }
 }
 
@@ -67,7 +81,7 @@ export function sqlTypeToColumnType(
  */
 export function entityToMigrationBuilder(
   metadata: EntityMetadata,
-  adapter: IDbAdapter
+  adapter: IDbAdapter,
 ): MigrationBuilder {
   const builder = new MigrationBuilder();
   // Views have no DDL — the CREATE VIEW is managed outside NSP
@@ -104,9 +118,12 @@ export function entityToMigrationBuilder(
             : table.string(col.columnName, col.maxLength ?? 100);
 
         if (col.isNullable === false) colBuilder.notNullable();
-        else if (col.isNullable)      colBuilder.nullable();
+        else if (col.isNullable) colBuilder.nullable();
         if (col.defaultValue !== undefined) {
-          const val = typeof col.defaultValue === 'function' ? (col.defaultValue as Function)() : col.defaultValue;
+          const val =
+            typeof col.defaultValue === 'function'
+              ? (col.defaultValue as Function)()
+              : col.defaultValue;
           colBuilder.defaultTo(val);
         }
 
@@ -144,13 +161,19 @@ export function entityToMigrationBuilder(
       } else if (colType === 'BOOLEAN' || colType === 'BIT') {
         colBuilder = table.boolean(col.columnName);
       } else if (
-        colType.startsWith('TIMESTAMP') || colType === 'DATE' ||
-        colType === 'DATETIME2'         || colType === 'TIME'
+        colType.startsWith('TIMESTAMP') ||
+        colType === 'DATE' ||
+        colType === 'DATETIME2' ||
+        colType === 'TIME'
       ) {
         colBuilder = table.timestamp(col.columnName);
       } else if (colType.startsWith('DECIMAL') || colType.startsWith('FLOAT')) {
         colBuilder = table.decimal(col.columnName);
-      } else if (colType === 'UUID' || colType === 'UNIQUEIDENTIFIER' || colType === 'VARCHAR(36)') {
+      } else if (
+        colType === 'UUID' ||
+        colType === 'UNIQUEIDENTIFIER' ||
+        colType === 'VARCHAR(36)'
+      ) {
         colBuilder = table.uuid(col.columnName);
       } else if (colType === 'JSON') {
         colBuilder = table.json(col.columnName);
@@ -160,10 +183,13 @@ export function entityToMigrationBuilder(
 
       // Inline PRIMARY KEY only when NOT part of a composite key
       if (col.isPrimaryKey && !isCompositePkCol) colBuilder.primary();
-      if (col.isNullable === false)  colBuilder.notNullable();
-      else if (col.isNullable)       colBuilder.nullable();
+      if (col.isNullable === false) colBuilder.notNullable();
+      else if (col.isNullable) colBuilder.nullable();
       if (col.defaultValue !== undefined) {
-        const val = typeof col.defaultValue === 'function' ? (col.defaultValue as Function)() : col.defaultValue;
+        const val =
+          typeof col.defaultValue === 'function'
+            ? (col.defaultValue as Function)()
+            : col.defaultValue;
         colBuilder.defaultTo(val);
       }
     }
@@ -176,8 +202,9 @@ export function entityToMigrationBuilder(
       table.timestamp('updated_at').nullable();
     }
     if (metadata.softDelete) {
-      const alreadyDeclared = Array.from(metadata.columns.values())
-        .some(c => c.columnName === metadata.softDelete!.column);
+      const alreadyDeclared = Array.from(metadata.columns.values()).some(
+        c => c.columnName === metadata.softDelete!.column,
+      );
       if (!alreadyDeclared) {
         table.timestamp(metadata.softDelete.column).nullable();
       }
@@ -216,7 +243,7 @@ export function entityToMigrationBuilder(
       const tbl = adapter.escapeIdentifier(ec.table);
       const col = adapter.escapeIdentifier(ec.column);
       builder.executeSql(
-        `ALTER TABLE ${tbl} ADD CONSTRAINT chk_${ec.column}_enum CHECK (${col} IN (${quotedVals}));`
+        `ALTER TABLE ${tbl} ADD CONSTRAINT chk_${ec.column}_enum CHECK (${col} IN (${quotedVals}));`,
       );
     }
   }

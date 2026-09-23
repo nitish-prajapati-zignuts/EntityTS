@@ -25,7 +25,7 @@ export class DbTransaction {
    */
   constructor(
     private readonly driver: IDbTransactionDriver,
-    public readonly isolationLevel: IsolationLevel = IsolationLevel.ReadCommitted
+    public readonly isolationLevel: IsolationLevel = IsolationLevel.ReadCommitted,
   ) {}
 
   /**

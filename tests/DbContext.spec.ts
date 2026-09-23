@@ -100,7 +100,7 @@ describe('DbContext and EF Core-like features', () => {
   it('executes useTransaction and commits on success', async () => {
     let executedInTx = false;
 
-    await ctx.useTransaction(async (tx) => {
+    await ctx.useTransaction(async tx => {
       const txAccounts = ctx.accounts.inTransaction(tx);
       await txAccounts.toList();
       executedInTx = true;
@@ -111,14 +111,14 @@ describe('DbContext and EF Core-like features', () => {
 
   it('executes useTransaction and rolls back on failure', async () => {
     await expect(
-      ctx.useTransaction(async (tx) => {
+      ctx.useTransaction(async tx => {
         await ctx.accounts.inTransaction(tx).toList();
         throw new Error('Simulated failure');
-      })
+      }),
     ).rejects.toThrow('Simulated failure');
   });
 
-  it('integrates with Express middleware correctly', (done) => {
+  it('integrates with Express middleware correctly', done => {
     const middleware = dbContextMiddleware(TestDbContext);
     const req: any = {};
     const res: any = {

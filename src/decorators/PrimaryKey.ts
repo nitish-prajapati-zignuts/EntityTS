@@ -56,7 +56,7 @@ export interface ForeignKeyOptions {
  */
 export function ForeignKey(
   referencedEntity: () => Function,
-  options?: ForeignKeyOptions
+  options?: ForeignKeyOptions,
 ): PropertyDecorator {
   return (target: object, propertyKey: string | symbol) => {
     const propName = String(propertyKey);

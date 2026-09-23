@@ -67,7 +67,12 @@ export class OutboxDispatcher {
           \`dispatched_at\` BIGINT
         )
       `;
-    } else if (provider === 'postgres' || provider === 'neon' || provider === 'supabase' || provider === 'cockroachdb') {
+    } else if (
+      provider === 'postgres' ||
+      provider === 'neon' ||
+      provider === 'supabase' ||
+      provider === 'cockroachdb'
+    ) {
       sql = `
         CREATE TABLE IF NOT EXISTS "__nsp_outbox" (
           "id" VARCHAR(64) PRIMARY KEY,
@@ -112,7 +117,7 @@ export class OutboxDispatcher {
   public async enqueue<T>(
     eventType: string,
     payload: T,
-    transaction?: DbTransaction
+    transaction?: DbTransaction,
   ): Promise<string> {
     await this.ensureSchema();
 
@@ -139,7 +144,7 @@ export class OutboxDispatcher {
         { name: 'retry', value: 0 },
         { name: 'created', value: now },
       ],
-      transaction
+      transaction,
     );
 
     return id;
@@ -154,7 +159,7 @@ export class OutboxDispatcher {
    */
   public async dispatchPending(
     handler: (message: OutboxMessage) => Promise<void>,
-    options?: DispatchOptions
+    options?: DispatchOptions,
   ): Promise<DispatchSummary> {
     await this.ensureSchema();
 

@@ -66,7 +66,7 @@ export class LedgerEntryBuilder {
     accountId: string,
     amount: Money | string | number,
     description?: string,
-    currency?: string
+    currency?: string,
   ): this {
     const curr = currency || (amount instanceof Money ? amount.currency : this.defaultCurrency);
     const m = Money.from(amount, curr);
@@ -87,7 +87,7 @@ export class LedgerEntryBuilder {
     accountId: string,
     amount: Money | string | number,
     description?: string,
-    currency?: string
+    currency?: string,
   ): this {
     const curr = currency || (amount instanceof Money ? amount.currency : this.defaultCurrency);
     const m = Money.from(amount, curr);
@@ -132,7 +132,7 @@ export class LedgerEntryBuilder {
       if (!debits.equals(credits)) {
         throw new UnbalancedLedgerException(
           `${curr} ${debits.toDecimalString(4)}`,
-          `${curr} ${credits.toDecimalString(4)}`
+          `${curr} ${credits.toDecimalString(4)}`,
         );
       }
     }
@@ -215,7 +215,12 @@ export class LedgerManager {
           \`description\` VARCHAR(500)
         )
       `;
-    } else if (provider === 'postgres' || provider === 'neon' || provider === 'supabase' || provider === 'cockroachdb') {
+    } else if (
+      provider === 'postgres' ||
+      provider === 'neon' ||
+      provider === 'supabase' ||
+      provider === 'cockroachdb'
+    ) {
       entriesSql = `
         CREATE TABLE IF NOT EXISTS "__nsp_ledger_entries" (
           "id" VARCHAR(64) PRIMARY KEY,
@@ -269,7 +274,9 @@ export class LedgerManager {
    * Posts an immutable multi-leg double-entry transaction to the ledger.
    * Enforces debits == credits balancing prior to database persistence.
    */
-  public async postEntry(builderCallback: (builder: LedgerEntryBuilder) => void): Promise<LedgerEntry> {
+  public async postEntry(
+    builderCallback: (builder: LedgerEntryBuilder) => void,
+  ): Promise<LedgerEntry> {
     await this.ensureSchema();
 
     const builder = new LedgerEntryBuilder();
@@ -342,7 +349,8 @@ export class LedgerManager {
    * Debits the destination account and credits the originating account.
    */
   public async transfer(options: TransferOptions): Promise<LedgerEntry> {
-    const currency = options.currency || (options.amount instanceof Money ? options.amount.currency : 'USD');
+    const currency =
+      options.currency || (options.amount instanceof Money ? options.amount.currency : 'USD');
     const money = Money.from(options.amount, currency);
 
     return this.postEntry(b => {

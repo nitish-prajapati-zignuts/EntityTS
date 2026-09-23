@@ -28,7 +28,9 @@ describe('Resilient Connection & Execution Strategy', () => {
 
     it('detects MySQL deadlock and connection lost errors', () => {
       expect(isTransientError({ errno: 1205, message: 'Lock wait timeout exceeded' })).toBe(true);
-      expect(isTransientError({ errno: 1213, message: 'Deadlock found when trying to get lock' })).toBe(true);
+      expect(
+        isTransientError({ errno: 1213, message: 'Deadlock found when trying to get lock' }),
+      ).toBe(true);
       expect(isTransientError({ errno: 2006, message: 'MySQL server has gone away' })).toBe(true);
     });
 
@@ -44,7 +46,9 @@ describe('Resilient Connection & Execution Strategy', () => {
 
     it('does NOT treat business/syntax errors as transient', () => {
       expect(isTransientError({ code: '42P01', message: 'relation does not exist' })).toBe(false);
-      expect(isTransientError({ code: '23505', message: 'unique constraint violation' })).toBe(false);
+      expect(isTransientError({ code: '23505', message: 'unique constraint violation' })).toBe(
+        false,
+      );
       expect(isTransientError(new Error('Validation error: invalid amount'))).toBe(false);
     });
   });
@@ -96,7 +100,7 @@ describe('Resilient Connection & Execution Strategy', () => {
           const err: any = new Error('Syntax error');
           err.code = '42601';
           throw err;
-        })
+        }),
       ).rejects.toThrow('Syntax error');
 
       expect(attempts).toBe(1);
@@ -117,7 +121,7 @@ describe('Resilient Connection & Execution Strategy', () => {
           const err: any = new Error('Deadlock');
           err.code = '40P01';
           throw err;
-        })
+        }),
       ).rejects.toThrow('Deadlock');
 
       expect(attempts).toBe(3); // 1 initial + 2 retries
@@ -138,10 +142,7 @@ describe('Resilient Connection & Execution Strategy', () => {
     });
 
     it('configures retry via DbContextOptionsBuilder.enableRetryOnFailure', () => {
-      const options = new DbContextOptionsBuilder()
-        .useMock()
-        .enableRetryOnFailure(5, 3000)
-        .build();
+      const options = new DbContextOptionsBuilder().useMock().enableRetryOnFailure(5, 3000).build();
 
       expect(options.executionStrategy).toBeDefined();
     });
@@ -166,7 +167,7 @@ describe('Resilient Connection & Execution Strategy', () => {
       const ctx = new TestDbContext(options);
       ctx.accounts = new DbSet<Account>(adapter, Account);
 
-      const result = await ctx.executeResilientTransaction(async (_tx) => {
+      const result = await ctx.executeResilientTransaction(async _tx => {
         attempts++;
         if (attempts === 1) {
           const deadlockErr: any = new Error('deadlock victim');

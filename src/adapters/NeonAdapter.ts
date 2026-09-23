@@ -29,13 +29,14 @@ export class NeonAdapter implements IDbAdapter {
     try {
       this.neonModule = await this.resolveNeon();
       const connConfig =
-        typeof this.config === 'string'
-          ? { connectionString: this.config }
-          : this.config;
+        typeof this.config === 'string' ? { connectionString: this.config } : this.config;
       // @neondatabase/serverless exports Pool for WebSocket-based pooled connections
       this.pool = new this.neonModule.Pool(connConfig);
     } catch (err) {
-      throw new ConnectionException(`Failed to connect to Neon PostgreSQL: ${(err as Error).message}`, err);
+      throw new ConnectionException(
+        `Failed to connect to Neon PostgreSQL: ${(err as Error).message}`,
+        err,
+      );
     }
   }
 
@@ -59,7 +60,7 @@ export class NeonAdapter implements IDbAdapter {
   public async executeQuery<T = unknown>(
     sql: string,
     params?: AdapterParam[],
-    transaction?: DbTransaction
+    transaction?: DbTransaction,
   ): Promise<T[]> {
     await this.connect();
     const client = transaction ? transaction.getDriver<any>().client : this.pool;
@@ -77,7 +78,7 @@ export class NeonAdapter implements IDbAdapter {
   public async executeNonQuery(
     sql: string,
     params?: AdapterParam[],
-    transaction?: DbTransaction
+    transaction?: DbTransaction,
   ): Promise<{ rowsAffected: number; insertId?: unknown }> {
     await this.connect();
     const client = transaction ? transaction.getDriver<any>().client : this.pool;
@@ -93,7 +94,11 @@ export class NeonAdapter implements IDbAdapter {
       }
       return { rowsAffected: res.rowCount ?? 0, insertId };
     } catch (err) {
-      throw new QueryException(`Failed to execute Neon non-query: ${(err as Error).message}`, sql, err);
+      throw new QueryException(
+        `Failed to execute Neon non-query: ${(err as Error).message}`,
+        sql,
+        err,
+      );
     }
   }
 
@@ -113,7 +118,7 @@ export class NeonAdapter implements IDbAdapter {
   public async executeScalar<T = unknown>(
     sql: string,
     params?: AdapterParam[],
-    transaction?: DbTransaction
+    transaction?: DbTransaction,
   ): Promise<T> {
     const rows = await this.executeQuery<Record<string, unknown>>(sql, params, transaction);
     if (!rows || rows.length === 0) return null as unknown as T;
@@ -126,19 +131,15 @@ export class NeonAdapter implements IDbAdapter {
     name: string,
     params: AdapterParam[],
     _timeoutMs?: number,
-    transaction?: DbTransaction
+    transaction?: DbTransaction,
   ): Promise<StoredProcedureResult<T[]>> {
     await this.connect();
     const client = transaction ? transaction.getDriver<any>().client : this.pool;
 
     try {
-      const inputParams = params.filter(
-        p => p.direction !== ParameterDirection.ReturnValue
-      );
+      const inputParams = params.filter(p => p.direction !== ParameterDirection.ReturnValue);
 
-      const placeholders = inputParams
-        .map((_, idx) => `$${idx + 1}`)
-        .join(', ');
+      const placeholders = inputParams.map((_, idx) => `$${idx + 1}`).join(', ');
 
       const callSql = `CALL ${this.escapeIdentifier(name)}(${placeholders})`;
       const values = inputParams.map(p => p.value ?? null);
@@ -150,7 +151,10 @@ export class NeonAdapter implements IDbAdapter {
       try {
         res = await client.query(callSql, values);
       } catch (callErr: any) {
-        if (callErr.message && (callErr.message.includes('not a procedure') || callErr.code === '42809')) {
+        if (
+          callErr.message &&
+          (callErr.message.includes('not a procedure') || callErr.code === '42809')
+        ) {
           const selectSql = `SELECT * FROM ${this.escapeIdentifier(name)}(${placeholders})`;
           res = await client.query(selectSql, values);
         } else {
@@ -167,9 +171,7 @@ export class NeonAdapter implements IDbAdapter {
             p.direction === ParameterDirection.InputOutput
           ) {
             const lowerName = p.name.toLowerCase();
-            const matchingKey = Object.keys(firstRow).find(
-              k => k.toLowerCase() === lowerName
-            );
+            const matchingKey = Object.keys(firstRow).find(k => k.toLowerCase() === lowerName);
             if (matchingKey) {
               outputParams[p.name] = firstRow[matchingKey];
             }
@@ -187,7 +189,7 @@ export class NeonAdapter implements IDbAdapter {
       throw new ProcedureException(
         `Failed to execute Neon procedure/function '${name}': ${(err as Error).message}`,
         name,
-        err
+        err,
       );
     }
   }
@@ -196,7 +198,7 @@ export class NeonAdapter implements IDbAdapter {
     name: string,
     params: AdapterParam[],
     timeoutMs?: number,
-    transaction?: DbTransaction
+    transaction?: DbTransaction,
   ): Promise<StoredProcedureResult<T>> {
     const single = await this.executeProcedure<any>(name, params, timeoutMs, transaction);
     return {
@@ -207,7 +209,9 @@ export class NeonAdapter implements IDbAdapter {
     };
   }
 
-  public async beginTransaction(isolationLevel = IsolationLevel.ReadCommitted): Promise<DbTransaction> {
+  public async beginTransaction(
+    isolationLevel = IsolationLevel.ReadCommitted,
+  ): Promise<DbTransaction> {
     await this.connect();
     const client = await this.pool.connect();
     await client.query(`BEGIN TRANSACTION ISOLATION LEVEL ${isolationLevel}`);

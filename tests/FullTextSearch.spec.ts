@@ -30,7 +30,7 @@ describe('Native Full-Text Search (.whereSearch)', () => {
 
       const { sql, params } = qb.toSelectSql();
       expect(sql).toContain(
-        `to_tsvector('english', coalesce("title", '') || ' ' || coalesce("content", '')) @@ websearch_to_tsquery('english', $1)`
+        `to_tsvector('english', coalesce("title", '') || ' ' || coalesce("content", '')) @@ websearch_to_tsquery('english', $1)`,
       );
       expect(params).toHaveLength(1);
       expect(params[0].value).toBe('typescript performance');
@@ -45,7 +45,9 @@ describe('Native Full-Text Search (.whereSearch)', () => {
       qb.where(where);
 
       const { sql } = qb.toSelectSql();
-      expect(sql).toContain(`to_tsvector('english', coalesce("title", '')) @@ websearch_to_tsquery('english', $1)`);
+      expect(sql).toContain(
+        `to_tsvector('english', coalesce("title", '')) @@ websearch_to_tsquery('english', $1)`,
+      );
     });
 
     it('translates to MySQL MATCH ... AGAINST in BOOLEAN MODE', () => {
@@ -105,9 +107,24 @@ describe('Native Full-Text Search (.whereSearch)', () => {
     let articleSet: DbSet<Article>;
 
     const initialArticles: Article[] = [
-      { id: 1, title: 'Learn TypeScript in 2026', content: 'Comprehensive guide to TypeScript ORM design', category: 'Tech' },
-      { id: 2, title: 'Database Indexing Strategies', content: 'How B-Trees and Full-Text search indexes scale', category: 'Tech' },
-      { id: 3, title: 'Cooking Italian Pasta', content: 'Delicious homemade pasta recipes and sauces', category: 'Food' },
+      {
+        id: 1,
+        title: 'Learn TypeScript in 2026',
+        content: 'Comprehensive guide to TypeScript ORM design',
+        category: 'Tech',
+      },
+      {
+        id: 2,
+        title: 'Database Indexing Strategies',
+        content: 'How B-Trees and Full-Text search indexes scale',
+        category: 'Tech',
+      },
+      {
+        id: 3,
+        title: 'Cooking Italian Pasta',
+        content: 'Delicious homemade pasta recipes and sauces',
+        category: 'Food',
+      },
     ];
 
     beforeEach(() => {
@@ -120,9 +137,7 @@ describe('Native Full-Text Search (.whereSearch)', () => {
     });
 
     it('searches across multiple columns using whereSearch', async () => {
-      const results = await articleSet
-        .whereSearch(['title', 'content'], 'TypeScript')
-        .toList();
+      const results = await articleSet.whereSearch(['title', 'content'], 'TypeScript').toList();
 
       expect(results).toHaveLength(1);
       expect(results[0].title).toBe('Learn TypeScript in 2026');

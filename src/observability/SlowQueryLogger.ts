@@ -21,7 +21,7 @@ export function createSlowQueryLogger(options?: SlowQueryLoggerOptions): QueryHo
           `[SLOW QUERY] execution took ${ms}ms (threshold: ${threshold}ms): ${sql}`,
           ms,
           sql,
-          params
+          params,
         );
       }
     },

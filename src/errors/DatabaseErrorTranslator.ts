@@ -37,10 +37,13 @@ export class DatabaseErrorTranslator {
     }
 
     const err = (rawError || {}) as any;
-    const cause = (rawError instanceof QueryException && rawError.cause) ? (rawError.cause as any) : {};
+    const cause =
+      rawError instanceof QueryException && rawError.cause ? (rawError.cause as any) : {};
     const msg = String(err.message || err.sqlMessage || cause.message || cause.sqlMessage || err);
     const code = String(err.code || cause.code || (err.cause as any)?.code || '');
-    const errno = Number(err.errno || err.number || cause.errno || cause.number || (err.cause as any)?.errno || 0);
+    const errno = Number(
+      err.errno || err.number || cause.errno || cause.number || (err.cause as any)?.errno || 0,
+    );
 
     // ── 1. SQL SYNTAX ERROR ───────────────────────────────────────────────
     // Postgres: 42601 (syntax_error)
@@ -69,12 +72,7 @@ export class DatabaseErrorTranslator {
           position = nearMatch[1];
         }
       }
-      return new SqlSyntaxErrorException(
-        `SQL syntax error: ${msg}`,
-        position,
-        sql,
-        rawError
-      );
+      return new SqlSyntaxErrorException(`SQL syntax error: ${msg}`, position, sql, rawError);
     }
 
     // ── 2. COLUMN NOT FOUND (Check BEFORE Table Not Found) ────────────────
@@ -98,7 +96,10 @@ export class DatabaseErrorTranslator {
       let columnName: string | undefined;
       let targetTable: string | undefined;
 
-      const pgColMatch = /column\s+["']([^"']+)["'](?:\s+of\s+relation\s+["']([^"']+)["'])?\s+does\s+not\s+exist/i.exec(msg);
+      const pgColMatch =
+        /column\s+["']([^"']+)["'](?:\s+of\s+relation\s+["']([^"']+)["'])?\s+does\s+not\s+exist/i.exec(
+          msg,
+        );
       if (pgColMatch) {
         columnName = pgColMatch[1];
         targetTable = pgColMatch[2];
@@ -109,7 +110,8 @@ export class DatabaseErrorTranslator {
         columnName = parts.pop();
         if (parts.length > 0) targetTable = parts.pop();
       }
-      const sqliteColMatch = /(?:no\s+such\s+column:\s*|has\s+no\s+column\s+named\s+)([`"[\]\w.]+)/i.exec(msg);
+      const sqliteColMatch =
+        /(?:no\s+such\s+column:\s*|has\s+no\s+column\s+named\s+)([`"[\]\w.]+)/i.exec(msg);
       if (sqliteColMatch) {
         const parts = sqliteColMatch[1].replace(/[`"[\]]/g, '').split('.');
         columnName = parts.pop();
@@ -125,7 +127,7 @@ export class DatabaseErrorTranslator {
         columnName,
         targetTable,
         sql,
-        rawError
+        rawError,
       );
     }
 
@@ -161,15 +163,13 @@ export class DatabaseErrorTranslator {
       }
       const msTableMatch = /Invalid\s+object\s+name\s+['"]([^'"]+)['"]/i.exec(msg);
       if (msTableMatch) {
-        tableName = msTableMatch[1].split('.').pop()?.replace(/[`"[\]]/g, '');
+        tableName = msTableMatch[1]
+          .split('.')
+          .pop()
+          ?.replace(/[`"[\]]/g, '');
       }
 
-      return new TableNotFoundException(
-        `Table not found: ${msg}`,
-        tableName,
-        sql,
-        rawError
-      );
+      return new TableNotFoundException(`Table not found: ${msg}`, tableName, sql, rawError);
     }
 
     // ── 4. UNIQUE CONSTRAINT ───────────────────────────────────────────────
@@ -213,7 +213,7 @@ export class DatabaseErrorTranslator {
         constraintName,
         columnName,
         sql,
-        rawError
+        rawError,
       );
     }
 
@@ -241,7 +241,7 @@ export class DatabaseErrorTranslator {
         undefined,
         err.table,
         sql,
-        rawError
+        rawError,
       );
     }
 
@@ -264,7 +264,7 @@ export class DatabaseErrorTranslator {
         `Check constraint violation: ${msg}`,
         err.constraint,
         sql,
-        rawError
+        rawError,
       );
     }
 
@@ -289,7 +289,7 @@ export class DatabaseErrorTranslator {
         `Cannot null constraint violation: ${msg}`,
         col,
         sql,
-        rawError
+        rawError,
       );
     }
 
@@ -302,18 +302,25 @@ export class DatabaseErrorTranslator {
    * - ProcedureNotFoundException (if the stored procedure does not exist in the database)
    * - Or standard ProcedureException
    */
-  public static translateProcedure(rawError: unknown, procedureName: string, provider?: string): ProcedureException {
+  public static translateProcedure(
+    rawError: unknown,
+    procedureName: string,
+    provider?: string,
+  ): ProcedureException {
     if (rawError instanceof ProcedureNotFoundException) {
       return rawError;
     }
 
     const err = (rawError || {}) as any;
-    const cause = (rawError instanceof ProcedureException && rawError.cause)
-      ? (rawError.cause as any)
-      : ((rawError as any).cause || {});
+    const cause =
+      rawError instanceof ProcedureException && rawError.cause
+        ? (rawError.cause as any)
+        : (rawError as any).cause || {};
     const msg = String(err.message || err.sqlMessage || cause.message || cause.sqlMessage || err);
     const code = String(err.code || cause.code || (err.cause as any)?.code || '');
-    const errno = Number(err.errno || err.number || cause.errno || cause.number || (err.cause as any)?.errno || 0);
+    const errno = Number(
+      err.errno || err.number || cause.errno || cause.number || (err.cause as any)?.errno || 0,
+    );
 
     // Postgres: 42883 (undefined_function / undefined_procedure)
     // MySQL: 1305, ER_SP_DOES_NOT_EXIST
@@ -338,7 +345,7 @@ export class DatabaseErrorTranslator {
       return new ProcedureNotFoundException(
         `Stored procedure '${procedureName}' does not exist in the database: ${msg}`,
         procedureName,
-        rawError
+        rawError,
       );
     }
 
@@ -349,7 +356,7 @@ export class DatabaseErrorTranslator {
     return new ProcedureException(
       `Failed to execute procedure '${procedureName}': ${msg}`,
       procedureName,
-      rawError
+      rawError,
     );
   }
 }

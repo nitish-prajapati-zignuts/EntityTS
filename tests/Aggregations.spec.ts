@@ -108,7 +108,9 @@ describe('Advanced Fluent Aggregations (GroupBy, Having, Select, Arrow Aggregate
         }));
 
       const { sql, params } = query.toSql();
-      expect(sql).toContain('SELECT "customer_id" AS "customerId", COUNT(*) AS "orderCount", SUM("total") AS "totalSpent", AVG("total") AS "averageOrder"');
+      expect(sql).toContain(
+        'SELECT "customer_id" AS "customerId", COUNT(*) AS "orderCount", SUM("total") AS "totalSpent", AVG("total") AS "averageOrder"',
+      );
       expect(sql).toContain('FROM "orders"');
       expect(sql).toContain('WHERE "status" = @p0');
       expect(sql).toContain('GROUP BY "customer_id"');

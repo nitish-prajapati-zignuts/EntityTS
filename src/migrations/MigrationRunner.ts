@@ -66,7 +66,7 @@ export class MigrationRunner {
             { name: 'p2', value: migration.name },
             { name: 'p3', value: nextBatch },
           ],
-          tx
+          tx,
         );
 
         await tx.commit();
@@ -114,7 +114,7 @@ export class MigrationRunner {
         await this.adapter.executeNonQuery(
           deleteRecordSql,
           [{ name: 'p1', value: migration.id }],
-          tx
+          tx,
         );
 
         await tx.commit();
@@ -129,7 +129,7 @@ export class MigrationRunner {
   }
 
   public async status(
-    migrations: MigrationModule[]
+    migrations: MigrationModule[],
   ): Promise<{ id: string; name: string; applied: boolean; appliedAt?: Date; batch?: number }[]> {
     await this.ensureMigrationsTable();
     const appliedRecords = await this.getAppliedMigrations();

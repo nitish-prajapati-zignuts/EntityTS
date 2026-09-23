@@ -37,17 +37,23 @@ describe('Primary / Read-Replica Connection Splitting', () => {
     primaryAdapter = new MockDbAdapter();
     primaryAdapter.executeQuery = jest.fn().mockResolvedValue([{ id: 1, name: 'From Primary' }]);
     primaryAdapter.executeNonQuery = jest.fn().mockResolvedValue({ rowsAffected: 1 });
-    primaryAdapter.executeProcedure = jest.fn().mockResolvedValue({ records: [], outputParams: {}, returnValue: 0, rowsAffected: 0 });
+    primaryAdapter.executeProcedure = jest
+      .fn()
+      .mockResolvedValue({ records: [], outputParams: {}, returnValue: 0, rowsAffected: 0 });
 
     replica1 = new MockDbAdapter();
     replica1.executeQuery = jest.fn().mockResolvedValue([{ id: 1, name: 'From Replica 1' }]);
     replica1.executeNonQuery = jest.fn().mockResolvedValue({ rowsAffected: 1 });
-    replica1.executeProcedure = jest.fn().mockResolvedValue({ records: [], outputParams: {}, returnValue: 0, rowsAffected: 0 });
+    replica1.executeProcedure = jest
+      .fn()
+      .mockResolvedValue({ records: [], outputParams: {}, returnValue: 0, rowsAffected: 0 });
 
     replica2 = new MockDbAdapter();
     replica2.executeQuery = jest.fn().mockResolvedValue([{ id: 1, name: 'From Replica 2' }]);
     replica2.executeNonQuery = jest.fn().mockResolvedValue({ rowsAffected: 1 });
-    replica2.executeProcedure = jest.fn().mockResolvedValue({ records: [], outputParams: {}, returnValue: 0, rowsAffected: 0 });
+    replica2.executeProcedure = jest
+      .fn()
+      .mockResolvedValue({ records: [], outputParams: {}, returnValue: 0, rowsAffected: 0 });
 
     routingAdapter = new ReplicaRoutingDbAdapter(primaryAdapter, [replica1, replica2], {
       strategy: 'round-robin',
@@ -75,7 +81,9 @@ describe('Primary / Read-Replica Connection Splitting', () => {
     });
 
     it('routes non-SELECT statements (INSERT/UPDATE/DELETE) exclusively to primary', async () => {
-      await routingAdapter.executeNonQuery('INSERT INTO users (name) VALUES (?)', [{ name: 'p0', value: 'Alice' }]);
+      await routingAdapter.executeNonQuery('INSERT INTO users (name) VALUES (?)', [
+        { name: 'p0', value: 'Alice' },
+      ]);
       expect(primaryAdapter.executeNonQuery).toHaveBeenCalledTimes(1);
       expect(replica1.executeNonQuery).toHaveBeenCalledTimes(0);
       expect(replica2.executeNonQuery).toHaveBeenCalledTimes(0);
@@ -123,9 +131,7 @@ describe('Primary / Read-Replica Connection Splitting', () => {
 
   describe('DbSet .usePrimary() integration', () => {
     it('forces read query to execute on primary when usePrimary() is chained', async () => {
-      const options = new DbContextOptionsBuilder()
-        .useAdapter(routingAdapter)
-        .build();
+      const options = new DbContextOptionsBuilder().useAdapter(routingAdapter).build();
 
       const ctx = new TestDbContext(options);
 
@@ -147,10 +153,10 @@ describe('Primary / Read-Replica Connection Splitting', () => {
     it('configures ReplicaRoutingDbAdapter automatically from builder', () => {
       const options = new DbContextOptionsBuilder()
         .usePostgres('postgresql://primary.db:5432/app')
-        .withReadReplicas([
-          'postgresql://replica1.db:5432/app',
-          'postgresql://replica2.db:5432/app',
-        ], { strategy: 'round-robin' })
+        .withReadReplicas(
+          ['postgresql://replica1.db:5432/app', 'postgresql://replica2.db:5432/app'],
+          { strategy: 'round-robin' },
+        )
         .build();
 
       expect(options.adapter).toBeInstanceOf(ReplicaRoutingDbAdapter);

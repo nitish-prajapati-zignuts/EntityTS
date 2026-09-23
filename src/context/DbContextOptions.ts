@@ -42,4 +42,3 @@ export interface DbContextOptions {
   executionStrategyOptions?: ExecutionStrategyOptions;
   tenantId?: string | number;
 }
-

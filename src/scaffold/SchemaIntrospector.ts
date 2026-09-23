@@ -35,7 +35,7 @@ export class SchemaIntrospector {
 
   public async introspect(
     filterTables?: string[],
-    includeViews = false
+    includeViews = false,
   ): Promise<IntrospectedTable[]> {
     const provider = this.adapter.provider;
     let tables: string[] = await this.fetchTableNames();
@@ -81,29 +81,28 @@ export class SchemaIntrospector {
     const p = this.adapter.provider;
     if (p === 'sqlite' || p === 'turso' || p === 'd1') {
       const rows = await this.adapter.executeQuery<{ name: string }>(
-        `SELECT name FROM sqlite_master WHERE type='view' AND name NOT LIKE 'sqlite_%';`
+        `SELECT name FROM sqlite_master WHERE type='view' AND name NOT LIKE 'sqlite_%';`,
       );
       return rows.map(r => r.name);
     }
     if (p === 'mssql') {
       const rows = await this.adapter.executeQuery<{ TABLE_NAME: string }>(
-        `SELECT TABLE_NAME FROM INFORMATION_SCHEMA.VIEWS;`
+        `SELECT TABLE_NAME FROM INFORMATION_SCHEMA.VIEWS;`,
       );
       return rows.map(r => r.TABLE_NAME);
     }
     if (p === 'mysql' || p === 'planetscale') {
       const rows = await this.adapter.executeQuery<{ TABLE_NAME: string }>(
-        `SELECT TABLE_NAME FROM information_schema.views WHERE TABLE_SCHEMA = DATABASE();`
+        `SELECT TABLE_NAME FROM information_schema.views WHERE TABLE_SCHEMA = DATABASE();`,
       );
       return rows.map(r => r.TABLE_NAME);
     }
     // postgres, neon, cockroachdb, supabase
     const rows = await this.adapter.executeQuery<{ table_name: string }>(
-      `SELECT table_name FROM information_schema.views WHERE table_schema = 'public';`
+      `SELECT table_name FROM information_schema.views WHERE table_schema = 'public';`,
     );
     return rows.map(r => r.table_name);
   }
-
 
   // ─── Table names ────────────────────────────────────────────────────────
 
@@ -111,25 +110,25 @@ export class SchemaIntrospector {
     const p = this.adapter.provider;
     if (p === 'sqlite' || p === 'turso' || p === 'd1') {
       const rows = await this.adapter.executeQuery<{ name: string }>(
-        `SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name != '__nsp_migrations';`
+        `SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name != '__nsp_migrations';`,
       );
       return rows.map(r => r.name);
     }
     if (p === 'mssql') {
       const rows = await this.adapter.executeQuery<{ TABLE_NAME: string }>(
-        `SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE = 'BASE TABLE' AND TABLE_NAME != '__nsp_migrations';`
+        `SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE = 'BASE TABLE' AND TABLE_NAME != '__nsp_migrations';`,
       );
       return rows.map(r => r.TABLE_NAME);
     }
     if (p === 'mysql' || p === 'planetscale') {
       const rows = await this.adapter.executeQuery<{ TABLE_NAME: string }>(
-        `SELECT TABLE_NAME FROM information_schema.tables WHERE table_schema = DATABASE() AND TABLE_NAME != '__nsp_migrations';`
+        `SELECT TABLE_NAME FROM information_schema.tables WHERE table_schema = DATABASE() AND TABLE_NAME != '__nsp_migrations';`,
       );
       return rows.map(r => r.TABLE_NAME);
     }
     // postgres, neon, cockroachdb, supabase
     const rows = await this.adapter.executeQuery<{ table_name: string }>(
-      `SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' AND table_name != '__nsp_migrations';`
+      `SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' AND table_name != '__nsp_migrations';`,
     );
     return rows.map(r => r.table_name);
   }
@@ -138,7 +137,7 @@ export class SchemaIntrospector {
 
   private async fetchColumns(
     tableName: string,
-    provider: DbProvider
+    provider: DbProvider,
   ): Promise<IntrospectedColumn[]> {
     if (provider === 'sqlite' || provider === 'turso' || provider === 'd1') {
       return this.fetchSqliteColumns(tableName);
@@ -212,14 +211,15 @@ export class SchemaIntrospector {
 
   private async fetchInfoSchemaColumns(
     tableName: string,
-    provider: DbProvider
+    provider: DbProvider,
   ): Promise<IntrospectedColumn[]> {
-    const isPostgresFamily = provider === 'postgres' || provider === 'neon' || provider === 'cockroachdb' || provider === 'supabase';
+    const isPostgresFamily =
+      provider === 'postgres' ||
+      provider === 'neon' ||
+      provider === 'cockroachdb' ||
+      provider === 'supabase';
     const isMysqlFamily = provider === 'mysql' || provider === 'planetscale';
-    const schemaFilter =
-      isPostgresFamily
-        ? `table_schema = 'public'`
-        : `table_schema = DATABASE()`;
+    const schemaFilter = isPostgresFamily ? `table_schema = 'public'` : `table_schema = DATABASE()`;
 
     const rows = await this.adapter.executeQuery<{
       column_name: string;
@@ -237,7 +237,7 @@ export class SchemaIntrospector {
         c.character_maximum_length,
         c.column_default,
         CASE WHEN kcu.column_name IS NOT NULL THEN 1 ELSE 0 END AS is_primary
-        ${isMysqlFamily ? ", c.extra" : ""}
+        ${isMysqlFamily ? ', c.extra' : ''}
       FROM information_schema.columns c
       LEFT JOIN (
         SELECT kcu.column_name
@@ -269,7 +269,7 @@ export class SchemaIntrospector {
 
   private async fetchForeignKeys(
     tableName: string,
-    provider: DbProvider
+    provider: DbProvider,
   ): Promise<IntrospectedForeignKey[]> {
     if (provider === 'sqlite' || provider === 'turso' || provider === 'd1') {
       return this.fetchSqliteForeignKeys(tableName);
@@ -386,4 +386,3 @@ export class SchemaIntrospector {
     }));
   }
 }
-

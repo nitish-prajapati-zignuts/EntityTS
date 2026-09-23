@@ -100,7 +100,7 @@ describe('Developer Experience (DX) Features', () => {
       await expect(
         context.withTransaction(async () => {
           throw new Error('Database write conflict');
-        })
+        }),
       ).rejects.toThrow('Database write conflict');
 
       expect(mockTx.rollback).toHaveBeenCalled();
@@ -189,8 +189,14 @@ describe('Developer Experience (DX) Features', () => {
       const migration = entityToMigrationBuilder(meta!, mockAdapter);
       const sqlStatements = migration.getSqlStatements(mockAdapter);
 
-      expect(sqlStatements.some(s => s.includes('CREATE UNIQUE INDEX') && s.includes('email'))).toBe(true);
-      expect(sqlStatements.some(s => s.includes('CREATE INDEX') && s.includes('firstName') && s.includes('lastName'))).toBe(true);
+      expect(
+        sqlStatements.some(s => s.includes('CREATE UNIQUE INDEX') && s.includes('email')),
+      ).toBe(true);
+      expect(
+        sqlStatements.some(
+          s => s.includes('CREATE INDEX') && s.includes('firstName') && s.includes('lastName'),
+        ),
+      ).toBe(true);
     });
   });
 
@@ -246,8 +252,24 @@ describe('Developer Experience (DX) Features', () => {
   describe('DbSet.toMap', () => {
     it('transforms query results into a Map keyed by selector', async () => {
       mockAdapter.executeQuery = jest.fn().mockResolvedValue([
-        { id: 1, email: 'one@example.com', firstName: 'One', lastName: 'User', role: 'user', points: 10, age: 20 },
-        { id: 2, email: 'two@example.com', firstName: 'Two', lastName: 'User', role: 'user', points: 20, age: 25 },
+        {
+          id: 1,
+          email: 'one@example.com',
+          firstName: 'One',
+          lastName: 'User',
+          role: 'user',
+          points: 10,
+          age: 20,
+        },
+        {
+          id: 2,
+          email: 'two@example.com',
+          firstName: 'Two',
+          lastName: 'User',
+          role: 'user',
+          points: 20,
+          age: 25,
+        },
       ]);
 
       const map = await context.users.toMap(u => u.id);
@@ -261,7 +283,15 @@ describe('Developer Experience (DX) Features', () => {
   describe('DbSet.selectAs', () => {
     it('projects results into custom DTOs in a type-safe manner', async () => {
       mockAdapter.executeQuery = jest.fn().mockResolvedValue([
-        { id: 10, email: 'alice@test.com', firstName: 'Alice', lastName: 'Wonderland', role: 'admin', points: 100, age: 28 },
+        {
+          id: 10,
+          email: 'alice@test.com',
+          firstName: 'Alice',
+          lastName: 'Wonderland',
+          role: 'admin',
+          points: 100,
+          age: 28,
+        },
       ]);
 
       const dtos = await context.users.selectAs(u => ({
@@ -280,13 +310,37 @@ describe('Developer Experience (DX) Features', () => {
         callCount++;
         if (callCount === 1) {
           return Promise.resolve([
-            { id: 1, email: 'e1@test.com', firstName: 'E1', lastName: 'L1', role: 'user', points: 0, age: 20 },
-            { id: 2, email: 'e2@test.com', firstName: 'E2', lastName: 'L2', role: 'user', points: 0, age: 21 },
+            {
+              id: 1,
+              email: 'e1@test.com',
+              firstName: 'E1',
+              lastName: 'L1',
+              role: 'user',
+              points: 0,
+              age: 20,
+            },
+            {
+              id: 2,
+              email: 'e2@test.com',
+              firstName: 'E2',
+              lastName: 'L2',
+              role: 'user',
+              points: 0,
+              age: 21,
+            },
           ]);
         }
         if (callCount === 2) {
           return Promise.resolve([
-            { id: 3, email: 'e3@test.com', firstName: 'E3', lastName: 'L3', role: 'user', points: 0, age: 22 },
+            {
+              id: 3,
+              email: 'e3@test.com',
+              firstName: 'E3',
+              lastName: 'L3',
+              role: 'user',
+              points: 0,
+              age: 22,
+            },
           ]);
         }
         return Promise.resolve([]);

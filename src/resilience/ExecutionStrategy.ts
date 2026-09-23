@@ -54,7 +54,7 @@ export interface ExecutionStrategyOptions {
  */
 export function isTransientError(
   error: any,
-  options?: { retryOnDeadlocks?: boolean; retryOnTransientErrors?: boolean }
+  options?: { retryOnDeadlocks?: boolean; retryOnTransientErrors?: boolean },
 ): boolean {
   if (!error) return false;
 
@@ -116,7 +116,17 @@ export function isTransientError(
     // 57P01 (admin_shutdown), 57P02 (crash_shutdown), 57P03 (cannot_connect_now)
     // 53300 (too_many_connections)
     // 08000, 08003, 08006, 08001, 08004 (connection exceptions)
-    const pgTransient = ['57P01', '57P02', '57P03', '53300', '08000', '08001', '08003', '08004', '08006'];
+    const pgTransient = [
+      '57P01',
+      '57P02',
+      '57P03',
+      '53300',
+      '08000',
+      '08001',
+      '08003',
+      '08004',
+      '08006',
+    ];
     if (pgTransient.includes(code)) return true;
 
     // MySQL server gone away or lost connection
@@ -129,7 +139,11 @@ export function isTransientError(
       return true;
     }
 
-    if (/timeout|connection reset|server closed the connection|connection terminated|socket hang up/i.test(msg)) {
+    if (
+      /timeout|connection reset|server closed the connection|connection terminated|socket hang up/i.test(
+        msg,
+      )
+    ) {
       return true;
     }
   }
@@ -182,7 +196,7 @@ export class DefaultExecutionStrategy implements IExecutionStrategy {
         // Exponential backoff
         const baseDelay = Math.min(
           this.options.maxDelayMs,
-          this.options.initialDelayMs * Math.pow(this.options.backoffMultiplier, attempt - 1)
+          this.options.initialDelayMs * Math.pow(this.options.backoffMultiplier, attempt - 1),
         );
 
         // Add random jitter between 0% and 25% if enabled
