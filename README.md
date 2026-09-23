@@ -249,3 +249,90 @@ options.usePlanetScale({
 
 ---
 
+## Stored Procedures (Single & Multiple Tables)
+
+Stored procedures are first-class citizens in `@nsp/dbcontext`.
+
+### 1. Basic Procedure Execution
+
+```typescript
+// Returns typed records directly
+const topUsers = await db.procedure('usp_GetTopUsers')
+  .input({ MinScore: 100, DepartmentId: 4 })
+  .query<User>();
+
+// Returns single scalar value
+const totalSales = await db.procedure('usp_GetTotalSales')
+  .input({ Year: 2026 })
+  .scalar<number>();
+
+// Executes non-query procedure and returns rowsAffected and return code
+const { rowsAffected, returnValue } = await db.procedure('usp_ArchiveInactive')
+  .input({ DaysThreshold: 90 })
+  .run();
+```
+
+---
+
+### Multiple Result Sets (Multiple Tables)
+
+When a stored procedure executes multiple `SELECT` statements, `@nsp/dbcontext` returns the tables as a strongly typed tuple via `.queryMultiple<[T1, T2]>()`:
+
+```typescript
+// Stored procedure executing 3 SELECT queries:
+// 1. SELECT * FROM Customers WHERE Id = @Id;
+// 2. SELECT * FROM Orders WHERE CustomerId = @Id;
+// 3. SELECT * FROM Rewards WHERE CustomerId = @Id;
+
+const [customers, orders, rewards] = await db.procedure('usp_GetCustomerDashboard')
+  .input({ Id: 101 })
+  .queryMultiple<[Customer[], Order[], Reward[]]>();
+
+console.log(customers[0].name);
+console.log(`Customer has ${orders.length} orders`);
+console.log(`Reward Tier: ${rewards[0].tier}`);
+```
+
+#### Multi-Table Query with Output Parameters:
+
+```typescript
+const { records: [customers, orders], out } = await db.procedure('usp_GetCustomerDashboard')
+  .input({ Id: 101 })
+  .output<{ Status: string; ExecutionMs: number }>()
+  .queryMultiple<[Customer[], Order[]]>();
+
+console.log(out.Status);     // Strongly-typed output parameter
+console.log(customers);      // Table 1 records
+console.log(orders);         // Table 2 records
+```
+
+---
+
+### Sequential Streaming Reader
+
+For large result sets, read tables sequentially using `.reader()`:
+
+```typescript
+const reader = await db.procedure('usp_GetQuarterlyReport')
+  .input({ Quarter: 'Q1', Year: 2026 })
+  .reader();
+
+// Read 1st table: Summary
+const summary = await reader.read<ReportSummary>();
+
+// Move to next table: Line Items
+if (await reader.nextResult()) {
+  const items = await reader.read<ReportItem>();
+}
+
+// Move to next table: Audit Logs
+if (await reader.nextResult()) {
+  const auditLogs = await reader.read<AuditEntry>();
+}
+
+// Access output params or return value at the end
+const returnValue = reader.returnValue;
+```
+
+---
+
