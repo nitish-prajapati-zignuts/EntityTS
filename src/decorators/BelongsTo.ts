@@ -19,16 +19,21 @@ export interface BelongsToOptions {
  * user?: LazyRelation<User>;
  * ```
  */
-export function BelongsTo(target: () => Function, options: BelongsToOptions): PropertyDecorator {
+export function BelongsTo(
+  target: () => Function,
+  options: BelongsToOptions | string,
+): PropertyDecorator {
   return (proto: Object, propertyKey: string | symbol) => {
     const propName = String(propertyKey);
+    const foreignKey = typeof options === 'string' ? options : options.foreignKey;
+    const lazy = typeof options === 'object' ? options.lazy : undefined;
     const metadata = ModelMetadataRegistry.getInstance().getOrCreate(proto.constructor);
     metadata.relations.set(propName, {
       propertyName: propName,
       type: 'belongsTo',
       target,
-      foreignKey: options.foreignKey,
-      lazy: options.lazy,
+      foreignKey,
+      lazy,
     });
   };
 }

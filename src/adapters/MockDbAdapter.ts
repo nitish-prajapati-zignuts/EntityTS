@@ -715,9 +715,19 @@ export class MockDbAdapter implements IDbAdapter {
   public async beginTransaction(
     isolationLevel = IsolationLevel.ReadCommitted,
   ): Promise<DbTransaction> {
+    const snapshot = new Map<string, Record<string, unknown>[]>();
+    for (const [table, rows] of this.tables.entries()) {
+      snapshot.set(table, JSON.parse(JSON.stringify(rows)));
+    }
+
     const driver = {
       commit: async () => {},
-      rollback: async () => {},
+      rollback: async () => {
+        this.tables.clear();
+        for (const [table, rows] of snapshot.entries()) {
+          this.tables.set(table, rows);
+        }
+      },
       savepoint: async () => {},
       rollbackTo: async () => {},
     };
