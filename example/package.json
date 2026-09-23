@@ -1,0 +1,15 @@
+{
+  "name": "example-express-crud",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Express application showcase demonstrating complete CRUD operations using @nsp/dbcontext",
+  "main": "dist/server.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "tsc && node dist/server.js",
+    "start:postgres": "DATABASE_URL=postgresql://localhost:5432/nsp_db DB_PROVIDER=postgres tsc && DATABASE_URL=postgresql://localhost:5432/nsp_db DB_PROVIDER=postgres node dist/server.js",
+    "dev": "tsc && node dist/server.js",
+    "test": "tsc && node dist/test-client.js",
+    "test:postgres": "DATABASE_URL=postgresql://localhost:5432/nsp_db DB_PROVIDER=postgres tsc && DATABASE_URL=postgresql://localhost:5432/nsp_db DB_PROVIDER=postgres node dist/test-client.js"
+  }
+}
