@@ -205,3 +205,47 @@ app.listen(3000, () => console.log('Server running on http://localhost:3000'));
 
 ---
 
+## Database Providers Configuration
+
+`DbContextOptionsBuilder` offers intuitive configuration for standard and serverless databases:
+
+```typescript
+// SQL Server (mssql)
+options.useSqlServer({
+  server: 'localhost',
+  port: 1433,
+  user: 'sa',
+  password: 'Password123!',
+  database: 'AppDb',
+  options: { encrypt: true, trustServerCertificate: true },
+  pool: { max: 20, min: 2 }
+});
+
+// PostgreSQL (pg)
+options.usePostgres('postgresql://user:pass@localhost:5432/app_db');
+
+// MySQL / MariaDB (mysql2)
+options.useMysql('mysql://root:secret@localhost:3306/app_db');
+
+// SQLite (better-sqlite3)
+options.useSqlite('./data/app.db');
+
+// Turso / libSQL (edge serverless)
+options.useTurso({
+  url: 'libsql://my-db.turso.io',
+  authToken: process.env.TURSO_AUTH_TOKEN
+});
+
+// Neon (serverless postgres)
+options.useNeon(process.env.NEON_DATABASE_URL!);
+
+// PlanetScale (serverless mysql)
+options.usePlanetScale({
+  host: process.env.DATABASE_HOST,
+  username: process.env.DATABASE_USERNAME,
+  password: process.env.DATABASE_PASSWORD
+});
+```
+
+---
+
