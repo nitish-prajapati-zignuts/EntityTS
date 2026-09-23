@@ -4,6 +4,7 @@ import { StoredProcedureResult } from '../procedure/StoredProcedureResult';
 import { IsolationLevel, DbTransaction } from '../transaction';
 import { QueryHooks } from '../hooks/QueryHook';
 import { LogMode, LogFunction } from '../context/DbContextOptions';
+import type { IConnectionPool } from '../pool/IConnectionPool';
 
 export class InterceptingDbAdapter implements IDbAdapter {
   constructor(
@@ -14,6 +15,14 @@ export class InterceptingDbAdapter implements IDbAdapter {
 
   public get provider(): DbProvider {
     return this.inner.provider;
+  }
+
+  public get pool(): IConnectionPool | undefined {
+    return this.inner.connectionPool || (this.inner as any).pool;
+  }
+
+  public get connectionPool(): IConnectionPool | undefined {
+    return this.inner.connectionPool;
   }
 
   public get innerAdapter(): IDbAdapter {

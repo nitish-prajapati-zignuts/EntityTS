@@ -23,6 +23,8 @@ import {
   DefaultExecutionStrategy,
 } from '../resilience';
 import { createQueryPlanLogger, QueryPlanLoggerOptions } from '../observability/QueryPlanAnalyzer';
+import { ConnectionPoolOptions } from '../pool/IConnectionPool';
+import { PooledDbAdapter } from '../pool/PooledDbAdapter';
 
 /**
  * Fluent options builder for configuring a `DbContext` instance.
@@ -412,6 +414,17 @@ export class DbContextOptionsBuilder {
   }
 
   /**
+   * Configures connection pooling, active connection bounds, and background health heartbeats.
+   *
+   * @param options - Connection pool settings (min/max connections, idle/acquire timeouts, heartbeat).
+   * @returns `this` builder instance for chaining.
+   */
+  public withConnectionPool(options?: ConnectionPoolOptions): this {
+    this.options.poolOptions = options || {};
+    return this;
+  }
+
+  /**
    * Builds and resolves the final `DbContextOptions` object.
    *
    * @returns Configured `DbContextOptions` object.
@@ -481,6 +494,10 @@ export class DbContextOptionsBuilder {
       } else {
         opts.hooks = plannerHooks;
       }
+    }
+
+    if (opts.poolOptions && opts.adapter && !(opts.adapter instanceof PooledDbAdapter)) {
+      opts.adapter = new PooledDbAdapter(opts.adapter, opts.poolOptions);
     }
 
     return opts;

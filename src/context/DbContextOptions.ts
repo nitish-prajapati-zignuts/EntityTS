@@ -13,6 +13,7 @@ import { ReplicaRoutingOptions } from '../adapters/ReplicaRoutingDbAdapter';
 import { QueryHooks } from '../hooks/QueryHook';
 import { IQueryCache } from '../cache/IQueryCache';
 import { IExecutionStrategy, ExecutionStrategyOptions } from '../resilience';
+import { ConnectionPoolOptions } from '../pool/IConnectionPool';
 
 export type NamingConvention = 'camelCase' | 'snake_case' | 'PascalCase';
 export type LogMode = boolean | 'prisma' | 'compact' | 'json' | LogFunction;
@@ -41,4 +42,5 @@ export interface DbContextOptions {
   executionStrategy?: IExecutionStrategy;
   executionStrategyOptions?: ExecutionStrategyOptions;
   tenantId?: string | number;
+  poolOptions?: ConnectionPoolOptions;
 }

@@ -1,6 +1,7 @@
 import { AdapterParam } from './AdapterParam';
 import { StoredProcedureResult } from '../procedure/StoredProcedureResult';
 import { IsolationLevel, DbTransaction } from '../transaction';
+import type { IConnectionPool } from '../pool/IConnectionPool';
 
 export type DbProvider =
   | 'mssql'
@@ -17,6 +18,7 @@ export type DbProvider =
 
 export interface IDbAdapter {
   readonly provider: DbProvider;
+  readonly connectionPool?: IConnectionPool;
 
   connect(): Promise<void>;
   disconnect(): Promise<void>;
