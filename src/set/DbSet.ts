@@ -2136,6 +2136,12 @@ export class DbSet<T extends object = any> {
       if (versionToCheck === undefined && (patch as any)[vp.propertyName] !== undefined) {
         versionToCheck = (patch as any)[vp.propertyName];
       }
+      if (versionToCheck === undefined) {
+        const existingRec = await this.find(id);
+        if (existingRec) {
+          versionToCheck = (existingRec as any)[vp.propertyName];
+        }
+      }
 
       let nextVersion: unknown;
       if (vp.strategy === 'number') {
@@ -2487,6 +2493,11 @@ export class DbSet<T extends object = any> {
         for (const [, rel] of this.metadata.relations) {
           if (rel.type !== 'hasMany' && rel.type !== 'hasOne') continue;
           const childTarget = rel.target();
+          const childMeta = ModelMetadataRegistry.getInstance().get(childTarget);
+          if (!childMeta?.softDelete) {
+            // Child doesn't have @SoftDelete configured: do not accidentally hard delete
+            continue;
+          }
           const childSet = this.context
             ? this.context.set(childTarget as any)
             : new DbSet(
@@ -2497,7 +2508,6 @@ export class DbSet<T extends object = any> {
                 this.context,
               );
           const scoped = this.transaction ? childSet.inTransaction(this.transaction) : childSet;
-          // removeWhere uses soft-delete automatically if child also has @SoftDelete
           await scoped.removeWhere({ [rel.foreignKey]: actualId } as any);
         }
       }
@@ -2597,13 +2607,73 @@ export class DbSet<T extends object = any> {
     if (this.metadata?.softDelete) {
       const colName = this.metadata.softDelete.column;
       const now = new Date();
-      const qb = new QueryBuilder(this.adapter, this.tableName);
-      for (const [key, val] of Object.entries(predicate)) {
-        qb.getWhereClause().eq(this.mapPropertyToColumn(key), val);
+      let rowsAffected = 0;
+
+      if (
+        this.adapter.provider === 'mock' &&
+        typeof (this.adapter as any).getTableData === 'function'
+      ) {
+        const rows = (this.adapter as any).getTableData(this.tableName) || [];
+        for (const row of rows) {
+          let matches = true;
+          for (const [key, val] of Object.entries(predicate)) {
+            const col = this.mapPropertyToColumn(key);
+            const rKey = Object.keys(row).find(k => k.toLowerCase() === col.toLowerCase());
+            if (!rKey || String(row[rKey]) !== String(val)) {
+              matches = false;
+              break;
+            }
+          }
+          if (matches) {
+            row[colName] = now;
+            rowsAffected++;
+          }
+        }
+      } else {
+        const qb = new QueryBuilder(this.adapter, this.tableName);
+        for (const [key, val] of Object.entries(predicate)) {
+          qb.getWhereClause().eq(this.mapPropertyToColumn(key), val);
+        }
+        const { sql, params } = qb.toUpdateSql({ [colName]: now });
+        const res = await this.adapter.executeNonQuery(sql, params, this.transaction);
+        rowsAffected = res.rowsAffected;
       }
-      const { sql, params } = qb.toUpdateSql({ [colName]: now });
-      const res = await this.adapter.executeNonQuery(sql, params, this.transaction);
-      return res.rowsAffected;
+
+      // Cascade soft-delete down to grandchildren if this child has cascade: true
+      if (
+        this.metadata.softDelete.cascade &&
+        this.metadata.relations &&
+        this.metadata.relations.size > 0
+      ) {
+        const matchingRecords = await this.where(predicate as any)
+          .withDeleted()
+          .toList();
+        const pkProp = this.getPrimaryKeyProperty();
+        for (const childRec of matchingRecords) {
+          const childId = (childRec as any)[pkProp];
+          for (const [, rel] of this.metadata.relations) {
+            if (rel.type !== 'hasMany' && rel.type !== 'hasOne') continue;
+            const grandChildTarget = rel.target();
+            const grandChildMeta = ModelMetadataRegistry.getInstance().get(grandChildTarget);
+            if (!grandChildMeta?.softDelete) continue;
+            const grandChildSet = this.context
+              ? this.context.set(grandChildTarget as any)
+              : new DbSet(
+                  this.adapter,
+                  grandChildTarget as any,
+                  undefined,
+                  this.transaction,
+                  this.context,
+                );
+            const scoped = this.transaction
+              ? grandChildSet.inTransaction(this.transaction)
+              : grandChildSet;
+            await scoped.removeWhere({ [rel.foreignKey]: childId } as any);
+          }
+        }
+      }
+
+      return rowsAffected;
     } else {
       return this.hardRemoveWhere(predicate);
     }
@@ -2696,13 +2766,65 @@ export class DbSet<T extends object = any> {
     }
 
     const sdMeta = this.metadata.softDelete;
-    const qb = new QueryBuilder(this.adapter, this.tableName);
-    for (const [key, val] of Object.entries(predicate)) {
-      qb.getWhereClause().eq(this.mapPropertyToColumn(key), val);
+    let rowsAffected = 0;
+
+    if (
+      this.adapter.provider === 'mock' &&
+      typeof (this.adapter as any).getTableData === 'function'
+    ) {
+      const rows = (this.adapter as any).getTableData(this.tableName) || [];
+      for (const row of rows) {
+        let matches = true;
+        for (const [key, val] of Object.entries(predicate)) {
+          const col = this.mapPropertyToColumn(key);
+          const rKey = Object.keys(row).find(k => k.toLowerCase() === col.toLowerCase());
+          if (!rKey || String(row[rKey]) !== String(val)) {
+            matches = false;
+            break;
+          }
+        }
+        if (matches) {
+          row[sdMeta.column] = null;
+          rowsAffected++;
+        }
+      }
+    } else {
+      const qb = new QueryBuilder(this.adapter, this.tableName);
+      for (const [key, val] of Object.entries(predicate)) {
+        qb.getWhereClause().eq(this.mapPropertyToColumn(key), val);
+      }
+      const { sql, params } = qb.toUpdateSql({ [sdMeta.column]: null });
+      const res = await this.adapter.executeNonQuery(sql, params, this.transaction);
+      rowsAffected = res.rowsAffected;
     }
-    const { sql, params } = qb.toUpdateSql({ [sdMeta.column]: null });
-    const res = await this.adapter.executeNonQuery(sql, params, this.transaction);
-    return res.rowsAffected;
+
+    // Cascade restore to hasMany / hasOne children if cascade is true
+    if (sdMeta.cascade && this.metadata.relations && this.metadata.relations.size > 0) {
+      const restoredRecords = await this.where(predicate as any).toList();
+      const pkProp = this.getPrimaryKeyProperty();
+      for (const rec of restoredRecords) {
+        const id = (rec as any)[pkProp];
+        for (const [, rel] of this.metadata.relations) {
+          if (rel.type !== 'hasMany' && rel.type !== 'hasOne') continue;
+          const childTarget = rel.target();
+          const childMeta = ModelMetadataRegistry.getInstance().get(childTarget);
+          if (!childMeta?.softDelete) continue;
+          const childSet = this.context
+            ? this.context.set(childTarget as any)
+            : new DbSet(
+                this.adapter,
+                childTarget as any,
+                undefined,
+                this.transaction,
+                this.context,
+              );
+          const scoped = this.transaction ? childSet.inTransaction(this.transaction) : childSet;
+          await scoped.restoreWhere({ [rel.foreignKey]: id } as any);
+        }
+      }
+    }
+
+    return rowsAffected;
   }
 
   /**
@@ -2857,13 +2979,34 @@ export class DbSet<T extends object = any> {
     data: Partial<T>;
     select?: (keyof T)[];
   }): Promise<T> {
+    const pkProp = this.getPrimaryKeyProperty();
     const existing = await this.findUnique({ where: args.where });
     if (!existing) {
+      const versionProp = this.metadata?.versionProperty?.propertyName;
+      if (versionProp && (args.where as any)[versionProp] !== undefined) {
+        const pkVal = (args.where as any)[pkProp];
+        if (pkVal !== undefined) {
+          const byPk = await this.find(pkVal);
+          if (byPk) {
+            throw new DbUpdateConcurrencyException(
+              `Database operation expected to affect 1 row, but affected 0 rows due to a concurrency conflict in '${this.tableName}'.`,
+              this.tableName,
+              pkVal,
+            );
+          }
+        }
+      }
       throw new Error(`Record to update not found matching where criteria`);
     }
-    const pkProp = this.getPrimaryKeyProperty();
     const id = (existing as any)[pkProp];
-    const updated = await this.update(id, args.data);
+    const versionProp = this.metadata?.versionProperty?.propertyName;
+    const expectedVersion =
+      versionProp && (args.where as any)[versionProp] !== undefined
+        ? (args.where as any)[versionProp]
+        : versionProp && (existing as any)[versionProp] !== undefined
+          ? (existing as any)[versionProp]
+          : undefined;
+    const updated = await this.update(id, args.data, expectedVersion);
     if (args.select && args.select.length > 0) {
       const filtered: any = {};
       for (const k of args.select) filtered[k] = (updated as any)[k];

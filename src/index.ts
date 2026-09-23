@@ -55,3 +55,7 @@ export * from './validation';
 export * from './audit';
 // Domain Events & Event Bus
 export * from './events';
+// Connection Pooling & Diagnostics
+export * from './pool';
+// Unit of Work & Aggregate Root Pattern
+export * from './uow';

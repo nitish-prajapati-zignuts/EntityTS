@@ -22,6 +22,8 @@ import {
   IdempotencyOptions,
 } from '../banking';
 import { EntityEventBus, EventHandler } from '../events';
+import type { IConnectionPool } from '../pool/IConnectionPool';
+import { UnitOfWork } from '../uow/UnitOfWork';
 
 /**
  * Diagnostic health status object returned by `context.health()`.
@@ -178,6 +180,13 @@ export abstract class DbContext {
   }
 
   /**
+   * The connection pool managing active connections, heartbeat, and diagnostics, if configured.
+   */
+  public get pool(): IConnectionPool | undefined {
+    return this._adapter.connectionPool || (this._adapter as any).pool;
+  }
+
+  /**
    * Creates a new Double-Entry Accounting Ledger Builder.
    * Enforces that total debits equal total credits before persisting financial journal entries.
    *
@@ -203,6 +212,15 @@ export abstract class DbContext {
     options?: IdempotencyOptions,
   ): Promise<T> {
     return this.idempotency.execute(key, fn, options);
+  }
+
+  /**
+   * Creates a new Unit of Work instance bound to this DbContext session.
+   * Enables batching multiple DbSet operations with topological dependency ordering
+   * and single-transaction commit.
+   */
+  public createUnitOfWork(): UnitOfWork<this> {
+    return new UnitOfWork<this>(this);
   }
 
   /**
@@ -920,11 +938,14 @@ export abstract class DbContext {
           const id = (entry.entity as any)[pkProp];
           const changes = entry.getChanges();
           const versionProp = entry.metadata?.versionProperty?.propertyName;
-          const expectedVersion = versionProp ? entry.getOriginalValue(versionProp) : undefined;
+          const expectedVersion = versionProp
+            ? (entry.getOriginalValue(versionProp) ?? (entry.entity as any)[versionProp])
+            : undefined;
           const concurrencyOriginals: Record<string, unknown> = {};
           if (entry.metadata?.concurrencyCheckProperties) {
             for (const prop of entry.metadata.concurrencyCheckProperties) {
-              concurrencyOriginals[prop] = entry.getOriginalValue(prop);
+              concurrencyOriginals[prop] =
+                entry.getOriginalValue(prop) ?? (entry.entity as any)[prop];
             }
           }
           if (Object.keys(changes).length > 0 || expectedVersion !== undefined) {
@@ -938,7 +959,9 @@ export abstract class DbContext {
         } else if (entry.state === EntityState.Deleted) {
           const id = (entry.entity as any)[pkProp];
           const versionProp = entry.metadata?.versionProperty?.propertyName;
-          const expectedVersion = versionProp ? entry.getOriginalValue(versionProp) : undefined;
+          const expectedVersion = versionProp
+            ? (entry.getOriginalValue(versionProp) ?? (entry.entity as any)[versionProp])
+            : undefined;
           await set.remove(id, expectedVersion);
           entry.acceptChanges();
           affectedCount++;

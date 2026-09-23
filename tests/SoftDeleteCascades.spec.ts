@@ -160,6 +160,54 @@ describe('Soft Delete Cascades', () => {
       expect(active.find(u => u.id === 1)).toBeUndefined();
     });
 
+    it('automatically cascades soft-delete to @HasMany children', async () => {
+      const ctx = buildCtx();
+
+      // Soft delete user 1 (which has cascade: true)
+      await ctx.users.remove(1);
+
+      // Verify posts for user 1 (10 and 11) are soft-deleted from active query
+      const activePosts = await ctx.posts.toList();
+      expect(activePosts.find(p => p.id === 10)).toBeUndefined();
+      expect(activePosts.find(p => p.id === 11)).toBeUndefined();
+
+      // Verify post 12 belonging to user 2 is untouched
+      expect(activePosts.find(p => p.id === 12)).toBeDefined();
+
+      // Verify soft-deleted posts are still present via .withDeleted()
+      const allPosts = await ctx.posts.withDeleted().toList();
+      expect(allPosts.find(p => p.id === 10)).toBeDefined();
+      expect(allPosts.find(p => p.id === 11)).toBeDefined();
+    });
+
+    it('automatically cascades restore() back to @HasMany children', async () => {
+      const ctx = buildCtx();
+
+      // Soft delete user 1 and cascade to posts
+      await ctx.users.remove(1);
+      expect((await ctx.posts.toList()).find(p => p.id === 10)).toBeUndefined();
+
+      // Restore user 1 (cascade: true should also restore posts)
+      await ctx.users.restore(1);
+
+      const restoredUsers = await ctx.users.toList();
+      expect(restoredUsers.find(u => u.id === 1)).toBeDefined();
+
+      const restoredPosts = await ctx.posts.toList();
+      expect(restoredPosts.find(p => p.id === 10)).toBeDefined();
+      expect(restoredPosts.find(p => p.id === 11)).toBeDefined();
+    });
+
+    it('does not delete non-soft-delete child entities when parent is soft-deleted', async () => {
+      const ctx = buildCtx();
+      await ctx.users.remove(1);
+
+      // Categories have no @SoftDelete and should not be deleted
+      const categories = await ctx.categories.toList();
+      expect(categories.length).toBe(1);
+      expect(categories[0].id).toBe(100);
+    });
+
     it('the deleted user is visible via .withDeleted()', async () => {
       const ctx = buildCtx();
       await ctx.users.remove(1);
@@ -176,12 +224,100 @@ describe('Soft Delete Cascades', () => {
     });
   });
 
-  describe('SoftDeleteOptions type', () => {
-    it('SoftDelete({ column, cascade }) registers both fields', () => {
-      const meta = ModelMetadataRegistry.getInstance().get(SdUser);
-      expect(meta?.softDelete).toBeDefined();
-      expect(meta!.softDelete!.column).toBe('deleted_at');
-      expect(meta!.softDelete!.cascade).toBe(true);
+  describe('Multi-level grandchild recursive soft-delete cascading', () => {
+    @Entity()
+    @Table('sd_blogs')
+    @SoftDelete({ column: 'deleted_at', cascade: true })
+    class SdBlog {
+      @PrimaryKey()
+      id!: number;
+
+      @Column()
+      title!: string;
+
+      @Column({ name: 'deleted_at', nullable: true })
+      deletedAt?: Date | null;
+
+      @HasMany(() => SdArticle, 'blogId')
+      articles?: SdArticle[];
+    }
+
+    @Entity()
+    @Table('sd_articles')
+    @SoftDelete({ column: 'deleted_at', cascade: true })
+    class SdArticle {
+      @PrimaryKey()
+      id!: number;
+
+      @Column()
+      blogId!: number;
+
+      @Column()
+      headline!: string;
+
+      @Column({ name: 'deleted_at', nullable: true })
+      deletedAt?: Date | null;
+
+      @HasMany(() => SdReview, 'articleId')
+      reviews?: SdReview[];
+    }
+
+    @Entity()
+    @Table('sd_reviews')
+    @SoftDelete({ column: 'deleted_at' })
+    class SdReview {
+      @PrimaryKey()
+      id!: number;
+
+      @Column()
+      articleId!: number;
+
+      @Column()
+      comment!: string;
+
+      @Column({ name: 'deleted_at', nullable: true })
+      deletedAt?: Date | null;
+    }
+
+    class MultiLevelContext extends DbContext {
+      public blogs = this.set(SdBlog);
+      public articles = this.set(SdArticle);
+      public reviews = this.set(SdReview);
+
+      protected onConfiguring(options: DbContextOptionsBuilder): void {
+        options.useMock({
+          tables: {
+            sd_blogs: [{ id: 1, title: 'Tech Blog', deleted_at: null }],
+            sd_articles: [{ id: 101, blogId: 1, headline: 'TypeScript 5', deleted_at: null }],
+            sd_reviews: [
+              { id: 1001, articleId: 101, comment: 'Great read!', deleted_at: null },
+              { id: 1002, articleId: 999, comment: 'Other review', deleted_at: null },
+            ],
+          },
+        });
+      }
+    }
+
+    it('cascades soft deletion across all 3 levels (Blog -> Article -> Review)', async () => {
+      const ctx = new MultiLevelContext();
+
+      // Soft delete root blog
+      await ctx.blogs.remove(1);
+
+      // Level 1: Blog is soft-deleted
+      const activeBlogs = await ctx.blogs.toList();
+      expect(activeBlogs.find(b => b.id === 1)).toBeUndefined();
+
+      // Level 2: Article is soft-deleted
+      const activeArticles = await ctx.articles.toList();
+      expect(activeArticles.find(a => a.id === 101)).toBeUndefined();
+
+      // Level 3: Review on Article 101 is soft-deleted
+      const activeReviews = await ctx.reviews.toList();
+      expect(activeReviews.find(r => r.id === 1001)).toBeUndefined();
+
+      // Unrelated review on article 999 is unaffected
+      expect(activeReviews.find(r => r.id === 1002)).toBeDefined();
     });
   });
 });
