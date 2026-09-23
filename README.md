@@ -638,3 +638,113 @@ export class UsersService {
 
 ---
 
+## EntityTS CLI Suite
+
+`entityts` provides a full-featured CLI tool for migrations, benchmarks, and reverse engineering.
+
+```bash
+entityts <command> [options]
+```
+
+### 1. Driver Management
+```bash
+# Install ONLY the package required for your database
+npx entityts add mssql
+npx entityts add postgres
+npx entityts add mysql
+npx entityts add sqlite
+
+# Initialize project with DbContext and install chosen driver
+npx entityts init --db mssql
+```
+
+### 2. Execution Benchmarks
+Run the built-in execution benchmark suite to measure query compilation, hydration throughput (ops/sec), and latency:
+
+```bash
+# Run execution benchmarks
+npm run benchmark
+
+# Or via CLI
+npx entityts benchmark --iterations 500
+
+# Filter specific scenario categories
+npx entityts benchmark --filter "Raw SQL|DbSet Query"
+
+# Output in JSON format
+npx entityts benchmark --json
+```
+Includes:
+- **Raw SQL execution**: `queryRaw`, `queryScalar`, and tagged template literal timing.
+- **DbSet queries**: `toList()`, `first()`, `.where()`, `.orderBy()`, `.take()`, and `.cache()`.
+- **Mutations & Bulk**: `add()`, `addRange()`, `bulkInsert()`, `update()`, and `bulkUpdate()`.
+- **Change Tracking**: Proxy mutation detection and `saveChanges()` batch flushing.
+- **Stored Procedures**: Parameter binding and execution.
+- **Resilience**: `DefaultExecutionStrategy` retry overhead profiling.
+
+### 3. Code-First Schema Management
+```bash
+# Push entity metadata directly to database (ideal for development)
+npx nsp db:push --context src/database/AppDbContext.ts
+
+# Dry run — inspect DDL statements without applying
+npx nsp db:push --context src/database/AppDbContext.ts --dry-run
+
+# Generate migration file from entity changes
+npx nsp db:migrate:generate AddUserColumns --context src/database/AppDbContext.ts
+
+# Scaffold a blank migration file
+npx nsp db:migrate:create CustomDataMigration
+```
+
+### 4. Database-First Scaffolding
+Reverse-engineer an existing database into TypeScript entity classes and a `DbContext`:
+
+```bash
+npx nsp db:scaffold --context src/database/AppDbContext.ts --output src/entities
+```
+
+---
+
+## Unit Testing with MockDbAdapter
+
+Write fast, deterministic unit tests without running a database server or container:
+
+```typescript
+import { MockDbAdapter } from '@nsp/dbcontext';
+import { AppDbContext } from './AppDbContext';
+
+describe('UserService', () => {
+  it('fetches active users from mock adapter', async () => {
+    const mock = new MockDbAdapter({
+      tables: {
+        users: [
+          { id: 1, full_name: 'Alice', email: 'alice@test.com', score: 95 },
+          { id: 2, full_name: 'Bob',   email: 'bob@test.com',   score: 40 },
+        ],
+      },
+      procedures: {
+        usp_GetCustomerDashboard: {
+          records: [
+            [{ id: 1, name: 'Alice' }],     // Table 1 (Customer)
+            [{ id: 101, total: 450.00 }],    // Table 2 (Orders)
+          ],
+          returnValue: 0,
+        },
+      },
+    });
+
+    const db = new AppDbContext({ adapter: mock });
+    const topUsers = await db.users.where(u => u.gt('score', 50)).toList();
+
+    expect(topUsers).toHaveLength(1);
+    expect(topUsers[0].name).toBe('Alice');
+  });
+});
+```
+
+---
+
+## License
+
+MIT © [NSP Team](https://github.com/nsp)
