@@ -19,7 +19,7 @@ module.exports = {
   setupFiles: ['reflect-metadata'],
   moduleFileExtensions: ['ts', 'js', 'json', 'node'],
   verbose: true,
-  // Limit parallelism to prevent SIGSEGV crashes from concurrent better-sqlite3
-  // native bindings being loaded across too many Jest worker processes simultaneously.
-  maxWorkers: process.env.CI ? 2 : '50%',
+  // Run tests in-band with 1 worker to prevent native C++ module (better-sqlite3)
+  // SIGSEGV worker crashes caused by multi-process native memory recycling in Jest
+  maxWorkers: 1,
 };
