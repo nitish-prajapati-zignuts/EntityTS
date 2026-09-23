@@ -3,12 +3,36 @@ import { EntityMetadata } from '../model/EntityMetadata';
 import { DbTransaction } from '../transaction/DbTransaction';
 import { QueryBuilder } from '../query/QueryBuilder';
 
+/**
+ * Options for high-performance chunked bulk updates.
+ */
 export interface BulkUpdateOptions<T> {
+  /** Property keys to match target rows (e.g. `['id']` or `['sku']`). */
   keys: (keyof T | string)[];
+  /** Optional subset of columns to update. If omitted, all non-key properties are updated. */
   update?: (keyof T | string)[];
+  /** Batch chunk size per transaction (default: 500). */
   batchSize?: number;
 }
 
+/**
+ * High-performance batch update engine that processes large numbers of entity mutations in transactions.
+ *
+ * Automatically updates `@UpdatedAt` timestamps and validates key columns.
+ *
+ * @usecase Ideal for mass status updates, bulk price adjustments, and inventory synchronization.
+ *
+ * @example
+ * **PostgreSQL / MySQL / SQLite / MSSQL:**
+ * ```ts
+ * const bulkUpdater = new BulkUpdateBuilder(adapter, 'orders', metadata);
+ * const updatedCount = await bulkUpdater.execute(modifiedOrders, {
+ *   keys: ['id'],
+ *   update: ['status', 'processedAt'],
+ *   batchSize: 500,
+ * });
+ * ```
+ */
 export class BulkUpdateBuilder<T extends object> {
   constructor(
     private readonly adapter: IDbAdapter,
@@ -17,6 +41,13 @@ export class BulkUpdateBuilder<T extends object> {
     private readonly transaction?: DbTransaction,
   ) {}
 
+  /**
+   * Executes the bulk update across the provided entities.
+   *
+   * @param entities - Array of entities containing update values and identifying keys.
+   * @param options - Bulk update configuration.
+   * @returns Total number of rows updated.
+   */
   public async execute(entities: Partial<T>[], options: BulkUpdateOptions<T>): Promise<number> {
     if (!entities || entities.length === 0) return 0;
     const batchSize = options.batchSize || 500;

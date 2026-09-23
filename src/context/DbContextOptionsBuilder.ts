@@ -38,12 +38,26 @@ export class DbContextOptionsBuilder {
   /**
    * Configures the context to connect to a Microsoft SQL Server database.
    *
-   * @usecase Connect to on-premise or Azure SQL Server instances.
-   * @param config - Connection configuration object or connection string.
+   * @usecase Connect to Microsoft SQL Server on-premise, AWS RDS for SQL Server, or Azure SQL Database instances.
+   * @param config - Connection configuration object with credentials or a standard ADO.NET connection string.
    * @returns `this` builder instance for chaining.
+   *
    * @example
+   * **Connection String:**
    * ```ts
-   * options.useSqlServer('Server=localhost;Database=mydb;User Id=sa;Password=secret;');
+   * options.useSqlServer('Server=localhost,1433;Database=appdb;User Id=sa;Password=Secret123!;Encrypt=false;');
+   * ```
+   *
+   * **Structured Configuration:**
+   * ```ts
+   * options.useSqlServer({
+   *   server: 'localhost',
+   *   port: 1433,
+   *   database: 'appdb',
+   *   user: 'sa',
+   *   password: 'SecretPassword!',
+   *   options: { encrypt: true, trustServerCertificate: false }
+   * });
    * ```
    */
   public useSqlServer(config: MssqlAdapterConfig | string): this {
@@ -56,12 +70,27 @@ export class DbContextOptionsBuilder {
   /**
    * Configures the context to connect to a PostgreSQL database.
    *
-   * @usecase Connect to PostgreSQL instances (standard pg, RDS, Google Cloud SQL, etc.).
-   * @param config - Connection configuration object or connection URI string.
+   * @usecase Connect to standard PostgreSQL instances, AWS RDS Postgres, Google Cloud SQL, Supabase, or Railway.
+   * @param config - Connection URI string or node-postgres `pg.PoolConfig` object.
    * @returns `this` builder instance for chaining.
+   *
    * @example
+   * **Connection URI:**
    * ```ts
-   * options.usePostgres('postgresql://user:pass@localhost:5432/mydb');
+   * options.usePostgres('postgresql://postgres:secret@localhost:5432/appdb?sslmode=prefer');
+   * ```
+   *
+   * **Structured Configuration:**
+   * ```ts
+   * options.usePostgres({
+   *   host: 'localhost',
+   *   port: 5432,
+   *   database: 'appdb',
+   *   user: 'postgres',
+   *   password: 'secretpassword',
+   *   max: 20,
+   *   idleTimeoutMillis: 30000,
+   * });
    * ```
    */
   public usePostgres(config: PostgresAdapterConfig | string): this {
@@ -74,12 +103,26 @@ export class DbContextOptionsBuilder {
   /**
    * Configures the context to connect to a MySQL or MariaDB database.
    *
-   * @usecase Connect to MySQL or MariaDB database servers.
-   * @param config - Connection configuration object or connection URI string.
+   * @usecase Connect to MySQL 5.7/8.x or MariaDB database servers across local containers, AWS RDS, or Google Cloud SQL.
+   * @param config - Connection URI string or `mysql2.PoolOptions` configuration object.
    * @returns `this` builder instance for chaining.
+   *
    * @example
+   * **Connection URI:**
    * ```ts
-   * options.useMysql('mysql://root:secret@localhost:3306/mydb');
+   * options.useMysql('mysql://root:secret@localhost:3306/appdb?timezone=Z');
+   * ```
+   *
+   * **Structured Configuration:**
+   * ```ts
+   * options.useMysql({
+   *   host: 'localhost',
+   *   port: 3306,
+   *   database: 'appdb',
+   *   user: 'root',
+   *   password: 'secretpassword',
+   *   connectionLimit: 15,
+   * });
    * ```
    */
   public useMysql(config: MysqlAdapterConfig | string): this {
@@ -92,12 +135,18 @@ export class DbContextOptionsBuilder {
   /**
    * Configures the context to connect to a SQLite database.
    *
-   * @usecase Connect to local file-based or in-memory SQLite databases for development, desktop apps, or tests.
-   * @param config - Database file path string (e.g. `'./data.db'` or `':memory:'`) or config object.
+   * @usecase Connect to local file-based or in-memory SQLite databases for development, testing, CLI tools, or Electron/desktop apps.
+   * @param config - Database file path string (e.g. `'./data.db'` or `':memory:'`) or configuration object.
    * @returns `this` builder instance for chaining.
+   *
    * @example
+   * **File Path / In-Memory:**
    * ```ts
-   * options.useSqlite('./dev.db');
+   * // File database:
+   * options.useSqlite('./data/app.db');
+   *
+   * // Fast in-memory database for unit testing:
+   * options.useSqlite(':memory:');
    * ```
    */
   public useSqlite(config: SqliteAdapterConfig | string): this {
@@ -110,12 +159,13 @@ export class DbContextOptionsBuilder {
   /**
    * Configures the context to connect to a Neon Serverless PostgreSQL database over HTTP/WebSockets.
    *
-   * @usecase Connect to Neon serverless Postgres with instant branching and autoscaling.
-   * @param config - Neon connection string or configuration object.
+   * @usecase Connect to Neon serverless Postgres with instant branching, autoscaling, and connection pooling.
+   * @param config - Neon connection string URI or `@neondatabase/serverless` configuration object.
    * @returns `this` builder instance for chaining.
+   *
    * @example
    * ```ts
-   * options.useNeon(process.env.NEON_DATABASE_URL!);
+   * options.useNeon(process.env.NEON_DATABASE_URL || 'postgresql://user:pass@ep-cool-branch-12345.us-east-2.aws.neon.tech/neondb?sslmode=require');
    * ```
    */
   public useNeon(config: NeonAdapterConfig | string): this {
@@ -128,9 +178,16 @@ export class DbContextOptionsBuilder {
   /**
    * Configures the context to connect to PlanetScale MySQL via HTTP.
    *
-   * @usecase Connect to PlanetScale's serverless MySQL platform in edge runtimes or serverless functions.
-   * @param config - PlanetScale connection string or configuration object.
+   * @usecase Connect to PlanetScale's serverless MySQL platform in serverless functions, Vercel, or AWS Lambda without connection pool exhaustion.
+   * @param config - PlanetScale connection string or `@planetscale/database` configuration object.
    * @returns `this` builder instance for chaining.
+   *
+   * @example
+   * ```ts
+   * options.usePlanetScale({
+   *   url: process.env.DATABASE_URL,
+   * });
+   * ```
    */
   public usePlanetScale(config: PlanetScaleAdapterConfig | string): this {
     this.options.provider = 'planetscale';
@@ -142,9 +199,17 @@ export class DbContextOptionsBuilder {
   /**
    * Configures the context to connect to Turso (libSQL) distributed edge database.
    *
-   * @usecase Connect to Turso edge SQLite databases with replication across global regions.
-   * @param config - Turso database URL or configuration object.
+   * @usecase Connect to Turso edge SQLite databases with distributed replication and sub-millisecond global queries.
+   * @param config - Turso database URL or `@libsql/client` configuration object.
    * @returns `this` builder instance for chaining.
+   *
+   * @example
+   * ```ts
+   * options.useTurso({
+   *   url: process.env.TURSO_DATABASE_URL!,
+   *   authToken: process.env.TURSO_AUTH_TOKEN!,
+   * });
+   * ```
    */
   public useTurso(config: TursoAdapterConfig | string): this {
     this.options.provider = 'turso';
@@ -156,9 +221,14 @@ export class DbContextOptionsBuilder {
   /**
    * Configures the context to connect to a CockroachDB distributed SQL cluster.
    *
-   * @usecase Connect to CockroachDB for multi-region active-active high availability.
+   * @usecase Connect to CockroachDB for multi-region active-active high availability and global ACID transactions.
    * @param config - CockroachDB connection string or configuration object.
    * @returns `this` builder instance for chaining.
+   *
+   * @example
+   * ```ts
+   * options.useCockroachDb('postgresql://user:pass@free-tier14.gcp-us-east1.cockroachlabs.cloud:26257/defaultdb?sslmode=verify-full');
+   * ```
    */
   public useCockroachDb(config: CockroachDbAdapterConfig | string): this {
     this.options.provider = 'cockroachdb';
@@ -170,9 +240,21 @@ export class DbContextOptionsBuilder {
   /**
    * Configures the context to connect to Cloudflare D1 serverless database.
    *
-   * @usecase Run queries on Cloudflare Workers edge runtime directly bound to Cloudflare D1.
-   * @param bindingOrConfig - Cloudflare D1 environment binding or config object.
+   * @usecase Run queries directly on Cloudflare Workers edge runtime bound to Cloudflare D1.
+   * @param bindingOrConfig - Cloudflare D1 environment binding (`env.DB`) or config object.
    * @returns `this` builder instance for chaining.
+   *
+   * @example
+   * ```ts
+   * export default {
+   *   async fetch(req, env) {
+   *     const options = new DbContextOptionsBuilder().useD1(env.DB).build();
+   *     const db = new AppDbContext(options);
+   *     const users = await db.users.toList();
+   *     return Response.json(users);
+   *   }
+   * };
+   * ```
    */
   public useD1(bindingOrConfig: D1DatabaseLike | D1AdapterConfig): this {
     this.options.provider = 'd1';
@@ -184,9 +266,14 @@ export class DbContextOptionsBuilder {
   /**
    * Configures the context to connect to a Supabase Postgres database.
    *
-   * @usecase Connect to Supabase Postgres database.
+   * @usecase Connect to Supabase Postgres database with support for Row-Level Security (RLS) and pgvector embeddings.
    * @param config - Supabase connection string or configuration object.
    * @returns `this` builder instance for chaining.
+   *
+   * @example
+   * ```ts
+   * options.useSupabase('postgresql://postgres.xxx:pass@aws-0-us-east-1.pooler.supabase.com:6543/postgres?pgbouncer=true');
+   * ```
    */
   public useSupabase(config: SupabaseAdapterConfig | string): this {
     this.options.provider = 'supabase';
@@ -198,7 +285,7 @@ export class DbContextOptionsBuilder {
   /**
    * Supplies a custom database adapter implementing the `IDbAdapter` interface.
    *
-   * @usecase Use a customized adapter, wrapper, or unsupported database driver.
+   * @usecase Use a customized adapter, database wrapper, or driver not bundled by default.
    * @param adapter - An instance of `IDbAdapter`.
    * @returns `this` builder instance for chaining.
    */
@@ -211,7 +298,7 @@ export class DbContextOptionsBuilder {
   /**
    * Configures an in-memory mock database adapter for fast unit testing.
    *
-   * @usecase Ideal for unit testing business logic and services without needing a live database connection.
+   * @usecase Ideal for unit testing business logic and services without spinning up a live database server.
    * @param mockOptions - Mock behavior configuration.
    * @returns `this` builder instance for chaining.
    */
@@ -223,21 +310,22 @@ export class DbContextOptionsBuilder {
   }
 
   /**
-   * Enables query logging in -style structured format, JSON, compact, or through a custom logger function.
+   * Enables query logging in structured EF Core format, JSON, compact one-line format, or via a custom logger callback.
    *
-   * @usecase Debug executed SQL queries with duration, parameter values, and error states like in .
-   * @param logging - `''` (or `true`) for -style structured logs, `'json'`, `'compact'`, or a custom `(sql, params, ms) => void` callback.
+   * @usecase Debug executed SQL queries with duration, parameter bindings, and error states.
+   * @param logging - `'structured'` (or `true`) for formatted multi-line logs, `'json'`, `'compact'`, or a custom `(sql, params, ms) => void` callback.
    * @returns `this` builder instance for chaining.
+   *
    * @example
    * ```ts
-   * // 1. -style structured multi-line logging:
-   * options.withLogging('');
+   * // 1. Formatted multi-line logging:
+   * options.withLogging(true);
    *
-   * // 2. Structured JSON for cloud log aggregators:
+   * // 2. Structured JSON for cloud log aggregators (Datadog, CloudWatch):
    * options.withLogging('json');
    *
-   * // 3. Custom function:
-   * options.withLogging((sql, params, ms) => console.log(`[SQL ${ms}ms] ${sql}`));
+   * // 3. Custom logger (e.g. Winston / Pino):
+   * options.withLogging((sql, params, ms) => logger.info({ sql, params, durationMs: ms }));
    * ```
    */
   public withLogging(logging: LogMode): this {

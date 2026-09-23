@@ -3,12 +3,38 @@ import { EntityMetadata } from '../model/EntityMetadata';
 import { DbTransaction } from '../transaction/DbTransaction';
 import { QueryBuilder } from '../query/QueryBuilder';
 
+/**
+ * Configuration options for batch bulk upsert operations.
+ */
 export interface BulkUpsertOptions<T> {
+  /** Property keys to detect existing conflicts against (e.g. `['sku']` or `['email', 'tenantId']`). */
   conflictKeys: (keyof T | string)[];
+  /** Optional subset of columns to update when conflict occurs. If omitted, all non-key columns are updated. */
   update?: (keyof T | string)[];
+  /** Chunk batch size per transactional batch (default: 500). */
   batchSize?: number;
 }
 
+/**
+ * High-performance bulk upsert engine executing chunked batch insert-or-update operations across database engines.
+ *
+ * Automatically manages audit timestamps (`@CreatedAt`, `@UpdatedAt`), creator identifiers (`@CreatedBy`),
+ * and optimistic concurrency versions across batches.
+ *
+ * @usecase Ideal for sync pipelines, API integrations, and catalog ingestion where incoming records may be new or existing.
+ *
+ * @example
+ * **PostgreSQL / MySQL / SQLite / MSSQL:**
+ * ```ts
+ * const upsertEngine = new BulkUpsertBuilder(adapter, 'products', metadata);
+ * const processed = await upsertEngine.execute(incomingProducts, {
+ *   conflictKeys: ['sku'],
+ *   update: ['price', 'stockQuantity', 'title'],
+ *   batchSize: 500,
+ * });
+ * console.log(`Processed ${processed} upsert items`);
+ * ```
+ */
 export class BulkUpsertBuilder<T extends object> {
   constructor(
     private readonly adapter: IDbAdapter,
@@ -18,6 +44,13 @@ export class BulkUpsertBuilder<T extends object> {
     private readonly context?: any,
   ) {}
 
+  /**
+   * Executes the bulk upsert workflow across the supplied entities.
+   *
+   * @param entities - List of entity objects to insert or update.
+   * @param options - Upsert configuration specifying conflict keys and update fields.
+   * @returns Total number of records inserted or updated.
+   */
   public async execute(entities: Partial<T>[], options: BulkUpsertOptions<T>): Promise<number> {
     if (!entities || entities.length === 0) return 0;
     const batchSize = options.batchSize || 500;

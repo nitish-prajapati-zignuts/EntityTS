@@ -3,11 +3,30 @@ import { EntityMetadata } from '../model/EntityMetadata';
 import { DbTransaction } from '../transaction/DbTransaction';
 import { QueryBuilder } from '../query/QueryBuilder';
 
+/**
+ * Options for high-performance bulk deletion.
+ */
 export interface BulkDeleteOptions {
+  /** Batch chunk size per transaction (default: 500). */
   batchSize?: number;
+  /** If true, forces physical hard DELETE even if `@SoftDelete` is enabled on the entity. */
   hardDelete?: boolean;
 }
 
+/**
+ * High-performance bulk delete engine for removing multiple rows matching filter conditions.
+ *
+ * Automatically respects `@SoftDelete` annotations unless `hardDelete: true` is explicitly requested.
+ *
+ * @usecase Purging expired records, historical log cleanups, GDPR removal, and data maintenance.
+ *
+ * @example
+ * **PostgreSQL / MySQL / SQLite / MSSQL:**
+ * ```ts
+ * const bulkDeleter = new BulkDeleteBuilder(adapter, 'notifications', metadata);
+ * const deletedCount = await bulkDeleter.execute({ isRead: true, isArchived: true });
+ * ```
+ */
 export class BulkDeleteBuilder<T extends object> {
   constructor(
     private readonly adapter: IDbAdapter,
@@ -16,6 +35,13 @@ export class BulkDeleteBuilder<T extends object> {
     private readonly transaction?: DbTransaction,
   ) {}
 
+  /**
+   * Executes the bulk delete command matching the predicate.
+   *
+   * @param predicate - Partial entity criteria matching rows to remove.
+   * @param options - Deletion options (hardDelete, batchSize).
+   * @returns Total number of rows deleted or soft-deleted.
+   */
   public async execute(predicate: Partial<T>, options?: BulkDeleteOptions): Promise<number> {
     const isSoft = !!this.metadata?.softDelete && !options?.hardDelete;
 

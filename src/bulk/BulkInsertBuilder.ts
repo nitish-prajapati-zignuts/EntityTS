@@ -2,11 +2,33 @@ import { IDbAdapter } from '../adapters/IDbAdapter';
 import { EntityMetadata } from '../model/EntityMetadata';
 import { DbTransaction } from '../transaction/DbTransaction';
 
+/**
+ * Options for high-performance chunked bulk insertion.
+ */
 export interface BulkInsertOptions {
+  /** Maximum number of records per individual SQL INSERT command (default: 500). */
   batchSize?: number;
+  /** If true, ignores duplicate key constraint violations (e.g. `INSERT ... ON CONFLICT DO NOTHING` or `INSERT IGNORE`). */
   ignoreDuplicates?: boolean;
 }
 
+/**
+ * High-throughput batch insert engine that splits large entity arrays into chunked multi-row INSERT queries.
+ *
+ * Automatically assigns audit timestamps, creator IDs, version tokens, and default values across all batches.
+ *
+ * @usecase Ideal for seeding test datasets, bulk data migrations, event stream ingestion, and telemetry logging.
+ *
+ * @example
+ * **PostgreSQL / MySQL / SQLite / MSSQL:**
+ * ```ts
+ * const bulkInsert = new BulkInsertBuilder(adapter, 'audit_logs', metadata);
+ * const insertedCount = await bulkInsert.execute(logsArray, {
+ *   batchSize: 1000,
+ *   ignoreDuplicates: true,
+ * });
+ * ```
+ */
 export class BulkInsertBuilder<T extends object> {
   constructor(
     private readonly adapter: IDbAdapter,
@@ -16,6 +38,13 @@ export class BulkInsertBuilder<T extends object> {
     private readonly context?: any,
   ) {}
 
+  /**
+   * Executes the bulk insert operation across all provided entities.
+   *
+   * @param entities - Array of entity objects to insert.
+   * @param options - Batching configuration options.
+   * @returns Total number of rows inserted across all chunks.
+   */
   public async execute(entities: Partial<T>[], options?: BulkInsertOptions): Promise<number> {
     if (!entities || entities.length === 0) return 0;
     const batchSize = options?.batchSize || 500;

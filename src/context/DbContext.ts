@@ -311,13 +311,17 @@ export abstract class DbContext {
   /**
    * Creates or returns a cached `DbSet<T>` for the specified entity class or table name.
    *
-   * @usecase Use this to obtain a repository set for querying, creating, updating, and deleting entities.
-   * @param entity - The entity class constructor or table name string.
+   * @usecase Access repository methods (CRUD, LINQ querying, batch mutations, change tracking) for any registered entity.
+   * @param entity - The entity class constructor (e.g. `User`) or table name string.
    * @returns A typed `DbSet<T>` for the requested entity.
+   *
    * @example
    * ```ts
-   * const userSet = context.set(User);
-   * const allUsers = await userSet.toList();
+   * const users = context.set(User);
+   * const activeAdmins = await users
+   *   .where(u => u.role === 'admin' && u.isActive === true)
+   *   .orderByDescending(u => u.createdAt)
+   *   .toList();
    * ```
    */
   public set<T extends object>(entity: EntityTarget<T>): DbSet<T> {
@@ -332,14 +336,36 @@ export abstract class DbContext {
   /**
    * Initiates a fluent stored procedure execution builder.
    *
-   * @usecase Use this to execute legacy or optimized database stored procedures with input, output, and inout parameters.
+   * Enables execution of database stored procedures, routines, and user-defined functions across
+   * MSSQL, MySQL, PostgreSQL, and Oracle with full support for input/output/inout parameters,
+   * multiple result sets, and transaction binding.
+   *
+   * @usecase Execute database-native procedures for high performance, complex batch transactions, or legacy procedure integrations.
    * @param name - The name of the stored procedure in the database.
    * @returns A `StoredProcedureBuilder` configured for the procedure.
+   *
    * @example
+   * **SQL Server (MSSQL):**
    * ```ts
-   * const users = await context.procedure('usp_GetActiveUsers')
-   *   .withParam('DepartmentId', 4)
-   *   .executeQuery<User>();
+   * const { records, out } = await context.procedure('usp_GetCustomerDashboard')
+   *   .input({ CustomerId: 101 })
+   *   .output<{ TotalSpent: number }>()
+   *   .query<OrderSummary>();
+   * ```
+   *
+   * **MySQL:**
+   * ```ts
+   * const { out } = await context.procedure('sp_create_user')
+   *   .input({ p_email: 'user@example.com' })
+   *   .output<{ out_id: number }>()
+   *   .run();
+   * ```
+   *
+   * **PostgreSQL:**
+   * ```ts
+   * const users = await context.procedure('fn_get_active_users')
+   *   .input({ min_rank: 5 })
+   *   .query<User>();
    * ```
    */
   public procedure(name: string): StoredProcedureBuilder {
@@ -349,14 +375,25 @@ export abstract class DbContext {
   /**
    * Executes a raw parameterized SELECT SQL query returning typed rows.
    *
-   * @usecase Use this for reporting queries, complex CTEs, or window functions that bypass entity definitions.
-   * @param sql - Raw SQL query with parameter placeholders (`@p0`, `@p1`, etc.).
+   * @usecase Execute complex analytical queries, CTEs (WITH RECURSIVE), window functions, or custom aggregations.
+   * @param sql - Raw SQL query string with parameter placeholders (`@p0`, `@p1`, etc.).
    * @param params - Optional parameter array to bind safely into the query.
    * @returns A Promise resolving to an array of typed row objects.
+   *
    * @example
+   * **PostgreSQL / SQLite:**
    * ```ts
-   * const report = await context.fromSql<{ month: string; total: number }>(
-   *   'SELECT strftime("%Y-%m", created_at) as month, SUM(amount) as total FROM orders GROUP BY month'
+   * const stats = await context.fromSql<{ department: string; avgSalary: number }>(
+   *   'SELECT department, AVG(salary) as "avgSalary" FROM employees GROUP BY department HAVING COUNT(*) > @p0',
+   *   [5]
+   * );
+   * ```
+   *
+   * **MySQL / MSSQL:**
+   * ```ts
+   * const results = await context.fromSql<SalesReport>(
+   *   'SELECT CategoryId, SUM(Total) AS Revenue FROM Orders WHERE OrderDate >= @p0 GROUP BY CategoryId',
+   *   [new Date(2026, 0, 1)]
    * );
    * ```
    */
@@ -370,17 +407,19 @@ export abstract class DbContext {
   /**
    * Executes a raw parameterized SQL command (e.g. INSERT, UPDATE, DELETE, DDL).
    *
-   * @usecase Use this for direct SQL batch commands or administrative operations.
-   * @param sql - Raw SQL command string.
-   * @param params - Optional array of parameter values.
+   * @usecase Perform bulk updates, table truncates, partition management, or raw administrative DML.
+   * @param sql - Raw SQL command string with parameter placeholders.
+   * @param params - Optional array of parameter values to bind safely.
    * @returns A Promise resolving to an object with `rowsAffected`.
+   *
    * @example
+   * **PostgreSQL / MySQL / SQLite / MSSQL:**
    * ```ts
-   * const res = await context.executeSql(
-   *   'UPDATE users SET status = @p0 WHERE last_login < @p1',
-   *   ['inactive', cutoffDate]
+   * const result = await context.executeSql(
+   *   'UPDATE users SET status = @p0, updated_at = @p1 WHERE last_login < @p2',
+   *   ['dormant', new Date(), sixMonthsAgo]
    * );
-   * console.log(`Deactivated ${res.rowsAffected} users`);
+   * console.log(`Updated ${result.rowsAffected} dormant users`);
    * ```
    */
   public async executeSql(sql: string, params?: unknown[]): Promise<{ rowsAffected: number }> {
@@ -393,18 +432,21 @@ export abstract class DbContext {
   /**
    * Begins a new database transaction.
    *
-   * @usecase Use this to gain manual control over transaction boundaries across multiple operations.
-   * @param isolationLevel - Optional transaction isolation level (`READ_COMMITTED`, `SERIALIZABLE`, etc.).
+   * @usecase Gain manual control over transaction boundaries across multiple operations, distributed services, or conditional rollbacks.
+   * @param isolationLevel - Optional transaction isolation level (`READ_COMMITTED`, `REPEATABLE_READ`, `SERIALIZABLE`, `SNAPSHOT`).
    * @returns A Promise resolving to the active `DbTransaction`.
+   *
    * @example
+   * **PostgreSQL / MySQL / MSSQL:**
    * ```ts
-   * const tx = await context.beginTransaction();
+   * const tx = await context.beginTransaction(IsolationLevel.SERIALIZABLE);
    * try {
-   *   await context.users.inTransaction(tx).add({ name: 'Bob' });
+   *   await context.users.inTransaction(tx).add({ name: 'Bob', email: 'bob@example.com' });
+   *   await context.auditLogs.inTransaction(tx).add({ action: 'USER_CREATED', target: 'Bob' });
    *   await tx.commit();
-   * } catch (e) {
+   * } catch (err) {
    *   await tx.rollback();
-   *   throw e;
+   *   throw err;
    * }
    * ```
    */
@@ -415,15 +457,18 @@ export abstract class DbContext {
   /**
    * Executes a callback within a managed transaction, auto-committing on success or rolling back on error.
    *
-   * @usecase Recommended way to execute transactional units of work safely without manual try/catch/commit/rollback boilerplate.
+   * @usecase Recommended pattern for executing transactional units of work safely without boilerplate try/catch/commit/rollback.
    * @param fn - Async callback receiving the active `DbTransaction`.
    * @param isolationLevel - Optional transaction isolation level.
    * @returns A Promise resolving to the result of the callback.
+   *
    * @example
+   * **PostgreSQL / MySQL / MSSQL / SQLite:**
    * ```ts
-   * await context.useTransaction(async tx => {
-   *   await context.accounts.inTransaction(tx).update(fromId, { balance: bal1 - amt });
-   *   await context.accounts.inTransaction(tx).update(toId, { balance: bal2 + amt });
+   * const transferResult = await context.useTransaction(async tx => {
+   *   await context.accounts.inTransaction(tx).update(fromId, { balance: sourceBal - amt });
+   *   await context.accounts.inTransaction(tx).update(toId, { balance: targetBal + amt });
+   *   return { success: true, transferred: amt };
    * });
    * ```
    */

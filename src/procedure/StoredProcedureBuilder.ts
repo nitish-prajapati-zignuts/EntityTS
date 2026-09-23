@@ -18,26 +18,37 @@ export interface ParamOptions {
 // ──────────────────────────────────────────────────────────────
 
 /**
- * Simplified result returned by the simplified `.call()` and `.callQuery()` helpers.
+ * Simplified result returned by `.output().query()`, `.output().queryMultiple()`, and `.output().run()`.
+ *
+ * Encapsulates tabular record sets, strongly-typed output/INOUT parameters, integer return codes,
+ * and affected row counts across all supported database engines.
+ *
+ * @typeParam TRecords - Type of records returned in tabular query results (e.g. `User[]` or `[OrderHeader[], OrderItem[]]`).
+ * @typeParam TOut - Interface of typed output parameters populated by the procedure (e.g. `{ GeneratedId: number; Status: string }`).
  *
  * @example
- * const { records, out, returnValue } = await ctx
- *   .procedure('usp_CreateOrder')
- *   .input({ CustomerId: 1, Total: 99.99 })
- *   .output<{ OrderId: number }>()
- *   .query<OrderRow>();
+ * ```ts
+ * // MSSQL / MySQL / PostgreSQL / Oracle:
+ * const { records, out, returnValue, rowsAffected } = await ctx
+ *   .procedure('usp_ProcessOrder')
+ *   .input({ CustomerId: 101, OrderTotal: 299.95 })
+ *   .output<{ OrderId: number; TrackingNumber: string }>()
+ *   .query<OrderSummary>();
  *
- * console.log(records);         // OrderRow[]
- * console.log(out.OrderId);     // number (typed)
+ * console.log('Rows:', records);               // OrderSummary[]
+ * console.log('New ID:', out.OrderId);         // number
+ * console.log('Tracking:', out.TrackingNumber); // string
+ * console.log('Return Code:', returnValue);    // 0 = Success
+ * ```
  */
 export interface SprocResult<TRecords = void, TOut extends object = Record<string, unknown>> {
-  /** Typed record set(s) returned by the procedure. */
+  /** Typed record set(s) returned by the procedure SELECT statements. */
   records: TRecords;
-  /** Typed output / INOUT parameters. */
+  /** Strongly-typed output and INOUT parameter values returned by the database. */
   out: TOut;
   /** Integer return value (SQL Server / MySQL RETURN statement). Defaults to 0. */
   returnValue: number;
-  /** Rows affected by DML inside the procedure. */
+  /** Number of rows modified or affected by DML commands executed within the procedure. */
   rowsAffected: number;
 }
 
@@ -64,7 +75,10 @@ function inferSqlType(value: unknown): SqlType | undefined {
 /**
  * Intermediate execution builder returned after defining output parameters with `.output<TOut>()`.
  *
- * Provides typed execution methods (`query`, `queryMultiple`, `run`) that bundle both result records and strongly-typed output parameters.
+ * Provides strongly-typed execution methods (`query`, `queryMultiple`, `reader`, `run`)
+ * that return both tabular query results and strongly-typed output parameters.
+ *
+ * @typeParam TOut - Interface representing expected OUTPUT or INOUT parameters.
  */
 export class SprocOutputBuilder<TOut extends object> {
   constructor(
@@ -73,15 +87,35 @@ export class SprocOutputBuilder<TOut extends object> {
   ) {}
 
   /**
-   * Executes the procedure and returns a single typed record set plus typed output parameters.
+   * Executes the stored procedure and returns a single tabular record set together with typed OUTPUT parameters.
    *
-   * @usecase Execute procedures that both return tabular query results and populate OUTPUT parameters.
-   * @returns A Promise resolving to `SprocResult` with `records` and `out`.
+   * @usecase Ideal for search or report procedures that return matched rows alongside aggregated metrics (e.g. TotalCount, MaxScore).
+   *
+   * @typeParam TRecord - The type of each row in the returned tabular record set.
+   * @returns A Promise resolving to `SprocResult` with `records: TRecord[]` and `out: TOut`.
+   *
    * @example
+   * **SQL Server (MSSQL):**
    * ```ts
    * const { records, out } = await context.procedure('usp_SearchUsers')
-   *   .input({ Search: 'Alice' })
+   *   .input({ SearchTerm: 'Alice', Page: 1, PageSize: 20 })
    *   .output<{ TotalCount: number }>()
+   *   .query<User>();
+   * ```
+   *
+   * **MySQL:**
+   * ```ts
+   * const { records, out } = await context.procedure('sp_search_users')
+   *   .input({ p_search: 'Alice', p_limit: 20 })
+   *   .output<{ p_total_count: number }>()
+   *   .query<User>();
+   * ```
+   *
+   * **PostgreSQL:**
+   * ```ts
+   * const { records, out } = await context.procedure('fn_search_users')
+   *   .input({ search_term: 'Alice' })
+   *   .output<{ out_total: number }>()
    *   .query<User>();
    * ```
    */
@@ -96,15 +130,27 @@ export class SprocOutputBuilder<TOut extends object> {
   }
 
   /**
-   * Executes the procedure and returns multiple typed record sets plus typed output parameters.
+   * Executes the stored procedure and returns multiple tabular record sets alongside typed OUTPUT parameters.
    *
-   * @usecase Execute complex procedures returning multiple SELECT results (e.g. Order header and Order items).
-   * @returns A Promise resolving to `SprocResult` with tuple of record sets in `records` and `out`.
+   * @usecase Fetching complex hierarchical or composite datasets (e.g. Order Header + Order Items + Shipping Info) in a single database round-trip.
+   *
+   * @typeParam T - Tuple defining the types of each returned record set, e.g. `[OrderHeader[], OrderItem[]]`.
+   * @returns A Promise resolving to `SprocResult` with `records: T` and `out: TOut`.
+   *
    * @example
+   * **SQL Server (MSSQL):**
    * ```ts
-   * const { records, out } = await context.procedure('usp_GetOrderDetails')
-   *   .input({ OrderId: 101 })
-   *   .output<{ Status: string }>()
+   * const { records: [orders, items], out } = await context.procedure('usp_GetOrderDetails')
+   *   .input({ OrderId: 1001 })
+   *   .output<{ OrderStatus: string; TotalAmount: number }>()
+   *   .queryMultiple<[OrderHeader[], OrderItem[]]>();
+   * ```
+   *
+   * **MySQL:**
+   * ```ts
+   * const { records: [orders, items], out } = await context.procedure('sp_get_order_details')
+   *   .input({ p_order_id: 1001 })
+   *   .output<{ p_status: string }>()
    *   .queryMultiple<[OrderHeader[], OrderItem[]]>();
    * ```
    */
@@ -119,7 +165,22 @@ export class SprocOutputBuilder<TOut extends object> {
   }
 
   /**
-   * Executes the procedure and returns a sequential `MultipleResultsReader` along with typed output parameters.
+   * Executes the stored procedure and returns a sequential `MultipleResultsReader` along with typed output parameters.
+   *
+   * @usecase Consuming multiple tables sequentially using a forward-only reader pattern (similar to Dapper GridReader).
+   * @returns A Promise resolving to `MultipleResultsReader<TOut>`.
+   *
+   * @example
+   * ```ts
+   * const reader = await context.procedure('usp_GetAnalyticsReport')
+   *   .input({ Year: 2026, Quarter: 1 })
+   *   .output<{ ReportGeneratedAt: Date }>()
+   *   .reader();
+   *
+   * const summary   = reader.readFirst<RevenueSummary>();
+   * const monthly   = reader.read<MonthlyBreakdown>();
+   * const topBuyers = reader.read<CustomerRanking>();
+   * ```
    */
   public async reader(): Promise<MultipleResultsReader<TOut>> {
     const raw = await this.builder.executeMultiple();
@@ -132,17 +193,37 @@ export class SprocOutputBuilder<TOut extends object> {
   }
 
   /**
-   * Executes the procedure with no tabular result set, returning only typed output parameters and return values.
+   * Executes the stored procedure with no tabular result set, returning only typed output parameters and return values.
    *
-   * @usecase Execute action procedures (e.g. creating records, generating sequential invoice numbers) where data is returned via OUTPUT parameters.
-   * @returns A Promise resolving to `SprocResult` with `out`, `returnValue`, and `rowsAffected`.
+   * @usecase Executing mutating business actions, generating sequential invoice codes, or performing transactional fund transfers.
+   * @returns A Promise resolving to `SprocResult<void, TOut>`.
+   *
    * @example
+   * **SQL Server (MSSQL):**
    * ```ts
-   * const { out } = await context.procedure('usp_CreateInvoice')
-   *   .input({ CustomerId: 42, Amount: 150.00 })
+   * const { out, returnValue } = await context.procedure('usp_CreateInvoice')
+   *   .input({ CustomerId: 42, SubTotal: 150.00 })
    *   .output<{ InvoiceNumber: string; GeneratedId: number }>()
    *   .run();
-   * console.log('Created invoice:', out.InvoiceNumber);
+   *
+   * console.log('Invoice:', out.InvoiceNumber); // e.g. "INV-2026-0042"
+   * console.log('ID:', out.GeneratedId);
+   * ```
+   *
+   * **PostgreSQL:**
+   * ```ts
+   * const { out } = await context.procedure('sp_create_invoice')
+   *   .input({ p_customer_id: 42, p_subtotal: 150.00 })
+   *   .output<{ p_invoice_no: string; p_new_id: number }>()
+   *   .run();
+   * ```
+   *
+   * **MySQL:**
+   * ```ts
+   * const { out } = await context.procedure('sp_create_invoice')
+   *   .input({ customer_id: 42, amount: 150.00 })
+   *   .output<{ out_invoice_no: string; out_id: number }>()
+   *   .run();
    * ```
    */
   public async run(): Promise<SprocResult<void, TOut>> {
@@ -161,10 +242,17 @@ export class SprocOutputBuilder<TOut extends object> {
 // ──────────────────────────────────────────────────────────────
 
 /**
- * Fluent builder for configuring and executing database stored procedures.
+ * Fluent builder for configuring and executing database stored procedures and routines across all supported database engines.
  *
- * Supports input/output/inout parameters, automatic SQL type inference, multi-result sets,
- * execution timeouts, and database transaction binding.
+ * Supports input/output/inout parameters, automatic SQL data type inference, multiple tabular result sets (GridReader),
+ * execution timeouts, transaction binding, and error translation.
+ *
+ * ### Multi-Database Compatibility
+ * - **Microsoft SQL Server (MSSQL)**: Full support for `EXEC`, `@Parameters`, `OUTPUT` params, `RETURN` codes, and multiple SELECT tables.
+ * - **MySQL / MariaDB**: Full support for `CALL procedure_name(?, ?)`, `INOUT` and `OUT` parameters, and multiple result sets.
+ * - **PostgreSQL**: Support for `CALL sp_name($1, $2)` procedures and `SELECT * FROM fn_name($1, $2)` functions.
+ * - **Oracle Database**: Full support for `BEGIN procedure_name(:p1, :p2); END;` and PL/SQL cursors.
+ * - **SQLite / LibSQL / Neon / Turso**: Supported via parameterized queries or emulated procedure handlers.
  */
 export class StoredProcedureBuilder {
   private readonly params: Map<string, AdapterParam> = new Map();
@@ -175,7 +263,7 @@ export class StoredProcedureBuilder {
    * Initializes a new instance of the `StoredProcedureBuilder`.
    *
    * @param adapter - The active database adapter.
-   * @param procedureName - Name of the stored procedure in the database.
+   * @param procedureName - Name of the stored procedure or function in the database.
    */
   constructor(
     private readonly adapter: IDbAdapter,
@@ -217,12 +305,30 @@ export class StoredProcedureBuilder {
    * - `Date`    → `DateTime2`
    * - `bigint`  → `BigInt`
    *
-   * @usecase Fast, clean parameter definition without manual type enumeration.
+   * @usecase Fast, clean parameter definition without manual SQL type specification.
    * @param params - Object containing parameter names and values.
    * @returns `this` builder instance for chaining.
+   *
    * @example
+   * **SQL Server (MSSQL):**
    * ```ts
-   * context.procedure('usp_GetOrders').input({ CustomerId: 42, Status: 'active' });
+   * await context.procedure('usp_GetCustomerOrders')
+   *   .input({ CustomerId: 42, Status: 'SHIPPED', MinTotal: 50.00 })
+   *   .query<Order>();
+   * ```
+   *
+   * **MySQL:**
+   * ```ts
+   * await context.procedure('sp_get_customer_orders')
+   *   .input({ p_customer_id: 42, p_status: 'SHIPPED' })
+   *   .query<Order>();
+   * ```
+   *
+   * **PostgreSQL:**
+   * ```ts
+   * await context.procedure('fn_get_customer_orders')
+   *   .input({ p_customer_id: 42, p_status: 'SHIPPED' })
+   *   .query<Order>();
    * ```
    */
   public input(params: Record<string, unknown>): this {
@@ -244,13 +350,31 @@ export class StoredProcedureBuilder {
    * @usecase Specify procedure OUTPUT parameters with complete TypeScript type safety on the returned `.out` property.
    * @param paramNames - Optional array of parameter names.
    * @returns An `SprocOutputBuilder<TOut>` for executing the query.
+   *
    * @example
+   * **SQL Server (MSSQL):**
    * ```ts
-   * const { out } = await context.procedure('usp_CreateUser')
-   *   .input({ Name: 'Alice', Email: 'alice@example.com' })
-   *   .output<{ NewUserId: number; CreatedAt: Date }>()
+   * const { out } = await context.procedure('usp_RegisterAccount')
+   *   .input({ Email: 'dev@entityts.org', PasswordHash: '...' })
+   *   .output<{ AccountId: number; ActivationToken: string }>()
    *   .run();
-   * console.log(out.NewUserId);
+   * console.log('Created ID:', out.AccountId);
+   * ```
+   *
+   * **MySQL:**
+   * ```ts
+   * const { out } = await context.procedure('sp_register_account')
+   *   .input({ p_email: 'dev@entityts.org', p_hash: '...' })
+   *   .output<{ out_account_id: number; out_token: string }>()
+   *   .run();
+   * ```
+   *
+   * **PostgreSQL:**
+   * ```ts
+   * const { out } = await context.procedure('sp_register_account')
+   *   .input({ in_email: 'dev@entityts.org', in_hash: '...' })
+   *   .output<{ out_account_id: number }>()
+   *   .run();
    * ```
    */
   public output<TOut extends object = Record<string, unknown>>(
@@ -285,11 +409,27 @@ export class StoredProcedureBuilder {
    *
    * @usecase Fetch tabular records from a stored procedure in a single clean call.
    * @returns A Promise resolving to an array of typed row objects.
+   *
    * @example
+   * **SQL Server (MSSQL):**
    * ```ts
-   * const orders = await context.procedure('usp_GetOrders')
-   *   .input({ CustomerId: 42 })
-   *   .query<Order>();
+   * const activeUsers = await context.procedure('usp_GetActiveUsers')
+   *   .input({ MinimumPoints: 100 })
+   *   .query<User>();
+   * ```
+   *
+   * **PostgreSQL:**
+   * ```ts
+   * const activeUsers = await context.procedure('fn_get_active_users')
+   *   .input({ min_points: 100 })
+   *   .query<User>();
+   * ```
+   *
+   * **MySQL:**
+   * ```ts
+   * const activeUsers = await context.procedure('sp_get_active_users')
+   *   .input({ min_points: 100 })
+   *   .query<User>();
    * ```
    */
   public async query<T = unknown>(): Promise<T[]> {
@@ -302,10 +442,19 @@ export class StoredProcedureBuilder {
    *
    * @usecase Ideal for stored procedures returning multiple tables in a single round-trip without output params.
    * @returns A Promise resolving to a tuple of typed arrays, e.g. `[OrderHeader[], OrderItem[]]`.
+   *
    * @example
+   * **SQL Server (MSSQL):**
    * ```ts
    * const [customers, orders, stats] = await context.procedure('usp_GetDashboard')
    *   .input({ CustomerId: 101 })
+   *   .queryMultiple<[Customer[], Order[], Stat[]]>();
+   * ```
+   *
+   * **MySQL:**
+   * ```ts
+   * const [customers, orders, stats] = await context.procedure('sp_get_dashboard')
+   *   .input({ p_customer_id: 101 })
    *   .queryMultiple<[Customer[], Order[], Stat[]]>();
    * ```
    */
@@ -319,15 +468,16 @@ export class StoredProcedureBuilder {
    * Allows reading result tables one-by-one with `.read<T>()`.
    *
    * @usecase Useful when consuming multiple tables sequentially or when tables vary by branch logic.
+   *
    * @example
    * ```ts
-   * const reader = await context.procedure('usp_GetDashboard')
-   *   .input({ CustomerId: 101 })
+   * const reader = await context.procedure('usp_GetComplexReport')
+   *   .input({ CompanyId: 10 })
    *   .reader();
    *
-   * const customers = reader.read<Customer>(); // Table 1
-   * const orders    = reader.read<Order>();    // Table 2
-   * const stats     = reader.read<Stat>();     // Table 3
+   * const company = reader.readFirst<Company>(); // Table 1
+   * const departments = reader.read<Department>(); // Table 2
+   * const employees   = reader.read<Employee>();   // Table 3
    * ```
    */
   public async reader<TOut = Record<string, unknown>>(): Promise<MultipleResultsReader<TOut>> {
@@ -343,12 +493,14 @@ export class StoredProcedureBuilder {
   /**
    * Executes the stored procedure and returns a single scalar value from the first column of the first row.
    *
-   * @usecase Quick execution for procedures returning counts, IDs, or single values.
+   * @usecase Quick execution for procedures returning counts, IDs, or single computed values.
    * @returns A Promise resolving to the scalar value.
+   *
    * @example
+   * **SQL Server / MySQL / PostgreSQL:**
    * ```ts
-   * const count = await context.procedure('usp_CountOrders')
-   *   .input({ CustomerId: 5 })
+   * const totalRevenue = await context.procedure('usp_CalculateRevenue')
+   *   .input({ Year: 2026, Month: 9 })
    *   .scalar<number>();
    * ```
    */
@@ -359,12 +511,28 @@ export class StoredProcedureBuilder {
   /**
    * Executes the stored procedure with no return set (fire-and-forget or DML mutation).
    *
-   * @usecase Execute procedures performing maintenance, cleanup, or sending notifications.
+   * @usecase Execute procedures performing maintenance, cleanup, partition rotations, or sending notifications.
    * @returns Object containing `rowsAffected` and `returnValue`.
+   *
    * @example
+   * **SQL Server (MSSQL):**
    * ```ts
-   * await context.procedure('usp_PurgeOldSessions')
+   * const { rowsAffected, returnValue } = await context.procedure('usp_PurgeOldSessions')
    *   .input({ OlderThanDays: 30 })
+   *   .run();
+   * ```
+   *
+   * **PostgreSQL:**
+   * ```ts
+   * await context.procedure('sp_purge_old_sessions')
+   *   .input({ older_than_days: 30 })
+   *   .run();
+   * ```
+   *
+   * **MySQL:**
+   * ```ts
+   * await context.procedure('sp_purge_old_sessions')
+   *   .input({ older_than_days: 30 })
    *   .run();
    * ```
    */
@@ -386,10 +554,13 @@ export class StoredProcedureBuilder {
    * @param type - Optional explicit `SqlType`.
    * @param options - Optional length, precision, or scale options.
    * @returns `this` builder instance for chaining.
+   *
    * @example
+   * **MSSQL:**
    * ```ts
-   * context.procedure('usp_Save')
-   *   .withParam('Code', 'ABC', SqlType.VarChar, { maxLength: 10 });
+   * context.procedure('usp_SaveCustomer')
+   *   .withParam('CustomerCode', 'CUST-100', SqlType.VarChar, { maxLength: 20 })
+   *   .withParam('CreditLimit', 5000.50, SqlType.Decimal, { precision: 18, scale: 2 });
    * ```
    */
   public withParam(name: string, value: unknown, type?: SqlType, options?: ParamOptions): this {
@@ -421,6 +592,12 @@ export class StoredProcedureBuilder {
    * @param type - Explicit SQL type (defaults to `SqlType.VarChar`).
    * @param options - Optional length, precision, or scale.
    * @returns `this` builder instance for chaining.
+   *
+   * @example
+   * ```ts
+   * context.procedure('usp_GenerateTrackingNumber')
+   *   .withOutputParam('TrackingNumber', SqlType.NVarChar, { maxLength: 50 });
+   * ```
    */
   public withOutputParam(
     name: string,
@@ -440,12 +617,19 @@ export class StoredProcedureBuilder {
   /**
    * Adds a bidirectional input/output (INOUT) parameter.
    *
-   * @usecase Use for procedures that take an initial value and mutate it in place (e.g. inout counter or token).
+   * @usecase Use for procedures that take an initial value and mutate it in place (e.g. inout counter, state flag, or token).
    * @param name - Parameter name.
    * @param value - Initial input value.
    * @param type - Explicit SQL type.
    * @param options - Optional sizing options.
    * @returns `this` builder instance for chaining.
+   *
+   * @example
+   * **MySQL / MSSQL / PostgreSQL:**
+   * ```ts
+   * context.procedure('sp_increment_sequence')
+   *   .withInputOutputParam('SequenceVal', 100, SqlType.Int);
+   * ```
    */
   public withInputOutputParam(
     name: string,
@@ -467,8 +651,21 @@ export class StoredProcedureBuilder {
   /**
    * Configures capturing of the procedure's integer return value (`RETURN 0` or `RETURN 1`).
    *
-   * @usecase Capture status codes or error return codes returned via SQL Server `RETURN` statements.
+   * @usecase Capture status codes or error return codes returned via SQL Server / MySQL `RETURN` statements.
    * @returns `this` builder instance for chaining.
+   *
+   * @example
+   * **SQL Server (MSSQL):**
+   * ```ts
+   * const result = await context.procedure('usp_ValidateUser')
+   *   .input({ UserId: 10 })
+   *   .withReturnValue()
+   *   .execute();
+   *
+   * if (result.returnValue === 0) {
+   *   console.log('User is valid');
+   * }
+   * ```
    */
   public withReturnValue(): this {
     const returnParamName = '__returnValue';
@@ -483,9 +680,16 @@ export class StoredProcedureBuilder {
   /**
    * Sets command execution timeout for this stored procedure execution in milliseconds.
    *
-   * @usecase Set higher timeouts for long-running batch or ETL stored procedures.
+   * @usecase Set higher timeouts for long-running batch or ETL stored procedures, or tight timeouts for interactive APIs.
    * @param ms - Timeout in milliseconds.
    * @returns `this` builder instance for chaining.
+   *
+   * @example
+   * ```ts
+   * await context.procedure('usp_HeavyMonthlyBatch')
+   *   .withTimeout(30000) // 30 seconds
+   *   .run();
+   * ```
    */
   public withTimeout(ms: number): this {
     this.timeoutMs = ms;
@@ -495,9 +699,24 @@ export class StoredProcedureBuilder {
   /**
    * Binds the execution of this stored procedure to an active database transaction.
    *
-   * @usecase Execute stored procedures as part of a larger multi-step transaction.
+   * @usecase Execute stored procedures as part of a larger multi-step transaction or Unit of Work.
    * @param tx - The active `DbTransaction`.
    * @returns `this` builder instance for chaining.
+   *
+   * @example
+   * ```ts
+   * await context.beginBoundedTransaction(async (tx) => {
+   *   await context.procedure('usp_DebitAccount')
+   *     .input({ AccountId: fromId, Amount: 100 })
+   *     .inTransaction(tx)
+   *     .run();
+   *
+   *   await context.procedure('usp_CreditAccount')
+   *     .input({ AccountId: toId, Amount: 100 })
+   *     .inTransaction(tx)
+   *     .run();
+   * });
+   * ```
    */
   public inTransaction(tx: DbTransaction): this {
     this.transaction = tx;

@@ -22,7 +22,26 @@ export interface UnitOfWorkCommitResult {
  *
  * Collects entity mutations across multiple `DbSet` collections, performs topological
  * dependency resolution to sequence parent-before-child inserts and child-before-parent deletes,
- * and commits all operations atomically within a single database transaction.
+ * and commits all operations atomically within a single database transaction across PostgreSQL, MySQL, SQLite, and MSSQL.
+ *
+ * @usecase Coordinate multi-aggregate transactions where multiple entities across different tables must be persisted together or fail together.
+ *
+ * @example
+ * **PostgreSQL / MySQL / SQLite / MSSQL:**
+ * ```ts
+ * const uow = context.createUnitOfWork();
+ *
+ * const customer = new Customer({ name: 'Acme Corp' });
+ * const order = new Order({ totalAmount: 1500 });
+ * const invoice = new Invoice({ status: 'PENDING' });
+ *
+ * uow.registerNew(context.customers, customer);
+ * uow.registerNew(context.orders, order);
+ * uow.registerNew(context.invoices, invoice);
+ *
+ * const result = await uow.commit();
+ * console.log(`Committed ${result.insertedCount} entities in atomic transaction.`);
+ * ```
  */
 export class UnitOfWork<TContext extends DbContext = DbContext> {
   private readonly _operations: UnitOfWorkOperation[] = [];
@@ -45,6 +64,11 @@ export class UnitOfWork<TContext extends DbContext = DbContext> {
 
   /**
    * Registers a newly created entity to be inserted during `commit()`.
+   *
+   * @usecase Queue an entity insertion in the Unit of Work.
+   * @param set - Target `DbSet` for the entity.
+   * @param entity - The entity object to insert.
+   * @returns `this` instance for chaining.
    */
   public registerNew<T extends object>(set: DbSet<T>, entity: T): this {
     return this.register(set, entity, EntityState.Added);
@@ -52,6 +76,12 @@ export class UnitOfWork<TContext extends DbContext = DbContext> {
 
   /**
    * Registers an existing entity as modified to be updated during `commit()`.
+   *
+   * @usecase Queue an entity modification with optional patch payload.
+   * @param set - Target `DbSet` for the entity.
+   * @param entity - The entity object being modified.
+   * @param patch - Optional partial update payload.
+   * @returns `this` instance for chaining.
    */
   public registerDirty<T extends object>(set: DbSet<T>, entity: T, patch?: Partial<T>): this {
     return this.register(set, entity, EntityState.Modified, patch);

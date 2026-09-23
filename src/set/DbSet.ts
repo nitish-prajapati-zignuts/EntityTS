@@ -1561,12 +1561,17 @@ export class DbSet<T extends object = any> {
   /**
    * Looks up an entity by its primary key value or returns `null` if not found.
    *
-   * @usecase Use this for fast, direct primary key lookups without writing WHERE clauses.
-   * @param id - The primary key value (e.g. number or UUID string).
+   * @usecase Fast, direct primary key lookup across any supported database engine (PostgreSQL, MySQL, SQLite, MSSQL, Neon, Turso).
+   * @param id - The primary key value (e.g. number, string, or UUID).
    * @returns A Promise resolving to the entity instance or `null`.
+   *
    * @example
+   * **PostgreSQL / MySQL / SQLite / MSSQL:**
    * ```ts
    * const user = await context.users.find(10);
+   * if (user) {
+   *   console.log('Found user:', user.name);
+   * }
    * ```
    */
   public async find(id: unknown): Promise<T | null> {
@@ -1577,10 +1582,11 @@ export class DbSet<T extends object = any> {
   /**
    * Looks up an entity by its primary key value or throws `EntityNotFoundException` if it does not exist.
    *
-   * @usecase Standard lookup for controller show/edit endpoints where a non-existent ID is a 404 client error.
+   * @usecase Standard lookup for API controller show/edit endpoints where a missing entity should trigger a 404 response.
    * @param id - The primary key value.
    * @throws `EntityNotFoundException` if no entity with the given primary key exists.
    * @returns A Promise resolving to the matching entity instance.
+   *
    * @example
    * ```ts
    * const user = await context.users.findOrThrow(req.params.id);
@@ -1900,20 +1906,22 @@ export class DbSet<T extends object = any> {
   /**
    * Inserts a new entity row into the database table.
    *
-   * Automatically assigns audit timestamps (`createdAt`, `updatedAt`), creator user (`createdBy`),
-   * and initial version numbers for optimistic concurrency.
+   * Automatically handles primary key generation (`RETURNING id` in PostgreSQL / SQLite, `OUTPUT INSERTED.id` in MSSQL, `insertId` in MySQL),
+   * audit timestamps (`@CreatedAt`, `@UpdatedAt`), audit user (`@CreatedBy`), tenant scoping (`@TenantId`), and optimistic concurrency versioning.
    *
-   * @usecase Use this to persist a new record into the database table.
+   * @usecase Persist a new entity record into the database across any supported engine with automatic identity resolution.
    * @param entity - The entity attributes to insert.
    * @returns A Promise resolving to the inserted entity with its generated primary key populated.
+   *
    * @example
+   * **PostgreSQL / MySQL / SQLite / MSSQL / Neon / Turso:**
    * ```ts
    * const newUser = await context.users.add({
    *   name: 'John Doe',
    *   email: 'john@example.com',
    *   role: 'user',
    * });
-   * console.log(newUser.id); // auto-incremented or generated ID
+   * console.log('Generated User ID:', newUser.id);
    * ```
    */
   public async add(entity: Partial<T>): Promise<T> {
@@ -2067,11 +2075,12 @@ export class DbSet<T extends object = any> {
   }
 
   /**
-   * Inserts multiple entities sequentially into the database.
+   * Inserts multiple entities sequentially into the database within the current transaction.
    *
-   * @usecase Use this to add a small collection of entities with individual audit metadata handling. (For large collections, use `bulkInsert`).
-   * @param entities - Array of entities to insert.
-   * @returns A Promise resolving to an array of saved entities with generated IDs.
+   * @usecase Add a collection of domain entities while triggering individual entity lifecycle hooks, validation, and audit entries.
+   * @param entities - Array of entity objects to insert.
+   * @returns A Promise resolving to an array of saved entities with generated primary keys.
+   *
    * @example
    * ```ts
    * const users = await context.users.addRange([
@@ -2096,6 +2105,7 @@ export class DbSet<T extends object = any> {
    * @usecase Update a unique record by matching where condition.
    * @param args - Object containing `where` filter, `data` patch, and optional `select` projection.
    * @returns A Promise resolving to the refreshed updated entity from the database.
+   *
    * @example
    * ```ts
    * const updated = await context.users.update({ where: { id: 1 }, data: { name: 'Jane Doe' } });
@@ -2111,16 +2121,21 @@ export class DbSet<T extends object = any> {
    *
    * Automatically refreshes `updatedAt` and advances `@Version` properties.
    *
-   * @usecase Use this to update a record's fields (e.g. updating profile info or updating order status).
+   * @usecase Update entity attributes (e.g. status changes, price updates) with concurrency conflict prevention.
    * @param id - The primary key of the entity to update.
    * @param patch - Partial object containing fields to update.
    * @param expectedVersion - Optional expected version for optimistic concurrency conflict detection.
    * @param concurrencyOriginals - Optional map of original values for columns decorated with `@ConcurrencyCheck`.
    * @throws `DbUpdateConcurrencyException` if expected version does not match current database row.
    * @returns A Promise resolving to the refreshed updated entity from the database.
+   *
    * @example
+   * **PostgreSQL / MySQL / SQLite / MSSQL:**
    * ```ts
-   * const updated = await context.users.update(userId, { name: 'Jane Doe' });
+   * const updatedUser = await context.users.update(userId, {
+   *   name: 'Jane Doe',
+   *   role: 'admin',
+   * });
    * ```
    */
   public async update(
@@ -3207,13 +3222,22 @@ export class DbSet<T extends object = any> {
   /**
    * Performs high-performance batch insertion of multiple records in a single chunked SQL statement.
    *
-   * @usecase Ideal for data imports, CSV uploads, ETL jobs, and seeding thousands of records with optimal database throughput.
+   * Automatically handles dialect parameter limits (e.g. SQLite 999/32766 params, PostgreSQL 65535 params, MSSQL 2100 params)
+   * by splitting large batches into optimal sub-chunks.
+   *
+   * @usecase Ideal for data imports, CSV uploads, ETL pipelines, and seeding thousands of records with optimal database throughput.
    * @param entities - Array of entities to insert in bulk.
    * @param options - Batching options (batch size, concurrency, transaction).
    * @returns A Promise resolving to the total number of rows inserted.
+   *
    * @example
+   * **PostgreSQL / MySQL / SQLite / MSSQL:**
    * ```ts
-   * const inserted = await context.products.bulkInsert(newProductList, { batchSize: 500 });
+   * const insertedCount = await context.products.bulkInsert(newProductList, {
+   *   batchSize: 500,
+   *   ignoreDuplicates: false,
+   * });
+   * console.log(`Inserted ${insertedCount} products`);
    * ```
    */
   public async bulkInsert(entities: Partial<T>[], options?: BulkInsertOptions): Promise<number> {
@@ -3230,13 +3254,21 @@ export class DbSet<T extends object = any> {
   /**
    * Performs high-performance batch updates across multiple records matching by primary key or specified keys.
    *
-   * @usecase Ideal for bulk price adjustments, mass status changes, and inventory updates.
+   * Generates optimized multi-row UPDATE statements (using `CASE ... WHEN` or temporary staging tables based on provider).
+   *
+   * @usecase Ideal for bulk price adjustments, mass status changes, and inventory level updates across thousands of records.
    * @param entities - Array of entities containing update values and identifying keys.
    * @param options - Bulk update options (update columns, key columns, batch size).
    * @returns A Promise resolving to the total number of rows updated.
+   *
    * @example
+   * **PostgreSQL / MySQL / SQLite / MSSQL:**
    * ```ts
-   * await context.products.bulkUpdate(updatedProducts, { keyColumns: ['id'], batchSize: 250 });
+   * await context.products.bulkUpdate(updatedProducts, {
+   *   keyColumns: ['id'],
+   *   updateColumns: ['price', 'stockQuantity'],
+   *   batchSize: 250,
+   * });
    * ```
    */
   public async bulkUpdate(entities: Partial<T>[], options: BulkUpdateOptions<T>): Promise<number> {
@@ -3250,15 +3282,27 @@ export class DbSet<T extends object = any> {
   }
 
   /**
-   * Performs high-performance bulk upsert (INSERT ... ON CONFLICT / MERGE) across multiple records in a single statement.
+   * Performs high-performance bulk upsert across multiple records in a single statement.
    *
-   * @usecase Ideal for data synchronization with external APIs or CRMs where records must be inserted if new or updated if existing.
+   * Automatically adapts to the underlying database dialect:
+   * - **PostgreSQL**: `INSERT ... ON CONFLICT (key) DO UPDATE SET ...`
+   * - **MySQL**: `INSERT ... ON DUPLICATE KEY UPDATE ...`
+   * - **SQLite**: `INSERT ... ON CONFLICT (key) DO UPDATE SET ...`
+   * - **Microsoft SQL Server**: `MERGE INTO ... USING (VALUES ...) ON ... WHEN MATCHED THEN UPDATE ... WHEN NOT MATCHED THEN INSERT ...`
+   *
+   * @usecase Ideal for data synchronization with external APIs or CRMs where incoming records must be inserted if new or updated if existing.
    * @param entities - Array of entities to upsert.
    * @param options - Match keys, update columns, and batching configuration.
    * @returns A Promise resolving to the number of rows affected.
+   *
    * @example
+   * **PostgreSQL / MySQL / SQLite / MSSQL:**
    * ```ts
-   * await context.products.bulkUpsert(syncedItems, { keyColumns: ['sku'], batchSize: 500 });
+   * await context.products.bulkUpsert(syncedItems, {
+   *   keyColumns: ['sku'],
+   *   updateColumns: ['price', 'stock', 'title'],
+   *   batchSize: 500,
+   * });
    * ```
    */
   public async bulkUpsert(entities: Partial<T>[], options: BulkUpsertOptions<T>): Promise<number> {
@@ -3279,7 +3323,9 @@ export class DbSet<T extends object = any> {
    * @param predicate - Criteria matching rows to delete.
    * @param options - Batching and transaction options.
    * @returns A Promise resolving to the number of rows deleted.
+   *
    * @example
+   * **PostgreSQL / MySQL / SQLite / MSSQL:**
    * ```ts
    * await context.notifications.bulkDelete({ isRead: true });
    * ```
