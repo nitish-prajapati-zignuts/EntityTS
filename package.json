@@ -1,0 +1,116 @@
+{
+  "name": "entityts",
+  "version": "0.1.0",
+  "description": "EntityTS — Enterprise EF Core-inspired ORM, DbContext, DbSet<T>, and Stored Procedure Execution for TypeScript & Node.js",
+  "main": "dist/index.js",
+  "module": "dist/esm/index.js",
+  "types": "dist/index.d.ts",
+  "sideEffects": false,
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/esm/index.js",
+      "require": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./banking": {
+      "types": "./dist/banking/index.d.ts",
+      "import": "./dist/esm/banking/index.js",
+      "require": "./dist/banking/index.js",
+      "default": "./dist/banking/index.js"
+    },
+    "./adapters": {
+      "types": "./dist/adapters/index.d.ts",
+      "import": "./dist/esm/adapters/index.js",
+      "require": "./dist/adapters/index.js",
+      "default": "./dist/adapters/index.js"
+    },
+    "./decorators": {
+      "types": "./dist/decorators/index.d.ts",
+      "import": "./dist/esm/decorators/index.js",
+      "require": "./dist/decorators/index.js",
+      "default": "./dist/decorators/index.js"
+    },
+    "./benchmark": {
+      "types": "./dist/benchmark/index.d.ts",
+      "import": "./dist/esm/benchmark/index.js",
+      "require": "./dist/benchmark/index.js",
+      "default": "./dist/benchmark/index.js"
+    }
+  },
+  "bin": {
+    "entityts": "./dist/cli/nsp.js",
+    "nsp": "./dist/cli/nsp.js"
+  },
+  "scripts": {
+    "build": "rm -rf dist && tsc -p tsconfig.build.json && tsc -p tsconfig.esm.json && node scripts/minify-dist.js",
+    "build:fast": "tsc -p tsconfig.build.json",
+    "benchmark": "node scripts/benchmark.js",
+    "test": "jest --passWithNoTests",
+    "test:coverage": "jest --coverage",
+    "clean": "rm -rf dist",
+    "example:build": "tsc -p example/tsconfig.json",
+    "example:start": "tsc -p example/tsconfig.json && node example/dist/server.js",
+    "example:test": "tsc -p example/tsconfig.json && node example/dist/test-client.js",
+    "example:postgres": "DATABASE_URL=postgresql://localhost:5432/nsp_db DB_PROVIDER=postgres tsc -p example/tsconfig.json && DATABASE_URL=postgresql://localhost:5432/nsp_db DB_PROVIDER=postgres node example/dist/server.js",
+    "example:postgres:test": "DATABASE_URL=postgresql://localhost:5432/nsp_db DB_PROVIDER=postgres tsc -p example/tsconfig.json && DATABASE_URL=postgresql://localhost:5432/nsp_db DB_PROVIDER=postgres node example/dist/test-client.js"
+  },
+  "keywords": [
+    "dbcontext",
+    "dbset",
+    "efcore",
+    "stored-procedure",
+    "sql",
+    "typescript",
+    "orm",
+    "mssql",
+    "postgres",
+    "mysql",
+    "sqlite"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "reflect-metadata": "^0.2.2"
+  },
+  "peerDependencies": {
+    "@nestjs/common": "^9.0.0 || ^10.0.0 || ^11.0.0",
+    "@nestjs/core": "^9.0.0 || ^10.0.0 || ^11.0.0",
+    "express": ">=4.18.0"
+  },
+  "peerDependenciesMeta": {
+    "@nestjs/common": {
+      "optional": true
+    },
+    "@nestjs/core": {
+      "optional": true
+    },
+    "express": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@libsql/client": ">=0.5.0",
+    "@neondatabase/serverless": ">=0.9.0",
+    "@nestjs/common": "^11.2.5",
+    "@nestjs/core": "^11.2.5",
+    "@planetscale/database": ">=1.0.0",
+    "@types/better-sqlite3": "^7.6.12",
+    "@types/express": "^5.0.6",
+    "@types/jest": "^29.5.14",
+    "@types/mssql": "^9.0.8",
+    "@types/node": "^22.13.9",
+    "@types/pg": "^8.11.11",
+    "better-sqlite3": ">=9.0.0",
+    "express": "^5.2.1",
+    "jest": "^29.7.0",
+    "mssql": ">=10.0.0",
+    "mysql2": ">=3.0.0",
+    "pg": ">=8.0.0",
+    "ts-jest": "^29.2.6",
+    "typescript": "^5.8.2"
+  }
+}
